@@ -41,20 +41,7 @@ class Player(pygame.sprite.Sprite):
         # if current_time - self.last_move_time < self.move_cooldown:
         #     return
 
-        # Movement is based on grid snapping, so the player moves in increments of the tile 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # 
-        # size.
+        # Movement is based on grid snapping, so the player moves in increments of the tile size.
 
         # Keyboard check
         if keys[pygame.K_UP] or keys[pygame.K_w]:    vertical_step = -1
