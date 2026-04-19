@@ -48,14 +48,18 @@ class UISettings:
     MAP_WIDTH = SIDEBAR_WIDTH
     MAP_HEIGHT = BOTTOM_LOG_HEIGHT
 
+class WindowSettings:
+    MAX_MESSAGES = 6
+    LINE_HEIGHT = 22
+    TEXT_PADDING = 10
+    WELCOME_MESSAGE = ["Welcome to the Dungeon!", "Use arrows to move."]
+
 class PlayerSettings:
     MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
-    SMALL = 10
-    MEDIUM = 20
-    LARGE = 30
+    SIZE = 20
     COLOR = 'white'
 
 class AudioSettings:

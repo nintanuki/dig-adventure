@@ -93,6 +93,7 @@ class Player(pygame.sprite.Sprite):
             self.position.y = target_destination_y
             # Update the rect's position to match the new position OR...
             self.rect.topleft = self.position
+            self.game.log_message("You moved!")
             self.game.audio.play_move_sound() # Play the movement sound effect
         else:
             # ...if the move is invalid (e.g., out of bounds), don't update the position and instead

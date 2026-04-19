@@ -6,6 +6,7 @@ import json
 from settings import *
 from audio import AudioManager
 from sprites import Player
+from windows import MessageLog
 import debug
 
 class GameManager:
@@ -21,6 +22,7 @@ class GameManager:
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.spawn_player() # Spawn the player at a safe location
+        self.message_log = MessageLog(self)
 
     def setup_controllers(self):
         """Initializes connected gamepads or joysticks."""
@@ -113,6 +115,10 @@ class GameManager:
             UISettings.MAP_HEIGHT)
         pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, map_frame_rect, 2, UISettings.BORDER_RADIUS)
 
+    def log_message(self, text):
+        """The central hub for all game objects to send text to the UI."""
+        self.message_log.add_message(text)
+
     def run(self):
         """
         Run the game loop.
@@ -136,15 +142,9 @@ class GameManager:
             # Drawing
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
+            self.all_sprites.draw(self.screen) # Draw the sprites to the screen
             self.draw_ui_frames() # Draw the UI frames and outlines
-
-            # Temporary UI Outlines for visualization (debugging purposes)
-            # Sidebar
-            # pygame.draw.rect(self.screen, 'blue', (ScreenSettings.WIDTH - UISettings.SIDEBAR_WIDTH, 0, UISettings.SIDEBAR_WIDTH, ScreenSettings.HEIGHT), 2)
-            # Bottom Log
-            # pygame.draw.rect(self.screen, 'red', (0, ScreenSettings.HEIGHT - UISettings.BOTTOM_LOG_HEIGHT, ScreenSettings.WIDTH, UISettings.BOTTOM_LOG_HEIGHT), 2)
-
-            self.all_sprites.draw(self.screen) # Draw all sprites to the screen
+            self.message_log.draw(self.screen) # Draw text to the message log
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)
