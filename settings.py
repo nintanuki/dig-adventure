@@ -57,6 +57,14 @@ class WindowSettings:
 class PlayerSettings:
     MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
 
+class ItemSettings:
+    # Percent chances for digging
+    CHANCE_FOR_ITEM = 0.4 
+    
+    # Item Weights (for random distribution)
+    TREASURES = ['Gold Coin', 'Ruby', 'Diamond', 'Emerald']
+    TOOLS = ['Torch', 'Lantern', 'Monster Repellent']
+
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
     MESSAGE_SIZE = 20
@@ -81,6 +89,7 @@ class AssetPaths:
 
     # Floor Tiles
     DIRT_TILE = os.path.join(GRAPHICS_DIR, 'dirt_0_new.png')
+    DUG_TILE = os.path.join(GRAPHICS_DIR, 'cobble_blood6.png')
     WALL_TILE = os.path.join(GRAPHICS_DIR, 'brick_brown_0.png')
 
     # Audio

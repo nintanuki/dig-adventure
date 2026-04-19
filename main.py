@@ -22,6 +22,7 @@ class GameManager:
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.game_active = True
+        self.setup_tile_map()
         self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
@@ -121,7 +122,12 @@ class GameManager:
                 if is_wall:
                     self.screen.blit(self.scaled_wall_tile, (tile_window_x, tile_window_y))
                 else:
-                    self.screen.blit(self.scaled_dirt_tile, (tile_window_x, tile_window_y))
+                    # Check if this specific tile has been dug
+                    grid_pos = (col, row)
+                    if self.tile_data.get(grid_pos, {}).get('is_dug'):
+                        self.screen.blit(self.scaled_dug_tile, (tile_window_x, tile_window_y))
+                    else:
+                        self.screen.blit(self.scaled_dirt_tile, (tile_window_x, tile_window_y))
 
                 # Draw the faint grey grid lines
                 tile_outline = pygame.Rect(tile_window_x, tile_window_y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
@@ -185,6 +191,38 @@ class GameManager:
             text_surf = big_font.render(end_text, False, end_color)
             text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH/2, ScreenSettings.HEIGHT/2))
             self.screen.blit(text_surf, text_rect)
+
+    def setup_tile_map(self):
+        """Creates a dictionary to track the state and contents of every tile."""
+        self.tile_data = {}
+        
+        # 1. Initialize all tiles as undug and empty
+        for col in range(1, UISettings.COLS - 1):
+            for row in range(1, UISettings.ROWS - 1):
+                self.tile_data[(col, row)] = {
+                    'is_dug': False,
+                    'item': None
+                }
+                
+        # 2. Place the Key at a specific location
+        # Choosing a spot away from the player's typical start
+        key_pos = (UISettings.COLS - 3, UISettings.ROWS - 3)
+        self.tile_data[key_pos]['item'] = 'Key'
+
+    def get_item_at_tile(self, grid_pos):
+        """Logic to decide what item is found when digging."""
+        # Check if a specific item (like the Key) was pre-placed
+        if self.tile_data[grid_pos]['item']:
+            return self.tile_data[grid_pos]['item']
+        
+        # Otherwise, roll for a random item
+        if random.random() < ItemSettings.CHANCE_FOR_ITEM:
+            if random.random() < 0.2: # 20% chance for a tool
+                return random.choice(ItemSettings.TOOLS)
+            else: # 80% chance for treasure
+                return random.choice(ItemSettings.TREASURES)
+                
+        return None
 
     def run(self):
         """

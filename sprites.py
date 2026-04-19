@@ -25,38 +25,66 @@ class Player(pygame.sprite.Sprite):
         self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
         self.time_of_last_move = 0
 
+        self.inventory = {
+        'Gold': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
+        'Torch': 2, 'Lantern': 0, 'Monster Repellent': 0,
+        'Key': 0, 'Shovel': 1, 'Map': 1
+        }
+
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 
-    def get_input_direction(self):
+    def get_input(self):
         """
         Handle player input for movement,
         including both keyboard and controller input.
 
         Returns:
-            horizontal_step (int): The number of steps to move horizontally.
-            vertical_step (int): The number of steps to move vertically.
+            horizontal_step (int): The number of steps to move horizontally. -1, 0, or 1
+            vertical_step (int): The number of steps to move vertically. -1, 0, or 1
+            action_type (str): 'move', 'dig', 'map', 'torch', 'repellent', or None
         """
         keys = pygame.key.get_pressed()
         horizontal_step = 0 # 0 means no movement, but we are also initializing here
         vertical_step = 0
+        action_type = None
 
         # Movement is based on grid snapping, so the player moves in increments of the tile size.
-
         # Keyboard check
         if keys[pygame.K_UP] or keys[pygame.K_w]:    vertical_step = -1
         elif keys[pygame.K_DOWN] or keys[pygame.K_s]: vertical_step = 1
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]: horizontal_step = -1
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]: horizontal_step = 1
 
-        # Controller D-Pad check
+        if horizontal_step != 0 or vertical_step != 0:
+            action_type = 'move'
+
+        # Action Keys (Mnemonic)
+        elif keys[pygame.K_d]: action_type = 'dig'
+        elif keys[pygame.K_m]: action_type = 'map'
+        elif keys[pygame.K_t]: action_type = 'torch'
+        elif keys[pygame.K_r]: action_type = 'repellent'
+
+        # Controller check
         if pygame.joystick.get_count() > 0:
             joystick = pygame.joystick.Joystick(0)
+            
+            # D-Pad (Movement)
             dpad_direction = joystick.get_hat(0)
             # Only override if the d-pad is actually being touched
-            if dpad_direction[0] != 0: horizontal_step = dpad_direction[0]
-            if dpad_direction[1] != 0: vertical_step = -dpad_direction[1]
+            if dpad_direction[0] != 0 or dpad_direction[1] != 0:
+                horizontal_step = dpad_direction[0]
+                vertical_step = -dpad_direction[1]
+                action_type = 'move'
 
-        return horizontal_step, vertical_step
+            # Buttons (Actions)
+            # 0:A (Dig), 1:B (Torch), 2:X (Map), 3:Y (Repellent)
+            if action_type is None:
+                if joystick.get_button(0): action_type = 'dig'
+                elif joystick.get_button(1): action_type = 'torch'
+                elif joystick.get_button(2): action_type = 'map'
+                elif joystick.get_button(3): action_type = 'repellent'
+
+        return horizontal_step, vertical_step, action_type
 
     def apply_grid_snap_movement(self, horizontal_step=0, vertical_step=0):
         """
@@ -111,16 +139,55 @@ class Player(pygame.sprite.Sprite):
         """Checks the timer and input before deciding to move."""
         current_time = pygame.time.get_ticks()
         
-        # 1. Check if enough time has passed (The Cooldown)
+        # Check if enough time has passed (The Cooldown)
         if current_time - self.time_of_last_move >= self.move_cooldown:
-            
-            # 2. Get the direction the player wants to go
-            horizontal_step, vertical_step = self.get_input_direction()
-            
-            # 3. If there is input, execute the movement and reset the timer
-            if horizontal_step != 0 or vertical_step != 0:
+            # Get the direction the player wants to go
+            horizontal_step, vertical_step, action = self.get_input()
+            # If there is input, execute the movement and reset the timer
+            if action == 'move':
                 self.apply_grid_snap_movement(horizontal_step, vertical_step)
                 self.time_of_last_move = current_time
+
+            elif action == 'dig':
+                self.dig()
+                self.time_of_last_move = current_time
+
+            elif action == 'map':
+                self.game.log_message("You check your map...")
+                self.time_of_last_move = current_time # No turn spent
+
+            elif action == 'torch':
+                self.game.log_message("You light a torch!")
+                # self.game.advance_turn() # Add this when torch logic is ready
+                self.time_of_last_move = current_time
+
+    def dig(self):
+        """Perform a dig action on the current tile."""
+        # Convert pixel position back to grid coordinates
+        grid_x = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
+        grid_y = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
+        grid_pos = (grid_x, grid_y)
+
+        tile = self.game.tile_data.get(grid_pos)
+
+        if tile:
+            if tile['is_dug']:
+                self.game.log_message("You've already dug here.")
+            else:
+                tile['is_dug'] = True
+                found_item = self.game.get_item_at_tile(grid_pos)
+                
+                if found_item:
+                    self.game.log_message(f"You found a {found_item}!")
+                    # Update inventory (handling plural treasures vs tools)
+                    if found_item in self.inventory:
+                        self.inventory[found_item] += 1
+                    else:
+                        self.inventory[found_item] = 1
+                else:
+                    self.game.log_message("Nothing but dirt here.")
+                
+                self.game.advance_turn() # Digging costs a turn
 
     def update(self):
         """Update the player's state. This method is called every frame."""
