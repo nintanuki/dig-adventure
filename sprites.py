@@ -36,11 +36,6 @@ class Player(pygame.sprite.Sprite):
         horizontal_step = 0 # 0 means no movement, but we are also initializing here
         vertical_step = 0
 
-        # current_time = pygame.time.get_ticks()
-        # # Only allow movement if enough time has passed since the last move
-        # if current_time - self.last_move_time < self.move_cooldown:
-        #     return
-
         # Movement is based on grid snapping, so the player moves in increments of the tile size.
 
         # Keyboard check
@@ -59,21 +54,6 @@ class Player(pygame.sprite.Sprite):
 
         return horizontal_step, vertical_step
 
-    def process_movement_input(self):
-        """Checks the timer and input before deciding to move."""
-        current_time = pygame.time.get_ticks()
-        
-        # 1. Check if enough time has passed (The Cooldown)
-        if current_time - self.time_of_last_move >= self.move_cooldown:
-            
-            # 2. Get the direction the player wants to go
-            horizontal_step, vertical_step = self.get_input_direction()
-            
-            # 3. If there is input, execute the movement and reset the timer
-            if horizontal_step != 0 or vertical_step != 0:
-                self.apply_grid_snap_movement(horizontal_step, vertical_step)
-                self.time_of_last_move = current_time
-
     def apply_grid_snap_movement(self, horizontal_step=0, vertical_step=0):
         """
         The actual math that moves the player exactly one tile.
@@ -91,6 +71,21 @@ class Player(pygame.sprite.Sprite):
 
         # Update the rect's position to match the new position
         self.rect.topleft = self.position
+
+    def process_movement_input(self):
+        """Checks the timer and input before deciding to move."""
+        current_time = pygame.time.get_ticks()
+        
+        # 1. Check if enough time has passed (The Cooldown)
+        if current_time - self.time_of_last_move >= self.move_cooldown:
+            
+            # 2. Get the direction the player wants to go
+            horizontal_step, vertical_step = self.get_input_direction()
+            
+            # 3. If there is input, execute the movement and reset the timer
+            if horizontal_step != 0 or vertical_step != 0:
+                self.apply_grid_snap_movement(horizontal_step, vertical_step)
+                self.time_of_last_move = current_time
 
     def update(self):
         """Update the player's state. This method is called every frame."""
