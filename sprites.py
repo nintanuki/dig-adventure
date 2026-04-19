@@ -131,7 +131,7 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("You can't go that way!")
             self.game.audio.play_boundary_sound() # play a sound effect to indicate the collision
 
-    def process_movement(self):
+    def process_movement_and_actions(self):
         """Checks the timer and input before deciding to move."""
         current_time = pygame.time.get_ticks()
         
@@ -167,7 +167,21 @@ class Player(pygame.sprite.Sprite):
                 self.time_of_last_move = current_time
 
     def dig(self):
-        """Perform a dig action on the current tile."""
+        """
+        Perform a dig action on the current tile.
+        Or unlocks the door if the player is standing on the door
+        """
+        # Unlocking Door Logic
+        if self.position == self.game.door.position:
+            if self.inventory.get('Key', 0) > 0:
+                self.game.door.open_door()
+                self.game.log_message("You use the key and escape the dungeon!")
+                self.game.game_active = False
+            else:
+                self.game.log_message("The door is locked. You need a key!")
+                self.game.audio.play_boundary_sound()
+            return  # Stop here so we don't dig under the door!
+
         # Convert pixel position back to grid coordinates
         grid_x = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
         grid_y = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
@@ -187,22 +201,23 @@ class Player(pygame.sprite.Sprite):
                 # Then check to see if it's worth something
                 if found_item:
                     self.game.log_message(f"You found a {found_item}!")
+                    # Check if the item found is the Key to play the special sound
+                    if found_item == "Key":
+                        self.game.audio.play_key_sound()
                     # Update inventory
                     if found_item in self.inventory:
                         self.inventory[found_item] += 1
-
                     # # Add to score when that part is ready
                     # if found_item in ItemSettings.TREASURE_VALUES:
                     #     self.score += ItemSettings.TREASURE_VALUES[found_item]
                 else:
                     # if None is returned from game.get_item_at_tile
                     self.game.log_message("Nothing but dirt here.")
-                
                 self.game.advance_turn() # Digging costs a turn
 
     def update(self):
         """Update the player's state. This method is called every frame."""
-        self.process_movement()
+        self.process_movement_and_actions()
 
 class Monster(pygame.sprite.Sprite):
     def __init__(self, game, position, groups):

@@ -12,6 +12,9 @@ class AudioManager:
         self.boundary_sound = pygame.mixer.Sound(AssetPaths.BOUNDARY_SOUND)
         self.boundary_channel = pygame.mixer.Channel(1)
 
+        self.key_sound = pygame.mixer.Sound(AssetPaths.KEY_SOUND)
+        self.key_channel = pygame.mixer.Channel(2)
+
     def play_move_sound(self):
         """Play the movement sound effect."""
 
@@ -22,6 +25,10 @@ class AudioManager:
     def play_boundary_sound(self):
         """Play the boundary collision sound effect."""
         self.boundary_channel.play(self.boundary_sound)
+
+    def play_key_sound(self):
+        """Play a sound effect for when the key is discovered."""
+        self.key_channel.play(self.key_sound)
 
     def update(self):
         """Update method for the audio manager, used for volume control and looping music."""

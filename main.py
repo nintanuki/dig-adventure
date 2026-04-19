@@ -100,14 +100,7 @@ class GameManager:
         if self.player.position == self.monster.position:
             self.log_message("You were caught by the monster!")
             self.game_active = False
-
-        # Check for Door Collision (Win)
-        # Note: We'll add key requirements later, for now just touching it wins
-        if self.player.position == self.door.position:
-            self.door.open_door()
-            self.log_message("You escaped the dungeon!")
-            self.game_active = False
-
+            
     def draw_grid_background(self):
         """
         Loops through the screen and draws the dirt tiles with grey outlines.

@@ -7,7 +7,8 @@
 ## Ideas
 - [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, trigger a type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
 - [ ] Randomly load in different monster sprites
-- [ ]
+- [ ] Add random obstacles
+- [ ] Add text highlighting (e.g. Emerald is green)
 
 ## Phase 1: The Foundation (Baby Steps)
 - [X] **Window Initialization:** Set up a basic window using a library like Pygame or Arcade.

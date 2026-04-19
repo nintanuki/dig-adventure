@@ -57,6 +57,18 @@ class WindowSettings:
 class PlayerSettings:
     MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
 
+class MonsterSettings:
+    CHASE_RADIUS = 2  # Manhattan distance
+    IDLE_CHANCE = 0.2 # 1 in 5 chance to stand still
+    REPELLENT_DURATION = 3
+
+class LightSettings:
+    DEFAULT_RADIUS = 1
+    TORCH_RADIUS = 2
+    LANTERN_RADIUS = 4
+    TORCH_DURATION = 3
+    LANTERN_DURATION = 5
+
 class ItemSettings:
     # Point values for treasures
     TREASURE_VALUES = {
@@ -116,3 +128,4 @@ class AssetPaths:
     SOUND_DIR = 'sound/'
     MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
     BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')
+    KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
