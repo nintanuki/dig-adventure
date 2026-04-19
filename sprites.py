@@ -58,7 +58,7 @@ class Player(pygame.sprite.Sprite):
             action_type = 'move'
 
         # Action Keys (Mnemonic)
-        elif keys[pygame.K_d]: action_type = 'dig'
+        elif keys[pygame.K_SPACE]: action_type = 'dig'
         elif keys[pygame.K_m]: action_type = 'map'
         elif keys[pygame.K_t]: action_type = 'torch'
         elif keys[pygame.K_r]: action_type = 'repellent'
