@@ -93,12 +93,18 @@ class Player(pygame.sprite.Sprite):
             self.position.y = target_destination_y
             # Update the rect's position to match the new position OR...
             self.rect.topleft = self.position
-            self.game.log_message("You moved!")
+            
+            # Log messages for movement
+            if vertical_step == -1: self.game.log_message("You move one pace North.")
+            elif vertical_step == 1: self.game.log_message("You move one pace South.")
+            elif horizontal_step == -1: self.game.log_message("You move one pace West.")
+            elif horizontal_step == 1: self.game.log_message("You move one pace East.")
+
             self.game.audio.play_move_sound() # Play the movement sound effect
         else:
             # ...if the move is invalid (e.g., out of bounds), don't update the position and instead
-            # play a sound effect to indicate the collision
-            self.game.audio.play_boundary_sound()
+            self.game.log_message("You can't go that way!")
+            self.game.audio.play_boundary_sound() # play a sound effect to indicate the collision
 
     def process_movement_input(self):
         """Checks the timer and input before deciding to move."""
