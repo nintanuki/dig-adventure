@@ -58,9 +58,9 @@ class PlayerSettings:
     MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
 
 class MonsterSettings:
-    CHASE_RADIUS = 2  # Manhattan distance
+    CHASE_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.2 # 1 in 5 chance to stand still
-    REPELLENT_DURATION = 3
+    REPELLENT_DURATION = 5 # Number of turns the repellent effect lasts
 
 class LightSettings:
     DEFAULT_RADIUS = 1
@@ -92,9 +92,10 @@ class ItemSettings:
 
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
+        'Candle': 1, 'Shovel': 1, 'Map': 1,
         'Gold': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
-        'Torch': 2, 'Lantern': 0, 'Monster Repellent': 0,
-        'Key': 0, 'Shovel': 1, 'Map': 1
+        'Torch': 2, 'Lantern': 0, 'Monster Repellent': 1,
+        'Key': 0
         }
 
 class FontSettings:

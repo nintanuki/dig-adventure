@@ -26,6 +26,9 @@ class Player(pygame.sprite.Sprite):
         self.time_of_last_move = 0
 
         self.inventory = ItemSettings.INITIAL_INVENTORY
+        self.repellent_turns = 0
+        self.light_radius = LightSettings.DEFAULT_RADIUS
+        self.light_turns_left = 0
 
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 
@@ -162,8 +165,13 @@ class Player(pygame.sprite.Sprite):
                 self.time_of_last_move = current_time
 
             elif action == 'repellent':
-                self.game.log_message("You used a monster repellent!")
-                self.game.advance_turn()
+                if self.inventory.get('Monster Repellent', 0) > 0:
+                    self.inventory['Monster Repellent'] -= 1
+                    self.repellent_turns = MonsterSettings.REPELLENT_DURATION
+                    self.game.log_message("You used a monster repellent!")
+                    self.game.advance_turn()
+                else:
+                    self.game.log_message("You don't have any repellent!")
                 self.time_of_last_move = current_time
 
     def dig(self):
@@ -230,31 +238,108 @@ class Monster(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = position)
         self.position = pygame.math.Vector2(self.rect.topleft)
+        self.is_chasing = False
 
     def take_turn(self):
-        """Logic for the monster's turn."""
-        # 1. 25% chance to do nothing (Idling)
-        if random.random() < 0.25:
+        """Determines the monster's behavior each turn, including chasing the player if they are close enough."""
+       
+        # Check if the monster is currently repelled
+        is_repelled = self.game.player.repellent_turns > 0
+
+        # Calculate the Manhattan distance to the player
+        horizontal_difference = self.game.player.position.x - self.position.x
+        vertical_difference = self.game.player.position.y - self.position.y
+        manhattan_distance = (abs(horizontal_difference) // GridSettings.TILE_SIZE) + (abs(vertical_difference) // GridSettings.TILE_SIZE)
+
+        # If the monster is repelled, it will try to move away from the player instead of towards them.
+        if is_repelled:
+            self.is_chasing = False
+            move_horizontal = 0
+            move_vertical = 0
+
+            # The logic is basically the same as chasing, but reversed. =
+            # The monster will try to move in the direction that increases the distance between itself and the player.
+            if abs(horizontal_difference) >= abs(vertical_difference):
+                if horizontal_difference > 0:
+                    move_horizontal = -GridSettings.TILE_SIZE
+                elif horizontal_difference < 0:
+                    move_horizontal = GridSettings.TILE_SIZE
+                elif vertical_difference > 0:
+                    move_vertical = -GridSettings.TILE_SIZE
+                elif vertical_difference < 0:
+                    move_vertical = GridSettings.TILE_SIZE
+            else: # If the player is more vertical than horizontal, prioritize moving vertically to get away
+                if vertical_difference > 0:
+                    move_vertical = -GridSettings.TILE_SIZE
+                elif vertical_difference < 0:
+                    move_vertical = GridSettings.TILE_SIZE
+                elif horizontal_difference > 0:
+                    move_horizontal = -GridSettings.TILE_SIZE
+                elif horizontal_difference < 0:
+                    move_horizontal = GridSettings.TILE_SIZE
+
+            # After calculating the movement, we apply it.
+            # The apply_movement function will handle boundary checks to make sure the monster doesn't move out of bounds.
+            self.apply_movement(move_horizontal, move_vertical)
             return
 
-        # 2. Pick a random direction (-1, 0, or 1)
-        horizontal_step = random.choice([-1, 0, 1])
-        vertical_step = random.choice([-1, 0, 1])
+        # If the monster is not repelled, it will check if the player is within its chase radius.
+        if manhattan_distance <= MonsterSettings.CHASE_RADIUS:
+            self.is_chasing = True
+
+        # If the monster is chasing, it will try to move towards the player. Otherwise, it will move randomly or idle.
+        if self.is_chasing:
+            move_horizontal = 0
+            move_vertical = 0
+
+            # The monster will prioritize moving in the direction where the player is farther away,
+            # to close the distance more efficiently.
+            # This is the same logic as the repellent, but instead of moving away from the player, it moves towards them.
+            # Can this be moved into a function since it's so similar? But the signs are different...
+            if abs(horizontal_difference) >= abs(vertical_difference):
+                if horizontal_difference > 0:
+                    move_horizontal = GridSettings.TILE_SIZE
+                elif horizontal_difference < 0:
+                    move_horizontal = -GridSettings.TILE_SIZE
+                elif vertical_difference > 0:
+                    move_vertical = GridSettings.TILE_SIZE
+                elif vertical_difference < 0:
+                    move_vertical = -GridSettings.TILE_SIZE
+            else:
+                if vertical_difference > 0:
+                    move_vertical = GridSettings.TILE_SIZE
+                elif vertical_difference < 0:
+                    move_vertical = -GridSettings.TILE_SIZE
+                elif horizontal_difference > 0:
+                    move_horizontal = GridSettings.TILE_SIZE
+                elif horizontal_difference < 0:
+                    move_horizontal = -GridSettings.TILE_SIZE
+
+            # After calculating the movement, we apply it.
+            self.apply_movement(move_horizontal, move_vertical)
+            return
+
+        # If the monster is not chasing, it has a chance to move randomly or do nothing (idle).
+        if random.random() > MonsterSettings.IDLE_CHANCE:
+            self.move_randomly()
+
+    def move_randomly(self):
+        """Picks a random cardinal direction."""
+        direction = random.choice(['up', 'down', 'left', 'right'])
+        step_x, step_y = 0, 0
+        if direction == 'up': step_y = -GridSettings.TILE_SIZE
+        elif direction == 'down': step_y = GridSettings.TILE_SIZE
+        elif direction == 'left': step_x = -GridSettings.TILE_SIZE
+        elif direction == 'right': step_x = GridSettings.TILE_SIZE
         
-        # Prevent diagonal movement by picking only one axis if both are chosen
-        if horizontal_step != 0 and vertical_step != 0:
-            if random.random() < 0.5: horizontal_step = 0
-            else: vertical_step = 0
+        self.apply_movement(step_x, step_y)
 
-        if horizontal_step != 0 or vertical_step != 0:
-            self.apply_movement(horizontal_step, vertical_step)
+    def apply_movement(self, horizontal_amount, vertical_amount):
+        """Applies pixel movement to the monster after boundary checks."""
+        target_x = self.position.x + horizontal_amount
+        target_y = self.position.y + vertical_amount
 
-    def apply_movement(self, horizontal_step, vertical_step):
-        """Calculate and apply movement with boundary checks."""
-        target_x = self.position.x + (horizontal_step * GridSettings.TILE_SIZE)
-        target_y = self.position.y + (vertical_step * GridSettings.TILE_SIZE)
-
-        # Boundary Math (Same as Player)
+        # Boundary Math
         min_x = UISettings.ACTION_WINDOW_X + GridSettings.TILE_SIZE
         max_x = UISettings.ACTION_WINDOW_X + UISettings.ACTION_WINDOW_WIDTH - (GridSettings.TILE_SIZE * 2)
         min_y = UISettings.ACTION_WINDOW_Y + GridSettings.TILE_SIZE

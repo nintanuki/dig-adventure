@@ -26,6 +26,7 @@ class GameManager:
         self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
+        self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT))
 
         # Initialize Windows
         self.message_log = MessageLog(self)
@@ -91,8 +92,17 @@ class GameManager:
     def advance_turn(self):
         """Called whenever the player performs an action."""
 
-        if not self.game_active:
-            return
+        if not self.game_active: return
+
+        # Count down effects
+        if self.player.light_turns_left > 0:
+            self.player.light_turns_left -= 1
+            if self.player.light_turns_left == 0:
+                self.player.light_radius = LightSettings.DEFAULT_RADIUS
+                self.log_message("Your light flickers out...")
+
+        if self.player.repellent_turns > 0:
+            self.player.repellent_turns -= 1
 
         self.monster.take_turn()
 
@@ -165,6 +175,22 @@ class GameManager:
             UISettings.MAP_WIDTH,
             UISettings.MAP_HEIGHT)
         pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, map_frame_rect, 2, UISettings.BORDER_RADIUS)
+
+    def draw_fog_of_war(self):
+        self.fog_surface.fill((0, 0, 0)) # Reset to pure black
+        
+        # Calculate player position relative to the action window
+        p_x = self.player.position.x - UISettings.ACTION_WINDOW_X + (GridSettings.TILE_SIZE // 2)
+        p_y = self.player.position.y - UISettings.ACTION_WINDOW_Y + (GridSettings.TILE_SIZE // 2)
+        
+        # Draw a "white" circle on the black surface (Alpha mask)
+        # The radius is in pixels: (radius * tile_size)
+        radius_px = self.player.light_radius * GridSettings.TILE_SIZE
+        pygame.draw.circle(self.fog_surface, (255, 255, 255), (p_x, p_y), radius_px)
+        
+        # Use BLEND_RGBA_MULT to treat the fog_surface as a mask
+        self.fog_surface.set_colorkey((255, 255, 255)) 
+        self.screen.blit(self.fog_surface, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
 
     def log_message(self, text):
         """The central hub for all game objects to send text to the UI."""
@@ -255,6 +281,7 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
+            self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen) # Draw text to the message log
             self.inventory_window.draw(self.screen)
