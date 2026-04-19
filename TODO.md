@@ -1,10 +1,10 @@
 # Development Roadmap: From Text to Graphics
 
 ## Phase 1: The Foundation (Baby Steps)
-- [ ] **Window Initialization:** Set up a basic window using a library like Pygame or Arcade.
-- [ ] **The Grid:** Render a static 8x8 grid of squares based on the `settings.py` dimensions.
-- [ ] **Player Sprite:** Place a simple sprite (or colored square) on the grid that moves with arrow keys.
-- [ ] **Controller Support:** Figure out controller early. D-Pad movement and a dig button at least to start.
+- [X] **Window Initialization:** Set up a basic window using a library like Pygame or Arcade.
+- [X] **The Grid:** Render a static 8x8 grid of squares based on the `settings.py` dimensions.
+- [X] **Player Sprite:** Place a simple sprite (or colored square) on the grid that moves with arrow keys.
+- [/] **Controller Support:** Figure out controller early. D-Pad movement and a dig button at least to start.
 - [ ] **Boundary Checks:** Ensure the player cannot move outside the grid (porting logic from `main.py`).
 
 ## Phase 2: Visibility & "Fog of War"
