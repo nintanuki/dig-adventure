@@ -135,7 +135,7 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("You can't go that way!")
             self.game.audio.play_boundary_sound() # play a sound effect to indicate the collision
 
-    def process_movement_input(self):
+    def process_movement(self):
         """Checks the timer and input before deciding to move."""
         current_time = pygame.time.get_ticks()
         
@@ -150,20 +150,24 @@ class Player(pygame.sprite.Sprite):
 
             elif action == 'dig':
                 self.dig()
+                # advance turn is handled in the dig function because
+                # we need to check if the player already dug there
+                # self.game.advance_turn()
                 self.time_of_last_move = current_time
 
             elif action == 'map':
                 self.game.log_message("You check your map...")
-                self.time_of_last_move = current_time # No turn spent
+                self.game.advance_turn()
+                self.time_of_last_move = current_time
 
             elif action == 'torch':
                 self.game.log_message("You light a torch!")
-                # self.game.advance_turn() # Add this when torch logic is ready
+                self.game.advance_turn()
                 self.time_of_last_move = current_time
 
             elif action == 'repellent':
                 self.game.log_message("You used a monster repellent!")
-                # self.game.advance_turn() # Add this when torch logic is ready
+                self.game.advance_turn()
                 self.time_of_last_move = current_time
 
     def dig(self):
@@ -196,7 +200,7 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         """Update the player's state. This method is called every frame."""
-        self.process_movement_input()
+        self.process_movement()
 
 class Monster(pygame.sprite.Sprite):
     def __init__(self, game, position, groups):

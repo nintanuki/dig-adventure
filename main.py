@@ -6,7 +6,7 @@ import json
 from settings import *
 from audio import AudioManager
 from sprites import Player, Monster, Door
-from windows import MessageLog
+from windows import MessageLog, InventoryWindow
 import debug
 
 class GameManager:
@@ -26,7 +26,10 @@ class GameManager:
         self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
+
+        # Initialize Windows
         self.message_log = MessageLog(self)
+        self.inventory_window = InventoryWindow(self)
 
     def setup_controllers(self):
         """Initializes connected gamepads or joysticks."""
@@ -36,14 +39,14 @@ class GameManager:
 
     def load_assets(self):
         """Handle all image loading and scaling in one place."""
-        dirt = pygame.image.load(AssetPaths.DIRT_TILE).convert_alpha()
-        self.scaled_dirt_tile = pygame.transform.scale(dirt, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        dirt_surf = pygame.image.load(AssetPaths.DIRT_TILE).convert_alpha()
+        self.scaled_dirt_tile = pygame.transform.scale(dirt_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
         
-        dug = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
-        self.scaled_dug_tile = pygame.transform.scale(dirt, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        dug_surf = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
+        self.scaled_dug_tile = pygame.transform.scale(dug_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
-        wall = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
-        self.scaled_wall_tile = pygame.transform.scale(wall, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        wall_surf = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
+        self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
     def spawn_player(self):
         """Calculates a safe spawn point and initializes the player sprite."""
@@ -256,9 +259,8 @@ class GameManager:
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen) # Draw text to the message log
+            self.inventory_window.draw(self.screen)
             self.draw_end_game_screens()
-
-            
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)

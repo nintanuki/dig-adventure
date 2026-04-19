@@ -31,3 +31,25 @@ class MessageLog:
 
             text_surface = self.font.render(display_text, True, text_color)
             surface.blit(text_surface, (start_x, start_y + (index * WindowSettings.LINE_HEIGHT)))
+
+class InventoryWindow:
+    def __init__(self, game):
+        self.game = game
+        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
+
+    def draw(self, surface):
+        """Renders the player's inventory items in the sidebar."""
+        # Starting coordinates based on Sidebar settings
+        start_x = UISettings.SIDEBAR_X + WindowSettings.TEXT_PADDING
+        start_y = UISettings.SIDEBAR_Y + WindowSettings.TEXT_PADDING
+        
+        # Header
+        header_surf = self.font.render("INVENTORY", True, 'yellow')
+        surface.blit(header_surf, (start_x, start_y))
+
+        # Loop through the player's inventory dictionary
+        for index, (item, count) in enumerate(self.game.player.inventory.items()):
+            item_text = f"{item}: {count}"
+            # Offset y-position for each line using LINE_HEIGHT
+            text_surf = self.font.render(item_text, True, FontSettings.DEFAULT_COLOR)
+            surface.blit(text_surf, (start_x, start_y + 40 + (index * WindowSettings.LINE_HEIGHT)))
