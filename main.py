@@ -202,7 +202,7 @@ class GameManager:
         """Creates a dictionary to track the state and contents of every tile."""
         self.tile_data = {}
         
-        # 1. Initialize all tiles as undug and empty
+        # Initialize all tiles as undug and empty
         for col in range(1, UISettings.COLS - 1):
             for row in range(1, UISettings.ROWS - 1):
                 self.tile_data[(col, row)] = {
@@ -210,23 +210,25 @@ class GameManager:
                     'item': None
                 }
                 
-        # 2. Place the Key at a specific location
-        # Choosing a spot away from the player's typical start
-        key_pos = (UISettings.COLS - 3, UISettings.ROWS - 3)
+        # Randomly place the "Key" at a specific location
+        # We turn the "dictionary keys" (the coordinates) into a list and pick one
+        random_coords = list(self.tile_data.keys())
+        key_pos = random.choice(random_coords)
         self.tile_data[key_pos]['item'] = 'Key'
 
     def get_item_at_tile(self, grid_pos):
         """Logic to decide what item is found when digging."""
-        # Check if a specific item (like the Key) was pre-placed
+        # 1. Check if a specific item (like the Key) was pre-placed
         if self.tile_data[grid_pos]['item']:
             return self.tile_data[grid_pos]['item']
         
-        # Otherwise, roll for a random item
-        if random.random() < ItemSettings.CHANCE_FOR_ITEM:
-            if random.random() < 0.2: # 20% chance for a tool
-                return random.choice(ItemSettings.TOOLS)
-            else: # 80% chance for treasure
-                return random.choice(ItemSettings.TREASURES)
+        # 2. Otherwise, roll for a random item using your SPAWN_RATES
+        roll = random.random()
+        cumulative_chance = 0
+        for item, chance in ItemSettings.SPAWN_CHANCE.items():
+            cumulative_chance += chance
+            if roll < cumulative_chance:
+                return item
                 
         return None
 

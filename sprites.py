@@ -184,16 +184,22 @@ class Player(pygame.sprite.Sprite):
                 self.game.log_message("You've already dug here.")
             else:
                 tile['is_dug'] = True
-                found_item = self.game.get_item_at_tile(grid_pos)
                 
+                # Ask the game manager what is here (it checks Key first, then SPAWN_CHANCE)
+                found_item = self.game.get_item_at_tile(grid_pos)
+
+                # Then check to see if it's worth something
                 if found_item:
                     self.game.log_message(f"You found a {found_item}!")
-                    # Update inventory (handling plural treasures vs tools)
+                    # Update inventory
                     if found_item in self.inventory:
                         self.inventory[found_item] += 1
-                    else:
-                        self.inventory[found_item] = 1
+
+                    # # Add to score when that part is ready
+                    # if found_item in ItemSettings.TREASURE_VALUES:
+                    #     self.score += ItemSettings.TREASURE_VALUES[found_item]
                 else:
+                    # if None is returned from game.get_item_at_tile
                     self.game.log_message("Nothing but dirt here.")
                 
                 self.game.advance_turn() # Digging costs a turn

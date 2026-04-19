@@ -58,12 +58,33 @@ class PlayerSettings:
     MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
 
 class ItemSettings:
-    # Percent chances for digging
-    CHANCE_FOR_ITEM = 0.4 
-    
-    # Item Weights (for random distribution)
-    TREASURES = ['Gold Coin', 'Ruby', 'Diamond', 'Emerald']
-    TOOLS = ['Torch', 'Lantern', 'Monster Repellent']
+    # Point values for treasures
+    TREASURE_VALUES = {
+        'Gold': 10,
+        'Ruby': 50,
+        'Emerald': 100,
+        'Diamond': 500
+    }
+
+    # Digging probabilities (must be between 0.0 and 1.0)
+    # The higher the number, the more common it is.
+    SPAWN_CHANCE = {
+        'Gold': 0.25,
+        'Torch': 0.15,
+        'Ruby': 0.05,
+        'Monster Repellent': 0.02,
+        'Emerald': 0.02,
+        'Lantern': 0.01,
+        'Diamond': 0.005
+    }
+
+    # UI Sort Order (The requested layout)
+    INVENTORY_SORT_ORDER = [
+        'Map', 'Shovel', 
+        'Torch', 'Lantern', 'Monster Repellent', 
+        'Gold', 'Ruby', 'Emerald', 'Diamond',
+        'Key'
+    ]
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
