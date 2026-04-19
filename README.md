@@ -1,6 +1,6 @@
-# dig-adventure
+# Dungeon Digging Adventure
 
-## Statement of Intent: Graphical Dungeon Crawler
+## Statement of Intent: "Turn-Based" Graphical Dungeon Crawler
 
 ### Vision
 This project is an evolution of my original text-based adventure. The goal is to move from a command-line interface to a 2D graphical grid while preserving the "turn-based" tension of the original mechanics.
