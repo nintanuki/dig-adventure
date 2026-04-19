@@ -73,20 +73,29 @@ class Player(pygame.sprite.Sprite):
         # 1. Calculate where the player WANTS to go based on the steps and tile size
         # We store this in temporary variables before updating' the player's actual position,
         # so we can check if it's a valid move first.
-        target_x = self.position.x + horizontal_step * GridSettings.TILE_SIZE
-        target_y = self.position.y + vertical_step * GridSettings.TILE_SIZE
+        target_destination_x = self.position.x + horizontal_step * GridSettings.TILE_SIZE
+        target_destination_y = self.position.y + vertical_step * GridSettings.TILE_SIZE
 
-        # 2. Check if that target destination is inside the game world
-        if 0 <= target_x < ScreenSettings.WIDTH and 0 <= target_y < ScreenSettings.HEIGHT:
-            # 3. If it is valid, update the player's position to the new coordinates
-            self.position.x = target_x
-            self.position.y = target_y
-            self.game.audio.play_move_sound() # Play the movement sound effect
+        # 2. Calculate the inner 'dirt' boundaries (excluding the walls)
+        # The leftmost dirt tile starts after the anchor + 1 wall tile
+        min_safe_x = UISettings.ACTION_WINDOW_X + GridSettings.TILE_SIZE
+        # The rightmost dirt tile is the window width minus 2 tiles (the walls on both sides)
+        max_safe_x = UISettings.ACTION_WINDOW_X + UISettings.ACTION_WINDOW_WIDTH - (GridSettings.TILE_SIZE * 2)
 
-            # 4. Update the rect's position to match the new position
+        min_safe_y = UISettings.ACTION_WINDOW_Y + GridSettings.TILE_SIZE
+        max_safe_y = UISettings.ACTION_WINDOW_Y + UISettings.ACTION_WINDOW_HEIGHT - (GridSettings.TILE_SIZE * 2)
+
+        # 3. Check if that target destination is inside the game world boundaries
+        if min_safe_x <= target_destination_x <= max_safe_x and \
+            min_safe_y <= target_destination_y <= max_safe_y:
+            # If it is valid, update the player's position to the new coordinates
+            self.position.x = target_destination_x
+            self.position.y = target_destination_y
+            # Update the rect's position to match the new position OR...
             self.rect.topleft = self.position
+            self.game.audio.play_move_sound() # Play the movement sound effect
         else:
-            # If the move is invalid (e.g., out of bounds),
+            # ...if the move is invalid (e.g., out of bounds), don't update the position and instead
             # play a sound effect to indicate the collision
             self.game.audio.play_boundary_sound()
 
