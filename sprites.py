@@ -21,7 +21,7 @@ class Player(pygame.sprite.Sprite):
 
         # Cooldown Timer (in milliseconds) so the player can't spam movement input
         self.move_cooldown = 2000
-        self.last_move_time = 0
+        self.time_of_last_move = 0
 
     def get_input_direction(self):
         """
@@ -41,7 +41,20 @@ class Player(pygame.sprite.Sprite):
         # if current_time - self.last_move_time < self.move_cooldown:
         #     return
 
-        # Movement is based on grid snapping, so the player moves in increments of the tile size.
+        # Movement is based on grid snapping, so the player moves in increments of the tile 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # size.
 
         # Keyboard check
         if keys[pygame.K_UP] or keys[pygame.K_w]:    vertical_step = -1
@@ -64,7 +77,7 @@ class Player(pygame.sprite.Sprite):
         current_time = pygame.time.get_ticks()
         
         # 1. Check if enough time has passed (The Cooldown)
-        if current_time - self.time_of_last_move >= self.move_cooldown_milliseconds:
+        if current_time - self.time_of_last_move >= self.move_cooldown:
             
             # 2. Get the direction the player wants to go
             horizontal_step, vertical_step = self.get_input_direction()
@@ -74,7 +87,7 @@ class Player(pygame.sprite.Sprite):
                 self.apply_grid_snap_movement(horizontal_step, vertical_step)
                 self.time_of_last_move = current_time
 
-    def move(self, horizontal_step=0, vertical_step=0):
+    def apply_grid_snap_movement(self, horizontal_step=0, vertical_step=0):
         """
         The actual math that moves the player exactly one tile.
         Move the player by a certain number of steps
