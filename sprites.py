@@ -173,4 +173,30 @@ class Monster(pygame.sprite.Sprite):
             self.rect.topleft = self.position
 
     def update(self):
+        """
+        I don't think we need this since the monster doesn't take controller input
+        and this is not an action game, but I'm leaving it here just in case
+        """
+        pass
+
+class Door(pygame.sprite.Sprite):
+    def __init__(self, game, position, groups):
+        super().__init__(groups)
+        self.game = game
+        
+        # Load and scale both versions of the door
+        closed_surf = pygame.image.load(AssetPaths.CLOSED_DOOR).convert_alpha()
+        open_surf = pygame.image.load(AssetPaths.OPEN_DOOR).convert_alpha()
+        
+        self.closed_image = pygame.transform.scale(closed_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        self.open_image = pygame.transform.scale(open_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        
+        self.image = self.closed_image
+        self.rect = self.image.get_rect(topleft = position)
+        self.position = pygame.math.Vector2(self.rect.topleft)
+
+    def open_door(self):
+        self.image = self.open_image
+
+    def update(self):
         pass

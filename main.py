@@ -5,7 +5,7 @@ import json
 
 from settings import *
 from audio import AudioManager
-from sprites import Player, Monster
+from sprites import Player, Monster, Door
 from windows import MessageLog
 import debug
 
@@ -21,6 +21,7 @@ class GameManager:
         self.load_assets() # Pre-load dirt asset to avoid loading it 60 times per second
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
+        self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
         self.message_log = MessageLog(self)
@@ -65,6 +66,19 @@ class GameManager:
         y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
         
         self.monster = Monster(self, (x, y), self.all_sprites)
+
+    def spawn_door(self):
+        """Spawns the door at a random location."""
+        col = random.randint(1, UISettings.COLS - 2)
+        row = random.randint(1, UISettings.ROWS - 2)
+        # Simple check to ensure it's not on the player start
+        if col == 1 and row == 1: col = 5 
+        
+        x = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
+        y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
+        
+        # We save a reference to the door specifically so we can check it later
+        self.door = Door(self, (x, y), self.all_sprites)
 
     def advance_turn(self):
         """Called whenever the player performs an action."""
