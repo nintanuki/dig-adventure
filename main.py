@@ -9,7 +9,7 @@ from sprites import Player
 class GameManager:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode(ScreenSettings.RESOLUTION)
+        self.screen = pygame.display.set_mode((ScreenSettings.RESOLUTION), pygame.SCALED)
         pygame.display.set_caption('Dig Adventure')
         self.clock = pygame.time.Clock()
 
@@ -40,11 +40,22 @@ class GameManager:
                 pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
 
     def run(self):
+        """
+        Run the game loop.
+        """
+        # Main game loop
         while True:
+            # Event Handling
             for event in pygame.event.get():
+                # Handle quitting the game
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+
+                # Handle fullscreen toggle with F11 key
+                if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_F11:
+                            pygame.display.toggle_fullscreen()
             
             self.all_sprites.update() # Update all sprites (calls their update method, if they have one)
             
