@@ -16,8 +16,7 @@ class GameManager:
         self.clock = pygame.time.Clock()
 
         # Controller Setup
-        pygame.joystick.init()
-        self.joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
+        self.setup_controllers()
 
         # Pre-load dirt asset to avoid loading it 60 times per second
         dirt_tile = pygame.image.load(AssetPaths.DIRT_TILE).convert_alpha()
@@ -33,6 +32,12 @@ class GameManager:
 
         # Spawn the player at a safe location
         self.spawn_player()
+
+    def setup_controllers(self):
+        """Initializes connected gamepads or joysticks."""
+        pygame.joystick.init()
+        # Create a list of all connected controllers
+        self.connected_joysticks = [pygame.joystick.Joystick(index) for index in range(pygame.joystick.get_count())]
 
     def spawn_player(self):
         """Calculates a safe spawn point and initializes the player sprite."""
@@ -111,7 +116,7 @@ class GameManager:
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)
-
+ 
 if __name__ == '__main__':
     game_manager = GameManager()
     game_manager.run()
