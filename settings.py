@@ -65,16 +65,17 @@ class MonsterSettings:
 class LightSettings:
     DEFAULT_RADIUS = 1
     TORCH_RADIUS = 2
-    LANTERN_RADIUS = 4
-    TORCH_DURATION = 3
-    LANTERN_DURATION = 5
+    TORCH_DURATION = 5
+    LANTERN_RADIUS = 5
+    LANTERN_DURATION = 10
 
 class ItemSettings:
     # Point values for treasures
-    TREASURE_VALUES = {
+    TREASURE_SCORE_VALUES = {
         'Gold': 10,
         'Ruby': 50,
-        'Emerald': 100,
+        'Sapphire': 100,
+        'Emerald': 150,
         'Diamond': 500
     }
 
@@ -82,19 +83,20 @@ class ItemSettings:
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
         'Gold': 0.25,
-        'Torch': 0.15,
-        'Ruby': 0.05,
-        'Monster Repellent': 0.02,
-        'Emerald': 0.02,
-        'Lantern': 0.01,
-        'Diamond': 0.005
+        'Monster Repellent': 0.20,
+        'Torch': 0.25,
+        'Lantern': 0.10,
+        'Ruby': 0.10,
+        'Sapphire': 0.05,
+        'Emerald': 0.025,
+        'Diamond': 0.01
     }
 
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
         'Candle': 1, 'Shovel': 1, 'Map': 1,
+        'Torch': 3, 'Lantern': 0, 'Monster Repellent': 2,
         'Gold': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
-        'Torch': 2, 'Lantern': 0, 'Monster Repellent': 1,
         'Key': 0
         }
 

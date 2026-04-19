@@ -160,8 +160,25 @@ class Player(pygame.sprite.Sprite):
                 self.time_of_last_move = current_time
 
             elif action == 'torch':
-                self.game.log_message("You light a torch!")
-                self.game.advance_turn()
+                # 1. Check for the Lantern first (The "Better" light)
+                if self.inventory.get('Lantern', 0) > 0:
+                    self.inventory['Lantern'] -= 1
+                    self.light_radius = LightSettings.LANTERN_RADIUS
+                    self.light_turns_left = LightSettings.LANTERN_DURATION
+                    self.game.log_message("You light your lantern! The dungeon is bathed in light.")
+                    self.game.advance_turn()
+                
+                # 2. Fall back to the Torch if no lantern is found
+                elif self.inventory.get('Torch', 0) > 0:
+                    self.inventory['Torch'] -= 1
+                    self.light_radius = LightSettings.TORCH_RADIUS
+                    self.light_turns_left = LightSettings.TORCH_DURATION
+                    self.game.log_message("You light a torch! The shadows retreat.")
+                    self.game.advance_turn()
+                
+                # 3. If they have neither
+                else:
+                    self.game.log_message("You have no light sources!")
                 self.time_of_last_move = current_time
 
             elif action == 'repellent':
@@ -216,8 +233,8 @@ class Player(pygame.sprite.Sprite):
                     if found_item in self.inventory:
                         self.inventory[found_item] += 1
                     # # Add to score when that part is ready
-                    # if found_item in ItemSettings.TREASURE_VALUES:
-                    #     self.score += ItemSettings.TREASURE_VALUES[found_item]
+                    # if found_item in ItemSettings.TREASURE_SCORE_VALUES:
+                    #     self.score += ItemSettings.TREASURE_SCORE_VALUES[found_item]
                 else:
                     # if None is returned from game.get_item_at_tile
                     self.game.log_message("Nothing but dirt here.")
