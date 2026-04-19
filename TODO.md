@@ -3,6 +3,9 @@
 ## Issues to Fix:
 - [ ] Player can "pass through" the monster
 
+## Ideas
+- [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, trigger a type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
+
 ## Phase 1: The Foundation (Baby Steps)
 - [X] **Window Initialization:** Set up a basic window using a library like Pygame or Arcade.
 - [X] **The Grid:** Render a static 8x8 grid of squares based on the `settings.py` dimensions.
