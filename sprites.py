@@ -161,6 +161,11 @@ class Player(pygame.sprite.Sprite):
                 # self.game.advance_turn() # Add this when torch logic is ready
                 self.time_of_last_move = current_time
 
+            elif action == 'repellent':
+                self.game.log_message("You used a monster repellent!")
+                # self.game.advance_turn() # Add this when torch logic is ready
+                self.time_of_last_move = current_time
+
     def dig(self):
         """Perform a dig action on the current tile."""
         # Convert pixel position back to grid coordinates

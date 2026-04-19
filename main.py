@@ -37,8 +37,11 @@ class GameManager:
     def load_assets(self):
         """Handle all image loading and scaling in one place."""
         dirt = pygame.image.load(AssetPaths.DIRT_TILE).convert_alpha()
-        self.scaled_dirt_tile = pygame.transform.scale(dirt, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)) #
+        self.scaled_dirt_tile = pygame.transform.scale(dirt, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
         
+        dug = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
+        self.scaled_dug_tile = pygame.transform.scale(dirt, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+
         wall = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
         self.scaled_wall_tile = pygame.transform.scale(wall, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
