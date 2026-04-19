@@ -14,7 +14,7 @@ class GridSettings:
     TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
 
 class PlayerSettings:
-    pass
+    MOVEMENT_COOLDOWN = 1000 # Time in milliseconds between allowed movements to prevent spamming
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'

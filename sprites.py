@@ -22,8 +22,8 @@ class Player(pygame.sprite.Sprite):
         self.position = pygame.math.Vector2(self.rect.topleft) # Using Vector2 for easier movement calculations
 
         # Cooldown Timer (in milliseconds) so the player can't spam movement input
-        self.move_cooldown = 2000
-        self.time_of_last_move = 0
+        self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
+        self.time_of_last_move = PlayerSettings.INITIAL_TIME_OF_LAST_MOVE
 
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 
