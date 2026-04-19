@@ -68,7 +68,10 @@ class AudioSettings:
 class AssetPaths:
     # Images
     GRAPHICS_DIR = 'graphics/'
+
+    # Sprites
     PLAYER = os.path.join(GRAPHICS_DIR, 'human_male.png')
+    MONSTER = os.path.join(GRAPHICS_DIR, 'dragon.png')
 
     # Door
     CLOSED_DOOR = os.path.join(GRAPHICS_DIR, 'closed_door.png')

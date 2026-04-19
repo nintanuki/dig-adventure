@@ -1,5 +1,5 @@
 import pygame
-# from audio import AudioManager
+import random
 from settings import *
 
 class Player(pygame.sprite.Sprite):
@@ -124,3 +124,52 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         """Update the player's state. This method is called every frame."""
         self.process_movement_input()
+
+class Monster(pygame.sprite.Sprite):
+    def __init__(self, game, position, groups):
+        super().__init__(groups)
+        self.game = game
+        
+        # Load and scale the monster image
+        surface = pygame.image.load(AssetPaths.MONSTER).convert_alpha()
+        self.image = pygame.transform.scale(surface, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        
+        self.rect = self.image.get_rect(topleft = position)
+        self.position = pygame.math.Vector2(self.rect.topleft)
+
+    def take_turn(self):
+        """Logic for the monster's turn."""
+        # 1. 25% chance to do nothing (Idling)
+        if random.random() < 0.25:
+            return
+
+        # 2. Pick a random direction (-1, 0, or 1)
+        horizontal_step = random.choice([-1, 0, 1])
+        vertical_step = random.choice([-1, 0, 1])
+        
+        # Prevent diagonal movement by picking only one axis if both are chosen
+        if horizontal_step != 0 and vertical_step != 0:
+            if random.random() < 0.5: horizontal_step = 0
+            else: vertical_step = 0
+
+        if horizontal_step != 0 or vertical_step != 0:
+            self.apply_movement(horizontal_step, vertical_step)
+
+    def apply_movement(self, horizontal_step, vertical_step):
+        """Calculate and apply movement with boundary checks."""
+        target_x = self.position.x + (horizontal_step * GridSettings.TILE_SIZE)
+        target_y = self.position.y + (vertical_step * GridSettings.TILE_SIZE)
+
+        # Boundary Math (Same as Player)
+        min_x = UISettings.ACTION_WINDOW_X + GridSettings.TILE_SIZE
+        max_x = UISettings.ACTION_WINDOW_X + UISettings.ACTION_WINDOW_WIDTH - (GridSettings.TILE_SIZE * 2)
+        min_y = UISettings.ACTION_WINDOW_Y + GridSettings.TILE_SIZE
+        max_y = UISettings.ACTION_WINDOW_Y + UISettings.ACTION_WINDOW_HEIGHT - (GridSettings.TILE_SIZE * 2)
+
+        if min_x <= target_x <= max_x and min_y <= target_y <= max_y:
+            self.position.x = target_x
+            self.position.y = target_y
+            self.rect.topleft = self.position
+
+    def update():
+        pass
