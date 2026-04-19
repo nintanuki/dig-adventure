@@ -1,3 +1,5 @@
+# Using classes for namespacing so they can be easily changed here and accessed from other files.
+
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
     WIDTH = 800
@@ -5,6 +7,14 @@ class ScreenSettings:
     RESOLUTION = (WIDTH,HEIGHT)
     CENTER = (WIDTH / 2, HEIGHT / 2)
     FPS = 120
+
+class GridSettings:
+    # The actual size of the image files
+    RAW_TILE_SIZE = 32 
+    # The multiplier for how big they will appear in-game
+    SCALE_FACTOR = 2 
+    # This is what the rest the code will use for grid snapping
+    TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR 
 
 class PlayerSettings:
     pass
