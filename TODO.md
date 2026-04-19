@@ -3,9 +3,10 @@
 ## Issues to Fix:
 - [ ] Player can "pass through" the monster
 - [ ] Monster can spawn on top of player
+- [ ] Figure out why text is so blurry
 
 ## Ideas
-- [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, trigger a type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
+- [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, THEN trigger the type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
 - [ ] Randomly load in different monster sprites
 - [ ] Add random obstacles
 - [ ] Add text highlighting (e.g. Emerald is green)
