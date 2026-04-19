@@ -33,9 +33,17 @@ class GameManager:
         self.player = Player(self, (0,0), self.all_sprites)
 
     def draw_grid_background(self):
-        """Loops through the screen and draws the dirt tiles with grey outlines."""
-        for x_pixels in range(0, ScreenSettings.WIDTH, GridSettings.TILE_SIZE):
-            for y_pixels in range(0, ScreenSettings.HEIGHT, GridSettings.TILE_SIZE):
+        """
+        Loops through the screen and draws the dirt tiles with grey outlines.
+        Draws the dirt tiles only within the Action Window boundaries.
+        """
+        # Loop through columns and rows based on our calculated grid size
+        for col in range(UISettings.COLS):
+            for row in range(UISettings.ROWS):
+                # Calculate pixel position based on the offsets
+                x_pixels = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
+                y_pixels = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
+                
                 # Draw the dirt tile
                 self.screen.blit(self.scaled_dirt_tile, (x_pixels, y_pixels))
                 
@@ -66,6 +74,13 @@ class GameManager:
             # Drawing
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
+
+            # Temporary UI Outlines for visualization (debugging purposes)
+            # Sidebar
+            pygame.draw.rect(self.screen, 'blue', (ScreenSettings.WIDTH - UISettings.SIDEBAR_WIDTH, 0, UISettings.SIDEBAR_WIDTH, ScreenSettings.HEIGHT), 2)
+            # Bottom Log
+            pygame.draw.rect(self.screen, 'red', (0, ScreenSettings.HEIGHT - UISettings.BOTTOM_LOG_HEIGHT, ScreenSettings.WIDTH, UISettings.BOTTOM_LOG_HEIGHT), 2)
+
             self.all_sprites.draw(self.screen) # Draw all sprites to the screen
 
             pygame.display.flip()

@@ -10,8 +10,29 @@ class ScreenSettings:
 
 class GridSettings:
     RAW_TILE_SIZE = 32 # The actual size of the image files (in pixels)
-    SCALE_FACTOR = 2 # The multiplier for how big they will appear in-game
+    SCALE_FACTOR = 1 # The multiplier for how big they will appear in-game
     TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
+
+class UISettings:
+    # 1-tile padding from the very edge of the window
+    WINDOW_PADDING = GridSettings.TILE_SIZE
+    
+    # Action Window Starting Points (Top-Left)
+    ACTION_WINDOW_X = WINDOW_PADDING
+    ACTION_WINDOW_Y = WINDOW_PADDING
+
+    # UI Element Sizes
+    SIDEBAR_WIDTH = 200 
+    BOTTOM_LOG_HEIGHT = 150
+    
+    # The actual playable area dimensions (Screen - UI - Padding)
+    # This tells the drawing loop where to STOP
+    ACTION_WINDOW_WIDTH = ScreenSettings.WIDTH - SIDEBAR_WIDTH - (WINDOW_PADDING * 2)
+    ACTION_WINDOW_HEIGHT = ScreenSettings.HEIGHT - BOTTOM_LOG_HEIGHT - (WINDOW_PADDING * 2)
+
+    # This ensures we only draw WHOLE tiles for the dungeon area
+    COLS = ACTION_WINDOW_WIDTH // GridSettings.TILE_SIZE
+    ROWS = ACTION_WINDOW_HEIGHT // GridSettings.TILE_SIZE
 
 class PlayerSettings:
     MOVEMENT_COOLDOWN = 1000 # Time in milliseconds between allowed movements to prevent spamming
@@ -22,9 +43,6 @@ class FontSettings:
     MEDIUM = 20
     LARGE = 30
     COLOR = 'white'
-
-class UISettings:
-    pass
 
 class AudioSettings:
     pass
