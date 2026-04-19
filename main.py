@@ -245,10 +245,13 @@ class GameManager:
                     pygame.quit()
                     sys.exit()
 
-                # Handle fullscreen toggle with F11 key
+                # Handle fullscreen toggle with F11 key and select button
                 if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_F11:
-                            pygame.display.toggle_fullscreen()
+                    if event.key == pygame.K_F11:
+                        pygame.display.toggle_fullscreen()
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == 6:
+                        pygame.display.toggle_fullscreen()
 
             # Only update sprites if the game is active. 
             # This prevents the player from moving after death.

@@ -25,11 +25,7 @@ class Player(pygame.sprite.Sprite):
         self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
         self.time_of_last_move = 0
 
-        self.inventory = {
-        'Gold': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
-        'Torch': 2, 'Lantern': 0, 'Monster Repellent': 0,
-        'Key': 0, 'Shovel': 1, 'Map': 1
-        }
+        self.inventory = ItemSettings.INITIAL_INVENTORY
 
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 

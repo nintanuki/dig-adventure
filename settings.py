@@ -79,12 +79,11 @@ class ItemSettings:
     }
 
     # UI Sort Order (The requested layout)
-    INVENTORY_SORT_ORDER = [
-        'Map', 'Shovel', 
-        'Torch', 'Lantern', 'Monster Repellent', 
-        'Gold', 'Ruby', 'Emerald', 'Diamond',
-        'Key'
-    ]
+    INITIAL_INVENTORY = {
+        'Gold': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
+        'Torch': 2, 'Lantern': 0, 'Monster Repellent': 0,
+        'Key': 0, 'Shovel': 1, 'Map': 1
+        }
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
