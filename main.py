@@ -81,29 +81,37 @@ class GameManager:
 
     def draw_ui_frames(self):
         """Draws the aesthetic borders around the game and UI sections."""
-        # 1. The Action Window Frame
-        # We draw it 2 pixels wider than the window so it doesn't overlap tiles
+        # The Action Window Frame
         action_frame_rect = pygame.Rect(
-            UISettings.ACTION_WINDOW_X - 2, 
-            UISettings.ACTION_WINDOW_Y - 2, 
-            UISettings.ACTION_WINDOW_WIDTH + 4, 
-            UISettings.ACTION_WINDOW_HEIGHT + 4
-        )
-        pygame.draw.rect(self.screen, 'white', action_frame_rect, 2, border_radius=5)
+            UISettings.ACTION_WINDOW_X, 
+            UISettings.ACTION_WINDOW_Y, 
+            UISettings.ACTION_WINDOW_WIDTH, 
+            UISettings.ACTION_WINDOW_HEIGHT)
+        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, action_frame_rect, 2, UISettings.BORDER_RADIUS)
+        
+        # Sidebar Window Frame
+        sidebar_frame_rect = pygame.Rect(
+            UISettings.SIDEBAR_X,
+            UISettings.SIDEBAR_Y,
+            UISettings.SIDEBAR_WIDTH,
+            UISettings.SIDEBAR_HEIGHT)
+        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, sidebar_frame_rect, 2, UISettings.BORDER_RADIUS)
+        
+        # Message Window Log Frame
+        message_log_frame_rect = pygame.Rect(
+            UISettings.LOG_X,
+            UISettings.LOG_Y,
+            UISettings.LOG_WIDTH,
+            UISettings.LOG_HEIGHT)
+        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, message_log_frame_rect, 2, UISettings.BORDER_RADIUS)
 
-        # 2. Sidebar Outline (Blue)
-        sidebar_rect = pygame.Rect(
-            ScreenSettings.WIDTH - UISettings.SIDEBAR_WIDTH, 0, 
-            UISettings.SIDEBAR_WIDTH, ScreenSettings.HEIGHT
-        )
-        pygame.draw.rect(self.screen, 'blue', sidebar_rect, 2)
-
-        # 3. Bottom Log Outline (Red)
-        log_rect = pygame.Rect(
-            0, ScreenSettings.HEIGHT - UISettings.BOTTOM_LOG_HEIGHT, 
-            ScreenSettings.WIDTH, UISettings.BOTTOM_LOG_HEIGHT
-        )
-        pygame.draw.rect(self.screen, 'red', log_rect, 2)
+        # Map Window Frame
+        map_frame_rect = pygame.Rect(
+            UISettings.MAP_X,
+            UISettings.MAP_Y,
+            UISettings.MAP_WIDTH,
+            UISettings.MAP_HEIGHT)
+        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, map_frame_rect, 2, UISettings.BORDER_RADIUS)
 
     def run(self):
         """
