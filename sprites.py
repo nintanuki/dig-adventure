@@ -23,7 +23,7 @@ class Player(pygame.sprite.Sprite):
 
         # Cooldown Timer (in milliseconds) so the player can't spam movement input
         self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
-        self.time_of_last_move = PlayerSettings.INITIAL_TIME_OF_LAST_MOVE
+        self.time_of_last_move = 0
 
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 
