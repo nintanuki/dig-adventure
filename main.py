@@ -1,11 +1,12 @@
 import pygame
 import sys
+import random
 import json
 
-import debug
 from settings import *
 from audio import AudioManager
 from sprites import Player
+import debug
 
 class GameManager:
     def __init__(self):
@@ -30,9 +31,25 @@ class GameManager:
         # Initialize the audio manager
         self.audio = AudioManager()
 
-        # Instantiate player and add to the group
-        # (Starting at 0,0 for now)
-        self.player = Player(self, (0,0), self.all_sprites)
+        # Spawn the player at a safe location
+        self.spawn_player()
+
+    def spawn_player(self):
+        """Calculates a safe spawn point and initializes the player sprite."""
+        
+        # Spawn the player at a random location within the Action Window, avoiding the walls
+        # Calculate random grid coordinates (avoiding the walls by starting at 1 and ending at COLS-1 and ROWS-1)
+        random_grid_column = random.randint(1, UISettings.COLS - 2)
+        random_grid_row = random.randint(1, UISettings.ROWS - 2)
+
+        # 2. Convert those grid coordinates into the actual screen anchor points
+        # We take the Action Window's start point and add the tile offset
+        player_screen_start_x = UISettings.ACTION_WINDOW_X + (random_grid_column * GridSettings.TILE_SIZE)
+        player_screen_start_y = UISettings.ACTION_WINDOW_Y + (random_grid_row * GridSettings.TILE_SIZE)
+
+        # 3. Create the player at that specific pixel location
+        # Note: We initialize the sprite group here as well
+        self.player = Player(self, (player_screen_start_x, player_screen_start_y), self.all_sprites)
 
     def draw_grid_background(self):
         """
