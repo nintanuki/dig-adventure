@@ -40,8 +40,15 @@ class GameManager:
 
     def load_assets(self):
         """Handle all image loading and scaling in one place."""
-        dirt_surf = pygame.image.load(AssetPaths.DIRT_TILE).convert_alpha()
-        self.scaled_dirt_tile = pygame.transform.scale(dirt_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        self.scaled_dirt_tiles = []
+
+        for dirt_path in AssetPaths.DIRT_TILES:
+            dirt_surf = pygame.image.load(dirt_path).convert_alpha()
+            scaled_dirt = pygame.transform.scale(
+                dirt_surf,
+                (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+            )
+            self.scaled_dirt_tiles.append(scaled_dirt)
         
         dug_surf = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
         self.scaled_dug_tile = pygame.transform.scale(dug_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
@@ -136,7 +143,8 @@ class GameManager:
                     if self.tile_data.get(grid_pos, {}).get('is_dug'):
                         self.screen.blit(self.scaled_dug_tile, (tile_window_x, tile_window_y))
                     else:
-                        self.screen.blit(self.scaled_dirt_tile, (tile_window_x, tile_window_y))
+                        tile = self.tile_data.get(grid_pos)
+                        self.screen.blit(tile['dirt_surface'], (tile_window_x, tile_window_y))
 
                 # Draw the faint grey grid lines
                 tile_outline = pygame.Rect(tile_window_x, tile_window_y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
@@ -226,7 +234,8 @@ class GameManager:
             for row in range(1, UISettings.ROWS - 1):
                 self.tile_data[(col, row)] = {
                     'is_dug': False,
-                    'item': None
+                    'item': None,
+                    'dirt_surface': random.choice(self.scaled_dirt_tiles)
                 }
                 
         # Randomly place the "Key" at a specific location
@@ -296,7 +305,7 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            # self.draw_fog_of_war()
+            self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)

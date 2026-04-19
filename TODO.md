@@ -5,11 +5,20 @@
 - [ ] Monster can spawn on top of player
 - [ ] Figure out why text is so blurry
 
+Gameplay:
+- [ ] Shorten time for torches and lanterns, and reduce chance of torches, lanterns and monster repellent
+- [ ] Add a second monster
+- [ ] Pacing is slow, move player faster? But somehow it's waiting until the text is down which I like
+
 ## Ideas
 - [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, THEN trigger the type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
 - [ ] Randomly load in different monster sprites
 - [ ] Add random obstacles
 - [ ] Add text highlighting (e.g. Emerald is green)
+
+What to do next:
+- [ ] add metal detector so player isn't wandering aimlessly
+- [ ] no backtracking rule.............?
 
 ## Phase 1: The Foundation (Baby Steps)
 - [X] **Window Initialization:** Set up a basic window using a library like Pygame or Arcade.

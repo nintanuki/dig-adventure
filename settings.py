@@ -116,6 +116,7 @@ class AudioSettings:
 class AssetPaths:
     # Images
     GRAPHICS_DIR = 'graphics/'
+    DIRT_GRAPHICS_DIR = os.path.join(GRAPHICS_DIR, 'dirt/')
 
     # Sprites
     PLAYER = os.path.join(GRAPHICS_DIR, 'human_male.png')
@@ -126,7 +127,33 @@ class AssetPaths:
     OPEN_DOOR = os.path.join(GRAPHICS_DIR, 'open_door.png')
 
     # Floor Tiles
-    DIRT_TILE = os.path.join(GRAPHICS_DIR, 'dirt_0_new.png')
+    DIRT_TILES = [
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_0_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_0_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_1_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_1_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_2_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_2_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_east_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_east_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_full_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_full_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_north_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_north_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northeast_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northeast_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northwest_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northwest_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_south_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_south_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southeast_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southeast_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southwest_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southwest_old.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_west_new.png'),
+        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_west_old.png')
+    ]
+
     DUG_TILE = os.path.join(GRAPHICS_DIR, 'cobble_blood6.png')
     WALL_TILE = os.path.join(GRAPHICS_DIR, 'brick_brown_0.png')
 
