@@ -30,6 +30,11 @@ class Player(pygame.sprite.Sprite):
         self.light_radius = LightSettings.DEFAULT_RADIUS
         self.light_turns_left = 0
 
+        # Animation states for smooth movement
+        self.target_pos = pygame.math.Vector2(position)
+        self.is_moving = False
+        self.anim_speed = PlayerSettings.ANIMATION_SPEED
+
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 
     def get_input(self):
@@ -115,11 +120,14 @@ class Player(pygame.sprite.Sprite):
         # 3. Check if that target destination is inside the game world boundaries
         if min_safe_x <= target_destination_x <= max_safe_x and \
             min_safe_y <= target_destination_y <= max_safe_y:
+
+            self.target_pos = pygame.math.Vector2(target_destination_x, target_destination_y)
+            self.is_moving = True
             # If it is valid, update the player's position to the new coordinates
-            self.position.x = target_destination_x
-            self.position.y = target_destination_y
-            # Update the rect's position to match the new position OR...
-            self.rect.topleft = self.position
+            # self.position.x = target_destination_x
+            # self.position.y = target_destination_y
+            # # Update the rect's position to match the new position OR...
+            # self.rect.topleft = self.position
             
             # Log messages for movement
             if vertical_step == -1: self.game.log_message("You move one pace North.")
@@ -240,9 +248,27 @@ class Player(pygame.sprite.Sprite):
                     self.game.log_message("Nothing but dirt here.")
                 self.game.advance_turn() # Digging costs a turn
 
+    def animate(self):
+        """Handles the animation of the player sprite when moving."""
+        if self.is_moving:
+            # Calculate the direction vector towards the target position
+            direction = self.target_pos - self.position
+            distance = direction.length()
+
+            if distance < self.anim_speed:
+                # If we're close enough to the target, snap to it and stop moving
+                self.position = self.target_pos
+                self.rect.topleft = self.position # Update the rect's position to match the new position
+                self.is_moving = False
+            else:
+                direction.scale_to_length(self.anim_speed)
+                self.position += direction
+                self.rect.topleft = self.position
+
     def update(self):
         """Update the player's state. This method is called every frame."""
-        self.process_movement_and_actions()
+        if not self.is_moving:
+            self.process_movement_and_actions()
 
 class Monster(pygame.sprite.Sprite):
     def __init__(self, game, position, groups):
@@ -255,6 +281,10 @@ class Monster(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(topleft = position)
         self.position = pygame.math.Vector2(self.rect.topleft)
+
+        self.target_pos = pygame.math.Vector2(position)
+        self.is_moving = False
+        self.anim_speed = PlayerSettings.ANIMATION_SPEED
         self.is_chasing = False
 
     def take_turn(self):
@@ -363,9 +393,21 @@ class Monster(pygame.sprite.Sprite):
         max_y = UISettings.ACTION_WINDOW_Y + UISettings.ACTION_WINDOW_HEIGHT - (GridSettings.TILE_SIZE * 2)
 
         if min_x <= target_x <= max_x and min_y <= target_y <= max_y:
-            self.position.x = target_x
-            self.position.y = target_y
-            self.rect.topleft = self.position
+            self.target_pos = pygame.math.Vector2(target_x, target_y)
+            self.is_moving = True
+
+    def animate(self):
+        """The visual sliding logic."""
+        if self.is_moving:
+            direction = self.target_pos - self.position
+            if direction.length() < self.anim_speed:
+                self.position = self.target_pos
+                self.rect.topleft = self.position
+                self.is_moving = False
+            else:
+                direction.scale_to_length(self.anim_speed)
+                self.position += direction
+                self.rect.topleft = self.position
 
     def update(self):
         """

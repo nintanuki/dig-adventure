@@ -4,17 +4,33 @@ from settings import UISettings, FontSettings, WindowSettings
 class MessageLog:
     def __init__(self, game):
         self.game = game
-        self.messages = WindowSettings.WELCOME_MESSAGE
-        
-        # Load font from settings
-        # If you don't have the .ttf file yet, use None for default system font
-        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.MESSAGE_SIZE) 
+        self.messages = list(WindowSettings.WELCOME_MESSAGE) 
+        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
+
+        # Typewriter state
+        self.pending_message = None # Holds the message until sprites finish moving
+        self.full_text = ""
+        self.active_message = ""
+        self.char_index = 0
+        self.type_speed = WindowSettings.TYPING_SPEED
+        self.is_typing = False
 
     def add_message(self, text):
-        """Adds a new message to the log and removes old ones if full."""
-        self.messages.append(text)
-        if len(self.messages) > WindowSettings.MAX_MESSAGES:
-            self.messages.pop(0) # Remove the oldest message
+        """
+        Adds a new message to the log and removes old ones if full.
+        Use a typewriter effect for the most recent message, while keeping previous messages static.
+        """
+        # If there is an active message finishing up, move it to history first
+        if self.full_text:
+            self.messages.append(self.full_text)
+            if len(self.messages) > WindowSettings.MAX_MESSAGES:
+                self.messages.pop(0)
+
+        # Set up the new message to be typed
+        self.full_text = text
+        self.active_message = ""
+        self.char_index = 0
+        self.is_typing = True
 
     def draw(self, surface):
         """Renders the current messages inside the log window."""
@@ -22,15 +38,28 @@ class MessageLog:
         start_x = UISettings.LOG_X + WindowSettings.TEXT_PADDING
         start_y = UISettings.LOG_Y + WindowSettings.TEXT_PADDING
 
+        # Draw History (Static white text)
         for index, message in enumerate(self.messages):
-            # Check if this is the most recent message (the last index)
-            is_last = (index == len(self.messages) - 1)
-
-            display_text = f">>> {message}" if is_last else message
-            text_color = FontSettings.LAST_MESSAGE_COLOR if is_last else FontSettings.DEFAULT_COLOR
-
-            text_surface = self.font.render(display_text, True, text_color)
+            text_surface = self.font.render(message, True, FontSettings.DEFAULT_COLOR)
             surface.blit(text_surface, (start_x, start_y + (index * WindowSettings.LINE_HEIGHT)))
+
+        # Draw Active Message (Typewriter effect in Yellow)
+        if self.full_text:
+            # Position it right after the last historical message
+            y_pos = start_y + (len(self.messages) * WindowSettings.LINE_HEIGHT)
+            display_text = f">>> {self.active_message}"
+            text_surface = self.font.render(display_text, True, FontSettings.LAST_MESSAGE_COLOR)
+            surface.blit(text_surface, (start_x, y_pos))
+
+    def update(self):
+        """Increments the character count."""
+        if self.is_typing:
+            self.char_index += self.type_speed
+            # Ensure we don't go out of bounds of the string
+            self.active_message = self.full_text[:int(self.char_index)]
+            
+            if self.char_index >= len(self.full_text):
+                self.is_typing = False
 
 class InventoryWindow:
     def __init__(self, game):

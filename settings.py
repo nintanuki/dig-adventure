@@ -49,18 +49,21 @@ class UISettings:
     MAP_HEIGHT = BOTTOM_LOG_HEIGHT
 
 class WindowSettings:
-    MAX_MESSAGES = 6
+    MAX_MESSAGES = 5
     LINE_HEIGHT = 22
     TEXT_PADDING = 10
     WELCOME_MESSAGE = ["Welcome to the Dungeon!", "Use arrows to move."]
+    TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
-    MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
+    MOVEMENT_COOLDOWN = 2000 # Time in milliseconds between allowed movements to prevent spamming
+    ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class MonsterSettings:
     CHASE_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.2 # 1 in 5 chance to stand still
     REPELLENT_DURATION = 5 # Number of turns the repellent effect lasts
+    ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class LightSettings:
     DEFAULT_RADIUS = 1

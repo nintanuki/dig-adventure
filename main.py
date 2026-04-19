@@ -251,6 +251,13 @@ class GameManager:
                 
         return None
 
+    @property
+    def is_busy(self):
+        """Centralized check to see if the game is currently animating."""
+        return (self.player.is_moving or 
+                self.monster.is_moving or 
+                self.message_log.is_typing)
+
     def run(self):
         """
         Run the game loop.
@@ -275,15 +282,23 @@ class GameManager:
             # Only update sprites if the game is active. 
             # This prevents the player from moving after death.
             if self.game_active:
-                self.all_sprites.update() # Update all sprites (calls their update method, if they have one)
+                # Always update the log (it handles its own typing timer)
+                self.message_log.update()
+                # Call sprites update functions ONLY if not busy
+                if not self.is_busy:
+                    self.all_sprites.update()
+                # Always run the animation math (so sprites can finish their slide)
+                for sprite in self.all_sprites:
+                    if hasattr(sprite, 'animate'):
+                        sprite.animate()
 
             # Drawing
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            self.draw_fog_of_war()
+            # self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
-            self.message_log.draw(self.screen) # Draw text to the message log
+            self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)
             self.draw_end_game_screens()
 
