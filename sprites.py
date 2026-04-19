@@ -101,6 +101,7 @@ class Player(pygame.sprite.Sprite):
             elif horizontal_step == 1: self.game.log_message("You move one pace East.")
 
             self.game.audio.play_move_sound() # Play the movement sound effect
+            self.game.advance_turn()
         else:
             # ...if the move is invalid (e.g., out of bounds), don't update the position and instead
             self.game.log_message("You can't go that way!")
@@ -171,5 +172,5 @@ class Monster(pygame.sprite.Sprite):
             self.position.y = target_y
             self.rect.topleft = self.position
 
-    def update():
+    def update(self):
         pass

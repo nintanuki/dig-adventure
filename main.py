@@ -5,7 +5,7 @@ import json
 
 from settings import *
 from audio import AudioManager
-from sprites import Player
+from sprites import Player, Monster
 from windows import MessageLog
 import debug
 
@@ -22,6 +22,7 @@ class GameManager:
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.spawn_player() # Spawn the player at a safe location
+        self.spawn_monster()
         self.message_log = MessageLog(self)
 
     def setup_controllers(self):
@@ -54,6 +55,20 @@ class GameManager:
         # 3. Create the player at that specific pixel location
         # Note: We initialize the sprite group here as well
         self.player = Player(self, (player_screen_start_x, player_screen_start_y), self.all_sprites)
+
+    def spawn_monster(self):
+        """Spawns a monster at a random valid location."""
+        col = random.randint(1, UISettings.COLS - 2)
+        row = random.randint(1, UISettings.ROWS - 2)
+        
+        x = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
+        y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
+        
+        self.monster = Monster(self, (x, y), self.all_sprites)
+
+    def advance_turn(self):
+        """Called whenever the player performs an action."""
+        self.monster.take_turn()
 
     def draw_grid_background(self):
         """
