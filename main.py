@@ -181,8 +181,8 @@ class GameManager:
             end_text = "VICTORY" if self.player.position == self.door.position else "GAME OVER"
             end_color = 'green' if end_text == "VICTORY" else 'red'
             
-            # Render and CEnter
-            text_surf = big_font.render(end_text, True, end_color)
+            # Render and Center
+            text_surf = big_font.render(end_text, False, end_color)
             text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH/2, ScreenSettings.HEIGHT/2))
             self.screen.blit(text_surf, text_rect)
 
