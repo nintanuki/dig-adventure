@@ -8,7 +8,7 @@ class MessageLog:
         
         # Load font from settings
         # If you don't have the .ttf file yet, use None for default system font
-        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.SIZE) 
+        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.MESSAGE_SIZE) 
 
     def add_message(self, text):
         """Adds a new message to the log and removes old ones if full."""

@@ -59,7 +59,8 @@ class PlayerSettings:
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
-    SIZE = 20
+    MESSAGE_SIZE = 20
+    ENDGAME_SIZE = 80
     DEFAULT_COLOR = 'white'
     LAST_MESSAGE_COLOR = 'yellow'
 

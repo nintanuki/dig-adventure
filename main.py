@@ -21,6 +21,7 @@ class GameManager:
         self.load_assets() # Pre-load dirt asset to avoid loading it 60 times per second
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
+        self.game_active = True
         self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
@@ -82,7 +83,23 @@ class GameManager:
 
     def advance_turn(self):
         """Called whenever the player performs an action."""
+
+        if not self.game_active:
+            return
+
         self.monster.take_turn()
+
+        # Check for Monster Collision (Loss)
+        if self.player.position == self.monster.position:
+            self.log_message("You were caught by the monster!")
+            self.game_active = False
+
+        # Check for Door Collision (Win)
+        # Note: We'll add key requirements later, for now just touching it wins
+        if self.player.position == self.door.position:
+            self.door.open_door()
+            self.log_message("You escaped the dungeon!")
+            self.game_active = False
 
     def draw_grid_background(self):
         """
@@ -148,6 +165,27 @@ class GameManager:
         """The central hub for all game objects to send text to the UI."""
         self.message_log.add_message(text)
 
+    def draw_end_game_screens(self):
+        # Draw Game Over Overlay
+        if not self.game_active:
+            # Dim the screen
+            overlay = pygame.Surface((ScreenSettings.WIDTH, ScreenSettings.HEIGHT))
+            overlay.set_alpha(180)
+            overlay.fill((0, 0, 0))
+            self.screen.blit(overlay, (0,0))
+
+            # Setup font for large text
+            big_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
+            
+            # Logic to decide if we won or lost for the text
+            end_text = "VICTORY" if self.player.position == self.door.position else "GAME OVER"
+            end_color = 'green' if end_text == "VICTORY" else 'red'
+            
+            # Render and CEnter
+            text_surf = big_font.render(end_text, True, end_color)
+            text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH/2, ScreenSettings.HEIGHT/2))
+            self.screen.blit(text_surf, text_rect)
+
     def run(self):
         """
         Run the game loop.
@@ -165,15 +203,21 @@ class GameManager:
                 if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_F11:
                             pygame.display.toggle_fullscreen()
-            
-            self.all_sprites.update() # Update all sprites (calls their update method, if they have one)
-            
+
+            # Only update sprites if the game is active. 
+            # This prevents the player from moving after death.
+            if self.game_active:
+                self.all_sprites.update() # Update all sprites (calls their update method, if they have one)
+
             # Drawing
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen) # Draw text to the message log
+            self.draw_end_game_screens()
+
+            
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)
