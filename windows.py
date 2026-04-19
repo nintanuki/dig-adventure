@@ -9,7 +9,6 @@ class MessageLog:
         # Load font from settings
         # If you don't have the .ttf file yet, use None for default system font
         self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.SIZE) 
-        self.text_color = pygame.Color('white')
 
     def add_message(self, text):
         """Adds a new message to the log and removes old ones if full."""
@@ -24,5 +23,11 @@ class MessageLog:
         start_y = UISettings.LOG_Y + WindowSettings.TEXT_PADDING
 
         for index, message in enumerate(self.messages):
-            text_surface = self.font.render(message, True, self.text_color)
+            # Check if this is the most recent message (the last index)
+            is_last = (index == len(self.messages) - 1)
+
+            display_text = f">>> {message}" if is_last else message
+            text_color = FontSettings.LAST_MESSAGE_COLOR if is_last else FontSettings.DEFAULT_COLOR
+
+            text_surface = self.font.render(display_text, True, text_color)
             surface.blit(text_surface, (start_x, start_y + (index * WindowSettings.LINE_HEIGHT)))

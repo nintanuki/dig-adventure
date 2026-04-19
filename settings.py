@@ -60,7 +60,8 @@ class PlayerSettings:
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
     SIZE = 20
-    COLOR = 'white'
+    DEFAULT_COLOR = 'white'
+    LAST_MESSAGE_COLOR = 'yellow'
 
 class AudioSettings:
     pass
