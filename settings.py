@@ -1,20 +1,17 @@
 # Using classes for namespacing so they can be easily changed here and accessed from other files.
+import os
 
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
     WIDTH = 800
     HEIGHT = 600
     RESOLUTION = (WIDTH,HEIGHT)
-    CENTER = (WIDTH / 2, HEIGHT / 2)
-    FPS = 120
+    FPS = 60
 
 class GridSettings:
-    # The actual size of the image files
-    RAW_TILE_SIZE = 32 
-    # The multiplier for how big they will appear in-game
-    SCALE_FACTOR = 2 
-    # This is what the rest the code will use for grid snapping
-    TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR 
+    RAW_TILE_SIZE = 32 # The actual size of the image files (in pixels)
+    SCALE_FACTOR = 2 # The multiplier for how big they will appear in-game
+    TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
 
 class PlayerSettings:
     pass
@@ -35,12 +32,12 @@ class AudioSettings:
 class AssetPaths:
     GRAPHICS_DIR = 'graphics/'
 
-    PLAYER = 'human_male.png'
+    PLAYER = os.path.join(GRAPHICS_DIR, 'human_male.png')
 
     # Door
-    CLOSED_DOOR = 'closed_door.png'
-    OPEN_DOOR = 'open_door.png'
+    CLOSED_DOOR = os.path.join(GRAPHICS_DIR, 'closed_door.png')
+    OPEN_DOOR = os.path.join(GRAPHICS_DIR, 'open_door.png')
 
     # Floor Tiles
-    DIRT_TILE = 'dirt_0_new.png'
-    WALL_TILE = 'brick_brown_0.png'
+    DIRT_TILE = os.path.join(GRAPHICS_DIR, 'dirt_0_new.png')
+    WALL_TILE = os.path.join(GRAPHICS_DIR, 'brick_brown_0.png')
