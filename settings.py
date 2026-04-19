@@ -35,7 +35,7 @@ class UISettings:
     ROWS = ACTION_WINDOW_HEIGHT // GridSettings.TILE_SIZE
 
 class PlayerSettings:
-    MOVEMENT_COOLDOWN = 1000 # Time in milliseconds between allowed movements to prevent spamming
+    MOVEMENT_COOLDOWN = 500 # Time in milliseconds between allowed movements to prevent spamming
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
