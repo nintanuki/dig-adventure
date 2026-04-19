@@ -20,7 +20,9 @@ class GameManager:
 
         # Pre-load dirt asset to avoid loading it 60 times per second
         dirt_tile = pygame.image.load(AssetPaths.DIRT_TILE).convert_alpha()
+        wall_tile = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
         self.scaled_dirt_tile = pygame.transform.scale(dirt_tile, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        self.scaled_wall_tile = pygame.transform.scale(wall_tile, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
         # Create a group to hold all sprites
         self.all_sprites = pygame.sprite.Group()
@@ -40,15 +42,22 @@ class GameManager:
         # Loop through columns and rows based on our calculated grid size
         for col in range(UISettings.COLS):
             for row in range(UISettings.ROWS):
-                # Calculate pixel position based on the offsets
-                x_pixels = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
-                y_pixels = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
-                
-                # Draw the dirt tile
-                self.screen.blit(self.scaled_dirt_tile, (x_pixels, y_pixels))
-                
+                # Calculate the actual pixel position on the screen for each tile
+                tile_window_x = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
+                tile_window_y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
+
+                # Check if this tile is on the edge of our grid
+                is_wall = (col == 0 or col == UISettings.COLS - 1 or 
+                        row == 0 or row == UISettings.ROWS - 1)
+
+                # Draw the wall tile if it's an edge, otherwise draw the dirt tile
+                if is_wall:
+                    self.screen.blit(self.scaled_wall_tile, (tile_window_x, tile_window_y))
+                else:
+                    self.screen.blit(self.scaled_dirt_tile, (tile_window_x, tile_window_y))
+
                 # Draw the faint grey grid lines
-                tile_outline = pygame.Rect(x_pixels, y_pixels, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+                tile_outline = pygame.Rect(tile_window_x, tile_window_y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
                 pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
 
     def run(self):
