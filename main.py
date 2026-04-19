@@ -4,6 +4,7 @@ import json
 
 import debug
 from settings import *
+from audio import AudioManager
 from sprites import Player
 
 class GameManager:
@@ -24,9 +25,12 @@ class GameManager:
         # Create a group to hold all sprites
         self.all_sprites = pygame.sprite.Group()
         
+        # Initialize the audio manager
+        self.audio = AudioManager()
+
         # Instantiate player and add to the group
         # (Starting at 0,0 for now)
-        self.player = Player((0,0), self.all_sprites)
+        self.player = Player(self, (0,0), self.all_sprites)
 
     def draw_grid_background(self):
         """Loops through the screen and draws the dirt tiles with grey outlines."""

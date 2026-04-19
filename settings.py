@@ -30,8 +30,8 @@ class AudioSettings:
     pass
 
 class AssetPaths:
+    # Images
     GRAPHICS_DIR = 'graphics/'
-
     PLAYER = os.path.join(GRAPHICS_DIR, 'human_male.png')
 
     # Door
@@ -41,3 +41,8 @@ class AssetPaths:
     # Floor Tiles
     DIRT_TILE = os.path.join(GRAPHICS_DIR, 'dirt_0_new.png')
     WALL_TILE = os.path.join(GRAPHICS_DIR, 'brick_brown_0.png')
+
+    # Audio
+    SOUND_DIR = 'sound/'
+    MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
+    BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')

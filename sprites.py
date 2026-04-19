@@ -1,12 +1,14 @@
 import pygame
+# from audio import AudioManager
 from settings import *
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, position, groups):
+    def __init__(self, game, position, groups):
         """
         Initialize the player sprite.
 
         Args:
+            game (GameManager): The game manager instance.
             position (tuple): The initial position of the player.
             groups (list): A list of sprite groups this sprite belongs to.
         """
@@ -22,6 +24,8 @@ class Player(pygame.sprite.Sprite):
         # Cooldown Timer (in milliseconds) so the player can't spam movement input
         self.move_cooldown = 2000
         self.time_of_last_move = 0
+
+        self.game = game # Reference to the game manager for accessing shared resources like the audio manager
 
     def get_input_direction(self):
         """
@@ -65,12 +69,26 @@ class Player(pygame.sprite.Sprite):
             horizontal_step (int, optional): _description_. Defaults to 0.
             vertical_step (int, optional): _description_. Defaults to 0.
         """
-        # Update the player's position based on the steps and tile size
-        self.position.x += horizontal_step * GridSettings.TILE_SIZE
-        self.position.y += vertical_step * GridSettings.TILE_SIZE
+        
+        # 1. Calculate where the player WANTS to go based on the steps and tile size
+        # We store this in temporary variables before updating' the player's actual position,
+        # so we can check if it's a valid move first.
+        target_x = self.position.x + horizontal_step * GridSettings.TILE_SIZE
+        target_y = self.position.y + vertical_step * GridSettings.TILE_SIZE
 
-        # Update the rect's position to match the new position
-        self.rect.topleft = self.position
+        # 2. Check if that target destination is inside the game world
+        if 0 <= target_x < ScreenSettings.WIDTH and 0 <= target_y < ScreenSettings.HEIGHT:
+            # 3. If it is valid, update the player's position to the new coordinates
+            self.position.x = target_x
+            self.position.y = target_y
+            self.game.audio.play_move_sound() # Play the movement sound effect
+
+            # 4. Update the rect's position to match the new position
+            self.rect.topleft = self.position
+        else:
+            # If the move is invalid (e.g., out of bounds),
+            # play a sound effect to indicate the collision
+            self.game.audio.play_boundary_sound()
 
     def process_movement_input(self):
         """Checks the timer and input before deciding to move."""
