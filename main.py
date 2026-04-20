@@ -101,15 +101,19 @@ class GameManager:
 
         if not self.game_active: return
 
-        # Count down effects
+        # Handle Light Shrinking
         if self.player.light_turns_left > 0:
             self.player.light_turns_left -= 1
-            if self.player.light_turns_left == 0:
+            
+            if self.player.light_turns_left > 0:
+                # Calculate how much radius we have per turn of life
+                # We use the starting radius of the current light source
+                unit_radius = self.player.active_light_max_radius / self.player.active_light_max_duration
+                self.player.light_radius = unit_radius * self.player.light_turns_left
+            else:
+                # It hit zero
                 self.player.light_radius = LightSettings.DEFAULT_RADIUS
                 self.log_message("Your light flickers out...")
-
-        if self.player.repellent_turns > 0:
-            self.player.repellent_turns -= 1
 
         self.monster.take_turn()
 

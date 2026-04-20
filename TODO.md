@@ -4,9 +4,10 @@
 - [ ] Player can "pass through" the monster
 - [ ] Monster can spawn on top of player
 - [ ] Figure out why text is so blurry
+- [ ] Fix "you found a emerald -> an emerald"
 
 Gameplay:
-- [ ] Shorten time for torches and lanterns, and reduce chance of torches, lanterns and monster repellent
+- [ ] Add premade maps will walls and obstacles
 - [ ] Add a second monster
 - [ ] Pacing is slow, move player faster? But somehow it's waiting until the text is down which I like
 

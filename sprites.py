@@ -27,8 +27,11 @@ class Player(pygame.sprite.Sprite):
 
         self.inventory = ItemSettings.INITIAL_INVENTORY
         self.repellent_turns = 0
+
         self.light_radius = LightSettings.DEFAULT_RADIUS
         self.light_turns_left = 0
+        self.active_light_max_radius = 0
+        self.active_light_max_duration = 0
 
         # Animation states for smooth movement
         self.target_pos = pygame.math.Vector2(position)
@@ -172,44 +175,31 @@ class Player(pygame.sprite.Sprite):
 
 
             elif action == 'light':
-                # Check for the Lantern first (The "Better" light)
+                # Setup helper variables to avoid repeating code
+                source = None
                 if self.inventory.get('Lantern', 0) > 0:
-                    self.inventory['Lantern'] -= 1
-                    self.light_radius = LightSettings.LANTERN_RADIUS
-                    # +1 because the turn will immediately be advanced after this
-                    self.light_turns_left = LightSettings.LANTERN_DURATION + 1 
-                    self.game.log_message("You light your lantern! The dungeon is bathed in light.")
-                    self.game.advance_turn()
-                
-                # Fall back to the Torch if no lantern is found
+                    source = ('Lantern', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
                 elif self.inventory.get('Torch', 0) > 0:
-                    self.inventory['Torch'] -= 1
-                    self.light_radius = LightSettings.TORCH_RADIUS
-                    self.light_turns_left = LightSettings.TORCH_DURATION + 1
-                    self.game.log_message("You light a torch! The shadows retreat.")
-                    self.game.advance_turn()
-
-                # Finally, if they have no better light sources, check for the Matches
+                    source = ('Torch', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
                 elif self.inventory.get('Match', 0) > 0:
-                    self.inventory['Match'] -= 1
-                    self.light_radius = LightSettings.MATCH_RADIUS
-                    self.light_turns_left = LightSettings.MATCH_DURATION + 1
-                    self.game.log_message("You strike a match. It flickers briefly.")
+                    source = ('Match', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
+
+                if source:
+                    name, radius, duration = source
+                    self.inventory[name] -= 1
+                    
+                    # Store the "Max" values for the shrinking math
+                    self.active_light_max_radius = radius
+                    self.active_light_max_duration = duration
+                    
+                    # Set current state (with the +1 buffer for the off-by-one fix)
+                    self.light_radius = radius
+                    self.light_turns_left = duration + 1 
+                    
+                    self.game.log_message(f"You light a {name.lower()}!")
                     self.game.advance_turn()
-                
-                # If they have no light sources at all
                 else:
                     self.game.log_message("You have no light sources!")
-                self.time_of_last_move = current_time
-
-            elif action == 'repellent':
-                if self.inventory.get('Monster Repellent', 0) > 0:
-                    self.inventory['Monster Repellent'] -= 1
-                    self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1
-                    self.game.log_message("You used a monster repellent!")
-                    self.game.advance_turn()
-                else:
-                    self.game.log_message("You don't have any repellent!")
                 self.time_of_last_move = current_time
 
     def dig(self):
