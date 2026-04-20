@@ -155,19 +155,7 @@ class GameManager:
 
         if not self.game_active: return
 
-        # Update the 'seen_tiles' dictionary based on current visibility
-        # This is what the MapWindow 'pulls' from to draw the minimap
-        for r in range(UISettings.ROWS):
-            for c in range(UISettings.COLS):
-                if self.player_can_see_grid_pos((c, r)):
-                    # Save the tile type to our persistent map data
-                    self.seen_tiles[(c, r)] = self.current_grid[r][c]
-                    
-                    # Only check for the monster if it has been initialized and is alive
-                    if hasattr(self, 'monster') and self.monster:
-                        m_col, m_row = self.screen_to_grid(self.monster.position.x, self.monster.position.y)
-                        if c == m_col and r == m_row:
-                            self.last_seen_monster_pos = {(m_col, m_row)}
+        self.remember_visible_map_info()
 
         # Handle Light Shrinking
         if self.player.light_turns_left > 0:
@@ -214,11 +202,14 @@ class GameManager:
                 if cell_type == "x":
                     self.screen.blit(self.scaled_wall_tile, (x, y))
                 else:
-                    tile_state = self.tile_data[(col, row)]
-                    if tile_state["is_dug"]:
+                    tile_state = self.tile_data.get((col, row))
+                    if tile_state and tile_state["is_dug"]:
                         self.screen.blit(self.scaled_dug_tile, (x, y))
-                    else:
+                    elif tile_state:
                         self.screen.blit(tile_state["dirt_surface"], (x, y))
+                    else:
+                        # fallback for any non-wall tile that wasn't added to tile_data
+                        self.screen.blit(random.choice(self.scaled_dirt_tiles), (x, y))
 
                 if DebugSettings.GRID: # Toggle grey outlines for debugging
                     tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
@@ -382,6 +373,35 @@ class GameManager:
         # Use self.player.light_radius - 0.5 to 'shrink' the map's reveal 
         # so it matches the visual fade of the fog.
         return distance <= (self.player.light_radius - 0.1)
+
+    def remember_visible_map_info(self):
+        """Persist anything currently visible to the minimap memory."""
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                grid_pos = (col, row)
+
+                if self.player_can_see_grid_pos(grid_pos):
+                    cell_type = self.get_map_cell(col, row)
+
+                    if cell_type == "x":
+                        self.seen_tiles[grid_pos] = "#"
+                    else:
+                        tile_state = self.tile_data.get(grid_pos)
+                        if tile_state and tile_state["is_dug"]:
+                            self.seen_tiles[grid_pos] = "o"
+                        else:
+                            self.seen_tiles[grid_pos] = " "
+                            
+        # remember door once seen
+        door_grid_pos = self.screen_to_grid(self.door.position.x, self.door.position.y)
+        if self.player_can_see_grid_pos(door_grid_pos):
+            self.last_seen_door_pos = door_grid_pos
+
+        # remember monster positions when seen
+        for monster in self.monsters:
+            monster_grid_pos = self.screen_to_grid(monster.position.x, monster.position.y)
+            if self.player_can_see_grid_pos(monster_grid_pos):
+                self.last_seen_monster_pos.add(monster_grid_pos)
 
     def refresh_map_snapshot(self):
         """Update remembered map data using only what the player can currently see."""

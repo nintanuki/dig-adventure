@@ -212,6 +212,7 @@ class Player(pygame.sprite.Sprite):
             return
 
         tile["is_dug"] = True
+        self.game.remember_visible_map_info()
         found_item, amount = self.game.get_item_at_tile(grid_pos)
 
         if found_item:

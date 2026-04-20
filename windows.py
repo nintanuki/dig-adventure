@@ -129,19 +129,45 @@ class MapWindow:
         # 2. Iterate through the grid ONCE
         for r in range(UISettings.ROWS):
             for c in range(UISettings.COLS):
-                # Only draw if the tile is in GameManager's 'seen_tiles' dictionary
-                if (c, r) in self.game.seen_tiles:
-                    rect = (start_x + (c * mini_tile_size), 
-                            start_y + (r * mini_tile_size), 
-                            mini_tile_size - 1, mini_tile_size - 1)
-                    
-                    cell_type = self.game.current_grid[r][c]
-                    color = (50, 50, 50) # Explored dirt
-                    if cell_type == 'x': color = (120, 120, 120) # Walls
-                    
+                grid_pos = (c, r)
+
+                if grid_pos in self.game.seen_tiles:
+                    rect = (
+                        start_x + (c * mini_tile_size),
+                        start_y + (r * mini_tile_size),
+                        mini_tile_size - 1,
+                        mini_tile_size - 1
+                    )
+
+                    remembered = self.game.seen_tiles[grid_pos]
+
+                    if remembered == "#":
+                        color = (120, 120, 120)   # wall
+                    elif remembered == "o":
+                        color = (139, 90, 43)     # dug spot
+                    else:
+                        color = (50, 50, 50)      # explored dirt/floor
+
                     pygame.draw.rect(surface, color, rect)
 
-        # 3. Draw Player (Ask main.py for the grid conversion)
+        # draw remembered door
+        if self.game.last_seen_door_pos:
+            d_col, d_row = self.game.last_seen_door_pos
+            pygame.draw.rect(surface, 'yellow',
+                (start_x + (d_col * mini_tile_size),
+                start_y + (d_row * mini_tile_size),
+                mini_tile_size - 1, mini_tile_size - 1)
+            )
+
+        # draw remembered monster positions
+        for m_col, m_row in self.game.last_seen_monster_pos:
+            pygame.draw.rect(surface, 'red',
+                (start_x + (m_col * mini_tile_size),
+                start_y + (m_row * mini_tile_size),
+                mini_tile_size - 1, mini_tile_size - 1)
+            )
+
+        # Draw Player (Ask main.py for the grid conversion)
         p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
         pygame.draw.rect(surface, 'blue', 
                          (start_x + (p_col * mini_tile_size), 
