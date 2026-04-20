@@ -7,6 +7,7 @@ from settings import *
 from audio import AudioManager
 from sprites import Player, Monster, Door
 from windows import MessageLog, InventoryWindow
+from tilemaps import DUNGEONS
 import debug
 
 class GameManager:
@@ -346,7 +347,7 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            self.draw_fog_of_war()
+            # self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)
