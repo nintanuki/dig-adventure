@@ -180,7 +180,11 @@ class Player(pygame.sprite.Sprite):
                     self.light_radius = radius
                     self.light_turns_left = duration + 1 # fix off by one error
                     
-                    self.game.log_message(f"YOU LIGHT A {name.upper()}!")
+                    if self.inventory.get("MAP", 0) > 0:
+                        self.game.refresh_map_snapshot()
+                        self.game.log_message(f"YOU LIGHT A {name.upper()}, YOU CHECK YOUR MAP.")
+                    else:
+                        self.game.log_message(f"YOU LIGHT A {name.upper()}!")
                     self.game.advance_turn()
                 else:
                     self.game.log_message("YOU HAVE NO LIGHT SOURCES!")

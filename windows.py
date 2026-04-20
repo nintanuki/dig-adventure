@@ -81,3 +81,22 @@ class InventoryWindow:
             # Offset y-position for each line using LINE_HEIGHT
             text_surf = self.font.render(item_text, False, FontSettings.DEFAULT_COLOR)
             surface.blit(text_surf, (start_x, start_y + 40 + (index * WindowSettings.LINE_HEIGHT)))
+
+class MapWindow:
+    """Displays the frozen snapshot of the map when the player uses a map item."""
+    def __init__(self, game):
+        self.game = game
+        self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
+
+    def draw(self, surface):
+        start_x = UISettings.MAP_X + WindowSettings.TEXT_PADDING
+        start_y = UISettings.MAP_Y + WindowSettings.TEXT_PADDING
+
+        # Header
+        header_surf = self.font.render("MAP", False, 'yellow')
+        surface.blit(header_surf, (start_x, start_y))
+
+        # Draw frozen snapshot rows
+        for index, line in enumerate(self.game.map_snapshot_lines):
+            text_surf = self.font.render(line, False, FontSettings.DEFAULT_COLOR)
+            surface.blit(text_surf, (start_x, start_y + 20 + (index * WindowSettings.LINE_HEIGHT)))

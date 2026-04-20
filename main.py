@@ -6,7 +6,7 @@ import json
 from settings import *
 from audio import AudioManager
 from sprites import Player, Monster, Door
-from windows import MessageLog, InventoryWindow
+from windows import MessageLog, InventoryWindow, MapWindow
 from tilemaps import DUNGEONS
 
 class GameManager:
@@ -33,6 +33,14 @@ class GameManager:
         # Initialize Windows
         self.message_log = MessageLog(self)
         self.inventory_window = InventoryWindow(self)
+        self.map_window = MapWindow(self)
+
+        # Variables to track what the player has seen for map drawing
+        self.seen_tiles = {}
+        self.last_map_player_pos = None
+        self.last_seen_monster_pos = None
+        self.last_seen_door_pos = None
+        self.map_snapshot_lines = []
 
     def load_random_dungeon(self):
         """Pick one dungeon and cache all map info for this run."""
@@ -322,6 +330,85 @@ class GameManager:
                 
         return None, 0
 
+    def player_can_see_grid_pos(self, grid_pos):
+        """
+        Return True if the grid position is inside the player's current light radius.
+        This is used for determining what to show in the map window and for the "last seen" logic.
+        """
+        player_col, player_row = self.screen_to_grid(self.player.position.x, self.player.position.y)
+        target_col, target_row = grid_pos
+
+        dx = target_col - player_col
+        dy = target_row - player_row
+        distance = (dx * dx + dy * dy) ** 0.5
+
+        return distance <= self.player.light_radius
+
+    def refresh_map_snapshot(self):
+        """Update remembered map data using only what the player can currently see."""
+        # Remember where the player was when they checked the map
+        self.last_map_player_pos = self.screen_to_grid(self.player.position.x, self.player.position.y)
+
+        # Reveal all tiles currently inside light radius
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                grid_pos = (col, row)
+
+                if self.player_can_see_grid_pos(grid_pos):
+                    cell = self.get_map_cell(col, row)
+
+                    # Store remembered terrain
+                    if cell == "x":
+                        self.seen_tiles[grid_pos] = "#"
+                    else:
+                        tile = self.tile_data.get(grid_pos)
+
+                        if tile and tile["is_dug"]:
+                            self.seen_tiles[grid_pos] = "o"
+                        else:
+                            self.seen_tiles[grid_pos] = " "
+
+        # Remember door location only if currently visible
+        door_grid_pos = self.screen_to_grid(self.door.position.x, self.door.position.y)
+        if self.player_can_see_grid_pos(door_grid_pos):
+            self.last_seen_door_pos = door_grid_pos
+
+        # Remember monster location only if currently visible
+        monster_grid_pos = self.screen_to_grid(self.monster.position.x, self.monster.position.y)
+        if self.player_can_see_grid_pos(monster_grid_pos):
+            self.last_seen_monster_pos = monster_grid_pos
+
+        # Build the frozen text snapshot for the UI
+        self.build_map_snapshot_lines()
+
+    def build_map_snapshot_lines(self):
+        """Build the text rows that the map window will render."""
+        lines = []
+
+        for row in range(UISettings.ROWS):
+            chars = []
+
+            for col in range(UISettings.COLS):
+                grid_pos = (col, row)
+                char = " "
+
+                if grid_pos in self.seen_tiles:
+                    char = self.seen_tiles[grid_pos]
+
+                # Overlay remembered special markers
+                if self.last_seen_door_pos == grid_pos:
+                    char = "D"
+                if self.last_seen_monster_pos == grid_pos:
+                    char = "M"
+                if self.last_map_player_pos == grid_pos:
+                    char = "P"
+
+                chars.append(char)
+
+            lines.append("".join(chars))
+
+        self.map_snapshot_lines = lines
+
     @property
     def is_busy(self):
         """Centralized check to see if the game is currently animating."""
@@ -373,6 +460,7 @@ class GameManager:
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)
+            self.map_window.draw(self.screen)
             self.draw_end_game_screens()
 
             pygame.display.flip()
