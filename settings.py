@@ -48,6 +48,9 @@ class UISettings:
     MAP_WIDTH = SIDEBAR_WIDTH
     MAP_HEIGHT = BOTTOM_LOG_HEIGHT
 
+    # Toggle grey outlines for debugging
+    DEBUG_OUTLINES = False
+
 class WindowSettings:
     MAX_MESSAGES = 5
     LINE_HEIGHT = 22

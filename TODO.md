@@ -8,6 +8,8 @@
 - [ ] Entire map should be revealed upon escape or gameover
 - [ ] Refactor code, game manager has way too many functions!
 - [ ] Properly comment everything
+- [ ] Monster is green and grass is green... hard to see?
+- [ ] Monster appears to get stuck between two walls until it sees the player and then gives chase
 
 Gameplay:
 - [ ] Add premade maps will walls and obstacles using 2D lists like the Zelda Pygame tutorial (with a randomize option?)

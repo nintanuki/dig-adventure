@@ -178,8 +178,9 @@ class GameManager:
                     else:
                         self.screen.blit(tile["dirt_surface"], (x, y))
 
-                tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
-                pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
+                if UISettings.DEBUG_OUTLINES: # Toggle grey outlines for debugging
+                    tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+                    pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
 
     def draw_ui_frames(self):
         """Draws the aesthetic borders around the game and UI sections."""
