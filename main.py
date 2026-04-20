@@ -23,6 +23,8 @@ class GameManager:
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.game_active = True
+
+        self.load_random_dungeon()
         self.setup_tile_map()
         self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
@@ -32,6 +34,58 @@ class GameManager:
         # Initialize Windows
         self.message_log = MessageLog(self)
         self.inventory_window = InventoryWindow(self)
+
+    def load_random_dungeon(self):
+        """Pick one dungeon and cache all map info for this run."""
+        self.dungeon_name, dungeon_data = random.choice(list(DUNGEONS.items()))
+        self.dungeon_desc = dungeon_data["desc"]
+
+        # Normalize map symbols so '.' also counts as walkable dirt
+        self.current_grid = []
+        for row in dungeon_data["grid"]:
+            normalized_row = []
+            for cell in row:
+                normalized_row.append(" " if cell == "." else cell)
+            self.current_grid.append(normalized_row)
+
+        # Optional safety check
+        if len(self.current_grid) != UISettings.ROWS:
+            raise ValueError(f"{self.dungeon_name} has wrong row count.")
+        for row in self.current_grid:
+            if len(row) != UISettings.COLS:
+                raise ValueError(f"{self.dungeon_name} has wrong column count.")
+
+    def grid_to_screen(self, col, row):
+        return (
+            UISettings.ACTION_WINDOW_X + col * GridSettings.TILE_SIZE,
+            UISettings.ACTION_WINDOW_Y + row * GridSettings.TILE_SIZE,
+        )
+
+    def screen_to_grid(self, x, y):
+        return (
+            int((x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE),
+            int((y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE),
+        )
+
+    def get_map_cell(self, col, row):
+        if 0 <= row < len(self.current_grid) and 0 <= col < len(self.current_grid[row]):
+            return self.current_grid[row][col]
+        return "x"  # treat out of bounds as wall
+
+    def is_walkable(self, col, row):
+        """Tiles entities can stand on."""
+        return self.get_map_cell(col, row) != "x"
+
+    def is_diggable(self, col, row):
+        """Tiles the player can dig/search."""
+        return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T"}
+
+    def find_marker(self, marker):
+        for row_idx, row in enumerate(self.current_grid):
+            for col_idx, cell in enumerate(row):
+                if cell == marker:
+                    return (col_idx, row_idx)
+        raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
 
     def setup_controllers(self):
         """Initializes connected gamepads or joysticks."""
@@ -58,43 +112,18 @@ class GameManager:
         self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
     def spawn_player(self):
-        """Calculates a safe spawn point and initializes the player sprite."""
-        
-        # Spawn the player at a random location within the Action Window, avoiding the walls
-        # Calculate random grid coordinates (avoiding the walls by starting at 1 and ending at COLS-1 and ROWS-1)
-        random_grid_column = random.randint(1, UISettings.COLS - 2)
-        random_grid_row = random.randint(1, UISettings.ROWS - 2)
-
-        # 2. Convert those grid coordinates into the actual screen anchor points
-        # We take the Action Window's start point and add the tile offset
-        player_screen_start_x = UISettings.ACTION_WINDOW_X + (random_grid_column * GridSettings.TILE_SIZE)
-        player_screen_start_y = UISettings.ACTION_WINDOW_Y + (random_grid_row * GridSettings.TILE_SIZE)
-
-        # 3. Create the player at that specific pixel location
-        # Note: We initialize the sprite group here as well
-        self.player = Player(self, (player_screen_start_x, player_screen_start_y), self.all_sprites)
+        col, row = self.find_marker("P")
+        x, y = self.grid_to_screen(col, row)
+        self.player = Player(self, (x, y), self.all_sprites)
 
     def spawn_monster(self):
-        """Spawns a monster at a random valid location."""
-        col = random.randint(1, UISettings.COLS - 2)
-        row = random.randint(1, UISettings.ROWS - 2)
-        
-        x = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
-        y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
-        
+        col, row = self.find_marker("M")
+        x, y = self.grid_to_screen(col, row)
         self.monster = Monster(self, (x, y), self.all_sprites)
 
     def spawn_door(self):
-        """Spawns the door at a random location."""
-        col = random.randint(1, UISettings.COLS - 2)
-        row = random.randint(1, UISettings.ROWS - 2)
-        # Simple check to ensure it's not on the player start
-        if col == 1 and row == 1: col = 5 
-        
-        x = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
-        y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
-        
-        # We save a reference to the door specifically so we can check it later
+        col, row = self.find_marker("D")
+        x, y = self.grid_to_screen(col, row)
         self.door = Door(self, (x, y), self.all_sprites)
 
     def advance_turn(self):
@@ -135,30 +164,21 @@ class GameManager:
         Draws the dirt tiles only within the Action Window boundaries.
         """
         # Loop through columns and rows based on our calculated grid size
-        for col in range(UISettings.COLS):
-            for row in range(UISettings.ROWS):
-                # Calculate the actual pixel position on the screen for each tile
-                tile_window_x = UISettings.ACTION_WINDOW_X + (col * GridSettings.TILE_SIZE)
-                tile_window_y = UISettings.ACTION_WINDOW_Y + (row * GridSettings.TILE_SIZE)
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                x, y = self.grid_to_screen(col, row)
+                cell = self.get_map_cell(col, row)
 
-                # Check if this tile is on the edge of our grid
-                is_wall = (col == 0 or col == UISettings.COLS - 1 or 
-                        row == 0 or row == UISettings.ROWS - 1)
-
-                # Draw the wall tile if it's an edge, otherwise draw the dirt tile
-                if is_wall:
-                    self.screen.blit(self.scaled_wall_tile, (tile_window_x, tile_window_y))
+                if cell == "x":
+                    self.screen.blit(self.scaled_wall_tile, (x, y))
                 else:
-                    # Check if this specific tile has been dug
-                    grid_pos = (col, row)
-                    if self.tile_data.get(grid_pos, {}).get('is_dug'):
-                        self.screen.blit(self.scaled_dug_tile, (tile_window_x, tile_window_y))
+                    tile = self.tile_data[(col, row)]
+                    if tile["is_dug"]:
+                        self.screen.blit(self.scaled_dug_tile, (x, y))
                     else:
-                        tile = self.tile_data.get(grid_pos)
-                        self.screen.blit(tile['dirt_surface'], (tile_window_x, tile_window_y))
+                        self.screen.blit(tile["dirt_surface"], (x, y))
 
-                # Draw the faint grey grid lines
-                tile_outline = pygame.Rect(tile_window_x, tile_window_y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+                tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
                 pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
 
     def draw_ui_frames(self):
@@ -259,29 +279,26 @@ class GameManager:
             self.screen.blit(text_surf, text_rect)
 
     def setup_tile_map(self):
-        """Creates a dictionary to track the state and contents of every tile."""
+        """Build per-tile state from the selected dungeon grid."""
         self.tile_data = {}
-        
-        # Initialize all tiles as undug and empty
-        for col in range(1, UISettings.COLS - 1):
-            for row in range(1, UISettings.ROWS - 1):
-                self.tile_data[(col, row)] = {
-                    'is_dug': False,
-                    'item': None,
-                    'dirt_surface': random.choice(self.scaled_dirt_tiles)
-                }
-                
-        # Get all valid dirt tile coordinates
-        random_coords = list(self.tile_data.keys())
 
-        # Place the Key
-        self.key_grid_pos = random.choice(random_coords)
-        self.tile_data[self.key_grid_pos]['item'] = 'Key'
-        
-        # Place the Key Detector (ensure it's not on the same tile as the Key)
-        random_coords.remove(self.key_grid_pos)
-        detector_pos = random.choice(random_coords)
-        self.tile_data[detector_pos]['item'] = 'Key Detector'
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                cell = self.get_map_cell(col, row)
+
+                if self.is_diggable(col, row):
+                    self.tile_data[(col, row)] = {
+                        "is_dug": False,
+                        "item": None,
+                        "dirt_surface": random.choice(self.scaled_dirt_tiles),
+                    }
+
+        # Pre-place special items from map markers
+        self.key_grid_pos = self.find_marker("K")
+        self.tile_data[self.key_grid_pos]["item"] = "KEY"
+
+        detector_pos = self.find_marker("T")
+        self.tile_data[detector_pos]["item"] = "KEY DETECTOR"
 
     def get_item_at_tile(self, grid_pos):
         """Logic to decide what item is found when digging."""
@@ -347,7 +364,7 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            self.draw_fog_of_war()
+            # self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)

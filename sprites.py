@@ -116,56 +116,29 @@ class Player(pygame.sprite.Sprite):
         return horizontal_step, vertical_step, action_type
 
     def apply_grid_snap_movement(self, horizontal_step=0, vertical_step=0):
-        """
-        The actual math that moves the player exactly one tile.
-        Move the player by a certain number of steps
-        in the horizontal and vertical directions,
-        based on the tile size defined in settings.
+        current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
+        target_col = current_col + horizontal_step
+        target_row = current_row + vertical_step
 
-        Args:
-            horizontal_step (int, optional): _description_. Defaults to 0.
-            vertical_step (int, optional): _description_. Defaults to 0.
-        """
-        
-        # 1. Calculate where the player WANTS to go based on the steps and tile size
-        # We store this in temporary variables before updating' the player's actual position,
-        # so we can check if it's a valid move first.
-        target_destination_x = self.position.x + horizontal_step * GridSettings.TILE_SIZE
-        target_destination_y = self.position.y + vertical_step * GridSettings.TILE_SIZE
-
-        # 2. Calculate the inner 'dirt' boundaries (excluding the walls)
-        # The leftmost dirt tile starts after the anchor + 1 wall tile
-        min_safe_x = UISettings.ACTION_WINDOW_X + GridSettings.TILE_SIZE
-        # The rightmost dirt tile is the window width minus 2 tiles (the walls on both sides)
-        max_safe_x = UISettings.ACTION_WINDOW_X + UISettings.ACTION_WINDOW_WIDTH - (GridSettings.TILE_SIZE * 2)
-
-        min_safe_y = UISettings.ACTION_WINDOW_Y + GridSettings.TILE_SIZE
-        max_safe_y = UISettings.ACTION_WINDOW_Y + UISettings.ACTION_WINDOW_HEIGHT - (GridSettings.TILE_SIZE * 2)
-
-        # 3. Check if that target destination is inside the game world boundaries
-        if min_safe_x <= target_destination_x <= max_safe_x and \
-            min_safe_y <= target_destination_y <= max_safe_y:
-
-            self.target_pos = pygame.math.Vector2(target_destination_x, target_destination_y)
+        if self.game.is_walkable(target_col, target_row):
+            target_x, target_y = self.game.grid_to_screen(target_col, target_row)
+            self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
-            # If it is valid, update the player's position to the new coordinates
-            # self.position.x = target_destination_x
-            # self.position.y = target_destination_y
-            # # Update the rect's position to match the new position OR...
-            # self.rect.topleft = self.position
-            
-            # Log messages for movement
-            if vertical_step == -1: self.game.log_message("YOU MOVED NORTH.")
-            elif vertical_step == 1: self.game.log_message("YOU MOVED SOUTH.")
-            elif horizontal_step == -1: self.game.log_message("YOU MOVED WEST.")
-            elif horizontal_step == 1: self.game.log_message("YOU MOVED EAST.")
 
-            self.game.audio.play_move_sound() # Play the movement sound effect
+            if vertical_step == -1:
+                self.game.log_message("YOU MOVED NORTH.")
+            elif vertical_step == 1:
+                self.game.log_message("YOU MOVED SOUTH.")
+            elif horizontal_step == -1:
+                self.game.log_message("YOU MOVED WEST.")
+            elif horizontal_step == 1:
+                self.game.log_message("YOU MOVED EAST.")
+
+            self.game.audio.play_move_sound()
             self.game.advance_turn()
         else:
-            # ...if the move is invalid (e.g., out of bounds), don't update the position and instead
             self.game.log_message("YOU CAN'T GO THAT WAY!")
-            self.game.audio.play_boundary_sound() # play a sound effect to indicate the collision
+            self.game.audio.play_boundary_sound()
 
     def process_movement_and_actions(self):
         """Checks the timer and input before deciding to move."""
@@ -233,11 +206,6 @@ class Player(pygame.sprite.Sprite):
                 self.time_of_last_move = current_time
 
     def dig(self):
-        """
-        Perform a dig action on the current tile.
-        Or unlocks the door if the player is standing on the door
-        """
-        # Unlocking Door Logic
         if self.position == self.game.door.position:
             if self.inventory.get('KEY', 0) > 0:
                 self.game.door.open_door()
@@ -246,55 +214,48 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.game.log_message("THE DOOR IS LOCKED. YOU NEED A KEY!")
                 self.game.audio.play_boundary_sound()
-            return  # Stop here so we don't dig under the door!
+            return
 
-        # Convert pixel position back to grid coordinates
-        grid_x = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
-        grid_y = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
-        grid_pos = (grid_x, grid_y)
-
+        grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
         tile = self.game.tile_data.get(grid_pos)
 
-        if tile:
-            if tile['is_dug']:
-                self.game.log_message("YOU'VE ALREADY DUG HERE.")
+        if not tile:
+            self.game.log_message("YOU CAN'T DIG HERE.")
+            return
+
+        if tile["is_dug"]:
+            self.game.log_message("YOU'VE ALREADY DUG HERE.")
+            return
+
+        tile["is_dug"] = True
+        found_item, amount = self.game.get_item_at_tile(grid_pos)
+
+        if found_item:
+            display_name = found_item
+            if amount > 1:
+                if found_item == "TORCH":
+                    display_name = "TORCHES"
+                elif found_item == "MATCH":
+                    display_name = "MATCHES"
+                elif found_item.endswith("Y"):
+                    display_name = found_item[:-1] + "IES"
+                elif not found_item.endswith("S"):
+                    display_name = found_item + "S"
+
+            if amount > 1:
+                self.game.log_message(f"YOU FOUND {amount} {display_name}!")
             else:
-                tile['is_dug'] = True
-                
-                # Ask the game manager what is here (it checks Key first, then SPAWN_CHANCE)
-                found_item, amount = self.game.get_item_at_tile(grid_pos)
+                self.game.log_message(f"YOU FOUND A {found_item}!")
 
-                # Then check to see if it's worth something
-                if found_item:
-                    display_name = found_item
-                    if amount > 1:
-                        # Handle pluralization for the log message
-                        if found_item == "TORCH":
-                            display_name = "TORCHES" # Fixes "torchs" -> "torches"
-                        elif found_item == "MATCH":
-                            display_name = "MATCHES" # Fixes "matchs" -> "matches"
-                        elif found_item.endswith('Y'):
-                            display_name = found_item[:-1] + "IES" # RUBY -> RUBIES
-                        elif not found_item.endswith('S'):
-                            display_name = found_item + "S" # EMERALD -> EMERALDS
-                    if amount > 1:
-                        self.game.log_message(f"YOU FOUND {amount} {display_name}!")
-                    else:
-                        self.game.log_message(f"YOU FOUND A {found_item}!")
+            if found_item == "KEY":
+                self.game.audio.play_key_sound()
 
-                    # Check if the item found is the KEY to play the special sound
-                    if found_item == "KEY":
-                        self.game.audio.play_key_sound()
-                    # Update inventory
-                    if found_item in self.inventory:
-                        self.inventory[found_item] += amount
-                    # # Add to score when that part is ready
-                    # if found_item in ItemSettings.TREASURE_SCORE_VALUES:
-                    #     self.score += ItemSettings.TREASURE_SCORE_VALUES[found_item]
-                else:
-                    # if None is returned from game.get_item_at_tile
-                    self.game.log_message("NOTHING BUT DIRT HERE.")
-                self.game.advance_turn() # Digging costs a turn
+            if found_item in self.inventory:
+                self.inventory[found_item] += amount
+        else:
+            self.game.log_message("NOTHING BUT DIRT HERE.")
+
+        self.game.advance_turn()
 
     def use_key_detector(self):
         """Calculates distance to key and logs proximity message."""
@@ -452,17 +413,12 @@ class Monster(pygame.sprite.Sprite):
         self.apply_movement(step_x, step_y)
 
     def apply_movement(self, horizontal_amount, vertical_amount):
-        """Applies pixel movement to the monster after boundary checks."""
-        target_x = self.position.x + horizontal_amount
-        target_y = self.position.y + vertical_amount
+        current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
+        target_col = current_col + (horizontal_amount // GridSettings.TILE_SIZE)
+        target_row = current_row + (vertical_amount // GridSettings.TILE_SIZE)
 
-        # Boundary Math
-        min_x = UISettings.ACTION_WINDOW_X + GridSettings.TILE_SIZE
-        max_x = UISettings.ACTION_WINDOW_X + UISettings.ACTION_WINDOW_WIDTH - (GridSettings.TILE_SIZE * 2)
-        min_y = UISettings.ACTION_WINDOW_Y + GridSettings.TILE_SIZE
-        max_y = UISettings.ACTION_WINDOW_Y + UISettings.ACTION_WINDOW_HEIGHT - (GridSettings.TILE_SIZE * 2)
-
-        if min_x <= target_x <= max_x and min_y <= target_y <= max_y:
+        if self.game.is_walkable(target_col, target_row):
+            target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
 
