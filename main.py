@@ -27,8 +27,9 @@ class GameManager:
         self.load_random_dungeon()
         self.setup_tile_map()
         self.spawn_door()
-        self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
+        self.spawn_player() # Spawn the player at a safe location
+        
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
         # Initialize Windows
@@ -153,6 +154,20 @@ class GameManager:
         """Called whenever the player performs an action."""
 
         if not self.game_active: return
+
+        # Update the 'seen_tiles' dictionary based on current visibility
+        # This is what the MapWindow 'pulls' from to draw the minimap
+        for r in range(UISettings.ROWS):
+            for c in range(UISettings.COLS):
+                if self.player_can_see_grid_pos((c, r)):
+                    # Save the tile type to our persistent map data
+                    self.seen_tiles[(c, r)] = self.current_grid[r][c]
+                    
+                    # Only check for the monster if it has been initialized and is alive
+                    if hasattr(self, 'monster') and self.monster:
+                        m_col, m_row = self.screen_to_grid(self.monster.position.x, self.monster.position.y)
+                        if c == m_col and r == m_row:
+                            self.last_seen_monster_pos = {(m_col, m_row)}
 
         # Handle Light Shrinking
         if self.player.light_turns_left > 0:
