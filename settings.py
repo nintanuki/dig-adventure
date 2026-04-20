@@ -211,4 +211,4 @@ class DebugSettings:
     """Settings related to debugging features."""
     GRID = False # Toggle grey outlines for debugging
     MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
-    NO_FOG = True # Set to True to disable fog of war
+    NO_FOG = False # Set to True to disable fog of war

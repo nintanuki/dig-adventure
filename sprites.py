@@ -162,16 +162,16 @@ class Player(pygame.sprite.Sprite):
 
             elif action == 'light':
                 # Setup helper variables to avoid repeating code
-                source = None
+                light_source = None
                 if self.inventory.get('LANTERN', 0) > 0:
-                    source = ('LANTERN', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
+                    light_source = ('LANTERN', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
                 elif self.inventory.get('TORCH', 0) > 0:
-                    source = ('TORCH', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
+                    light_source = ('TORCH', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
                 elif self.inventory.get('MATCH', 0) > 0:
-                    source = ('MATCH', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
+                    light_source = ('MATCH', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
 
-                if source:
-                    name, radius, duration = source
+                if light_source:
+                    name, radius, duration = light_source
                     self.inventory[name] -= 1
                     
                     # Store the "Max" values for the shrinking math

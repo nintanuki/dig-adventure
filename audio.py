@@ -3,7 +3,10 @@ from settings import *
 
 class AudioManager:
     def __init__(self):
-        """Initialize the audio manager and load all necessary sound effects."""
+        """
+        Initialize the audio manager and load all necessary sound effects.
+        Uses fixed channels for important sounds to prevent them from being cut off by other effects.
+        """
 
         # Load the movement sound effect and set up a channel for it
         self.move_sound = pygame.mixer.Sound(AssetPaths.MOVE_SOUND)

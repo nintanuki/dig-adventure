@@ -189,16 +189,16 @@ class GameManager:
         for row in range(UISettings.ROWS):
             for col in range(UISettings.COLS):
                 x, y = self.grid_to_screen(col, row)
-                cell = self.get_map_cell(col, row)
+                cell_type = self.get_map_cell(col, row)
 
-                if cell == "x":
+                if cell_type == "x":
                     self.screen.blit(self.scaled_wall_tile, (x, y))
                 else:
-                    tile = self.tile_data[(col, row)]
-                    if tile["is_dug"]:
+                    tile_state = self.tile_data[(col, row)]
+                    if tile_state["is_dug"]:
                         self.screen.blit(self.scaled_dug_tile, (x, y))
                     else:
-                        self.screen.blit(tile["dirt_surface"], (x, y))
+                        self.screen.blit(tile_state["dirt_surface"], (x, y))
 
                 if DebugSettings.GRID: # Toggle grey outlines for debugging
                     tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
@@ -307,7 +307,7 @@ class GameManager:
 
         for row in range(UISettings.ROWS):
             for col in range(UISettings.COLS):
-                cell = self.get_map_cell(col, row)
+                cell_type = self.get_map_cell(col, row)
 
                 if self.is_diggable(col, row):
                     self.tile_data[(col, row)] = {
@@ -370,15 +370,15 @@ class GameManager:
                 grid_pos = (col, row)
 
                 if self.player_can_see_grid_pos(grid_pos):
-                    cell = self.get_map_cell(col, row)
+                    cell_type = self.get_map_cell(col, row)
 
                     # Store remembered terrain
-                    if cell == "x":
+                    if cell_type == "x":
                         self.seen_tiles[grid_pos] = "#"
                     else:
-                        tile = self.tile_data.get(grid_pos)
+                        tile_state = self.tile_data.get(grid_pos)
 
-                        if tile and tile["is_dug"]:
+                        if tile_state and tile_state["is_dug"]:
                             self.seen_tiles[grid_pos] = "o"
                         else:
                             self.seen_tiles[grid_pos] = " "
