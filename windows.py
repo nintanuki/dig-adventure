@@ -105,21 +105,45 @@ class InventoryWindow:
                 
                 visual_row += 1
 
+# windows.py
+
+# windows.py
 class MapWindow:
-    """Displays the frozen snapshot of the map when the player uses a map item."""
     def __init__(self, game):
         self.game = game
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
     def draw(self, surface):
-        start_x = UISettings.MAP_X + WindowSettings.TEXT_PADDING
-        start_y = UISettings.MAP_Y + WindowSettings.TEXT_PADDING
+        # 1. Calculation for centering
+        padding = WindowSettings.TEXT_PADDING
+        available_w = UISettings.SIDEBAR_WIDTH - (padding * 2)
+        mini_tile_size = available_w // UISettings.COLS
+        
+        start_x = UISettings.SIDEBAR_X + padding
+        start_y = UISettings.MAP_Y + 50 
 
-        # Header
-        header_surf = self.font.render("MAP", False, 'yellow')
-        surface.blit(header_surf, (start_x, start_y))
+        # Draw Header
+        header_surf = self.font.render("MINIMAP", False, 'yellow')
+        surface.blit(header_surf, (start_x, UISettings.MAP_Y + padding))
 
-        # Draw frozen snapshot rows
-        for index, line in enumerate(self.game.map_snapshot_lines):
-            text_surf = self.font.render(line, False, FontSettings.DEFAULT_COLOR)
-            surface.blit(text_surf, (start_x, start_y + 20 + (index * WindowSettings.LINE_HEIGHT)))
+        # 2. Iterate through the grid ONCE
+        for r in range(UISettings.ROWS):
+            for c in range(UISettings.COLS):
+                # Only draw if the tile is in GameManager's 'seen_tiles' dictionary
+                if (c, r) in self.game.seen_tiles:
+                    rect = (start_x + (c * mini_tile_size), 
+                            start_y + (r * mini_tile_size), 
+                            mini_tile_size - 1, mini_tile_size - 1)
+                    
+                    cell_type = self.game.current_grid[r][c]
+                    color = (50, 50, 50) # Explored dirt
+                    if cell_type == 'x': color = (120, 120, 120) # Walls
+                    
+                    pygame.draw.rect(surface, color, rect)
+
+        # 3. Draw Player (Ask main.py for the grid conversion)
+        p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
+        pygame.draw.rect(surface, 'blue', 
+                         (start_x + (p_col * mini_tile_size), 
+                          start_y + (p_row * mini_tile_size), 
+                          mini_tile_size - 1, mini_tile_size - 1))

@@ -430,6 +430,20 @@ class GameManager:
 
         self.map_snapshot_lines = lines
 
+    def update_map_data(self):
+        """Scan the grid and update what the player has discovered."""
+        for r in range(UISettings.ROWS):
+            for c in range(UISettings.COLS):
+                if self.player_can_see_grid_pos((c, r)):
+                    # Add to discovered tiles
+                    self.seen_tiles[(c, r)] = self.current_grid[r][c]
+                    
+                    # If monster is here, update its last known location
+                    m_col, m_row = self.screen_to_grid(self.monster.position.x, self.monster.position.y)
+                    if c == m_col and r == m_row:
+                        # We use a set so we can clear/update the red dot
+                        self.last_seen_monster_pos = {(m_col, m_row)}
+
     @property
     def is_busy(self):
         """Centralized check to see if the game is currently animating."""
