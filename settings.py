@@ -153,54 +153,22 @@ class AudioSettings:
 class AssetPaths:
     # Images
     GRAPHICS_DIR = 'graphics/'
-    DIRT_GRAPHICS_DIR = os.path.join(GRAPHICS_DIR, 'dirt/')
 
     # Sprites
-    PLAYER = os.path.join(GRAPHICS_DIR, 'human_male.png')
-    CHAINMAIL = os.path.join(GRAPHICS_DIR, 'chainmail_3.png')
-    ARAGORN_SHIRT = os.path.join(GRAPHICS_DIR, 'aragorn.png')
-    LEG_ARMOR1 = os.path.join(GRAPHICS_DIR, 'leg_armor_1.png')
-    LEG_ARMOR4 = os.path.join(GRAPHICS_DIR, 'leg_armor_4.png')
-    BLUE_GOLD_BOOTS = os.path.join(GRAPHICS_DIR, 'blue_gold.png')
-    MIDDLE_BROWN_BOOTS = os.path.join(GRAPHICS_DIR, 'middle_ybrown.png')
-    BROWN_WIZARD_HAT = os.path.join(GRAPHICS_DIR, 'wizard_brown.png')
-
-    MONSTER = os.path.join(GRAPHICS_DIR, 'dragon.png')
+    PLAYER = os.path.join(GRAPHICS_DIR, 'tile_0097.png')
+    MONSTER = os.path.join(GRAPHICS_DIR, 'tile_0121.png')
 
     # Door
-    CLOSED_DOOR = os.path.join(GRAPHICS_DIR, 'closed_door.png')
-    OPEN_DOOR = os.path.join(GRAPHICS_DIR, 'open_door.png')
+    CLOSED_DOOR = os.path.join(GRAPHICS_DIR, 'tile_0045.png')
+    OPEN_DOOR = os.path.join(GRAPHICS_DIR, 'tile_0021.png')
 
     # Floor Tiles
     DIRT_TILES = [
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_0_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_0_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_1_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_1_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_2_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_2_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_east_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_east_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_full_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_full_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_north_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_north_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northeast_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northeast_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northwest_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_northwest_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_south_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_south_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southeast_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southeast_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southwest_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_southwest_old.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_west_new.png'),
-        os.path.join(DIRT_GRAPHICS_DIR, 'dirt_west_old.png')
+        os.path.join(GRAPHICS_DIR, 'tile_0000.png'),
     ]
 
-    DUG_TILE = os.path.join(GRAPHICS_DIR, 'cobble_blood6.png')
-    WALL_TILE = os.path.join(GRAPHICS_DIR, 'brick_brown_0.png')
+    DUG_TILE = os.path.join(GRAPHICS_DIR, 'tile_0012.png')
+    WALL_TILE = os.path.join(GRAPHICS_DIR, 'tile_0014.png')
 
     # CRT Effect
     TV = os.path.join(GRAPHICS_DIR, 'tv.png')
@@ -214,6 +182,6 @@ class AssetPaths:
 
 class DebugSettings:
     """Settings related to debugging features."""
-    GRID = False # Toggle grey outlines for debugging
+    GRID = True # Toggle grey outlines for debugging
     MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
     NO_FOG = False # Set to True to disable fog of war
