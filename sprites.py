@@ -45,7 +45,7 @@ class Player(pygame.sprite.Sprite):
         Returns:
             horizontal_step (int): The number of steps to move horizontally. -1, 0, or 1
             vertical_step (int): The number of steps to move vertically. -1, 0, or 1
-            action_type (str): 'move', 'dig', 'map', 'torch', 'repellent', or None
+            action_type (str): 'move', 'dig', 'detector', 'light', 'repellent', or None
         """
         keys = pygame.key.get_pressed()
         horizontal_step = 0 # 0 means no movement, but we are also initializing here
@@ -64,8 +64,8 @@ class Player(pygame.sprite.Sprite):
 
         # Action Keys (Mnemonic)
         elif keys[pygame.K_SPACE]: action_type = 'dig'
-        elif keys[pygame.K_m]: action_type = 'map'
-        elif keys[pygame.K_t]: action_type = 'torch'
+        elif keys[pygame.K_e]: action_type = 'detector'
+        elif keys[pygame.K_t]: action_type = 'light'
         elif keys[pygame.K_r]: action_type = 'repellent'
 
         # Controller check
@@ -81,11 +81,11 @@ class Player(pygame.sprite.Sprite):
                 action_type = 'move'
 
             # Buttons (Actions)
-            # 0:A (Dig), 1:B (Torch), 2:X (Map), 3:Y (Repellent)
+            # 0:A (Dig), 1:B (Light), 2:X (Detector), 3:Y (Repellent)
             if action_type is None:
                 if joystick.get_button(0): action_type = 'dig'
-                elif joystick.get_button(1): action_type = 'torch'
-                elif joystick.get_button(2): action_type = 'map'
+                elif joystick.get_button(1): action_type = 'light'
+                elif joystick.get_button(2): action_type = 'detector'
                 elif joystick.get_button(3): action_type = 'repellent'
 
         return horizontal_step, vertical_step, action_type
@@ -130,10 +130,10 @@ class Player(pygame.sprite.Sprite):
             # self.rect.topleft = self.position
             
             # Log messages for movement
-            if vertical_step == -1: self.game.log_message("You move one pace North.")
-            elif vertical_step == 1: self.game.log_message("You move one pace South.")
-            elif horizontal_step == -1: self.game.log_message("You move one pace West.")
-            elif horizontal_step == 1: self.game.log_message("You move one pace East.")
+            if vertical_step == -1: self.game.log_message("You moved North.")
+            elif vertical_step == 1: self.game.log_message("You moved South.")
+            elif horizontal_step == -1: self.game.log_message("You moved West.")
+            elif horizontal_step == 1: self.game.log_message("You moved East.")
 
             self.game.audio.play_move_sound() # Play the movement sound effect
             self.game.advance_turn()
@@ -171,24 +171,33 @@ class Player(pygame.sprite.Sprite):
                 self.time_of_last_move = current_time
 
 
-            elif action == 'torch':
-                # 1. Check for the Lantern first (The "Better" light)
+            elif action == 'light':
+                # Check for the Lantern first (The "Better" light)
                 if self.inventory.get('Lantern', 0) > 0:
                     self.inventory['Lantern'] -= 1
                     self.light_radius = LightSettings.LANTERN_RADIUS
-                    self.light_turns_left = LightSettings.LANTERN_DURATION
+                    # +1 because the turn will immediately be advanced after this
+                    self.light_turns_left = LightSettings.LANTERN_DURATION + 1 
                     self.game.log_message("You light your lantern! The dungeon is bathed in light.")
                     self.game.advance_turn()
                 
-                # 2. Fall back to the Torch if no lantern is found
+                # Fall back to the Torch if no lantern is found
                 elif self.inventory.get('Torch', 0) > 0:
                     self.inventory['Torch'] -= 1
                     self.light_radius = LightSettings.TORCH_RADIUS
-                    self.light_turns_left = LightSettings.TORCH_DURATION
+                    self.light_turns_left = LightSettings.TORCH_DURATION + 1
                     self.game.log_message("You light a torch! The shadows retreat.")
                     self.game.advance_turn()
+
+                # Finally, if they have no better light sources, check for the Matches
+                elif self.inventory.get('Match', 0) > 0:
+                    self.inventory['Match'] -= 1
+                    self.light_radius = LightSettings.MATCH_RADIUS
+                    self.light_turns_left = LightSettings.MATCH_DURATION + 1
+                    self.game.log_message("You strike a match. It flickers briefly.")
+                    self.game.advance_turn()
                 
-                # 3. If they have neither
+                # If they have no light sources at all
                 else:
                     self.game.log_message("You have no light sources!")
                 self.time_of_last_move = current_time
@@ -196,7 +205,7 @@ class Player(pygame.sprite.Sprite):
             elif action == 'repellent':
                 if self.inventory.get('Monster Repellent', 0) > 0:
                     self.inventory['Monster Repellent'] -= 1
-                    self.repellent_turns = MonsterSettings.REPELLENT_DURATION
+                    self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1
                     self.game.log_message("You used a monster repellent!")
                     self.game.advance_turn()
                 else:
@@ -242,6 +251,8 @@ class Player(pygame.sprite.Sprite):
                         # Handle pluralization for the log message
                         if found_item == "Torch":
                             display_name = "Torches" # Fixes "torchs" -> "torches"
+                        elif found_item == "Match":
+                            display_name = "Matches" # Fixes "matchs" -> "matches"
                         elif found_item.endswith('y'):
                             display_name = found_item[:-1] + "ies" # Ruby -> Rubies
                         elif not found_item.endswith('s'):

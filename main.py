@@ -217,8 +217,8 @@ class GameManager:
             big_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
             
             # Logic to decide if we won or lost for the text
-            end_text = "VICTORY" if self.player.position == self.door.position else "GAME OVER"
-            end_color = 'green' if end_text == "VICTORY" else 'red'
+            end_text = "ESCAPE" if self.player.position == self.door.position else "GAME OVER"
+            end_color = 'green' if end_text == "ESCAPE" else 'red'
             
             # Render and Center
             text_surf = big_font.render(end_text, False, end_color)

@@ -52,7 +52,12 @@ class WindowSettings:
     MAX_MESSAGES = 5
     LINE_HEIGHT = 22
     TEXT_PADDING = 10
-    WELCOME_MESSAGE = ["Welcome to the Dungeon!", "Use arrows to move."]
+    WELCOME_MESSAGE = [
+        "You find yourself in pitch black darkness...",
+        "Press B to Light your surroundings",
+        "Press A to Dig for treasure or tools",
+        "Press Y to use a Monster Repellent if you have one.",
+        "Press X to use a Key Detector if you have one.",]
     TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
@@ -66,11 +71,13 @@ class MonsterSettings:
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class LightSettings:
-    DEFAULT_RADIUS = 1
-    TORCH_RADIUS = 2
-    TORCH_DURATION = 5
+    DEFAULT_RADIUS = 0    # Game starts in total darkness
+    MATCH_RADIUS = 0.5    # Barely see your own square
+    MATCH_DURATION = 1
+    TORCH_RADIUS = 2     
+    TORCH_DURATION = 3
     LANTERN_RADIUS = 5
-    LANTERN_DURATION = 10
+    LANTERN_DURATION = 5
 
 class ItemSettings:
     # Point values for treasures
@@ -87,8 +94,9 @@ class ItemSettings:
     SPAWN_CHANCE = {
         'Gold Coins': 0.25,
         'Monster Repellent': 0.10,
+        'Match': 0.25,
         'Torch': 0.15,
-        'Lantern': 0.05,
+        'Lantern': 0.01,
         'Ruby': 0.10,
         'Sapphire': 0.05,
         'Emerald': 0.025,
@@ -99,6 +107,7 @@ class ItemSettings:
         'Gold Coins': (1, 100),
         'Ruby': (1, 3),
         'Sapphire': (1, 2),
+        'Match': (1, 5),
         'Torch': (1, 3),
         'Monster Repellent': (1, 1)
         # Anything not here will default to 1
@@ -106,8 +115,8 @@ class ItemSettings:
 
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
-        'Candle': 1, 'Shovel': 1, 'Map': 1,
-        'Torch': 3, 'Lantern': 0, 'Monster Repellent': 2,
+        'Match': 1, 'Torch': 0, 'Lantern': 0,
+        'Monster Repellent': 1,
         'Gold Coins': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
         'Key Detector': 0, 'Key': 0
         }
