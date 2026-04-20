@@ -365,19 +365,23 @@ class GameManager:
                 
         return None, 0
 
-    def player_can_see_grid_pos(self, grid_pos):
-        """
-        Return True if the grid position is inside the player's current light radius.
-        This is used for determining what to show in the map window and for the "last seen" logic.
-        """
-        player_col, player_row = self.screen_to_grid(self.player.position.x, self.player.position.y)
-        target_col, target_row = grid_pos
+    def player_can_see_grid_pos(self, target_grid_pos):
+        """Check if a specific grid coordinate is within the player's light radius."""
+        p_col, p_row = self.screen_to_grid(self.player.position.x, self.player.position.y)
+        t_col, t_row = target_grid_pos
 
-        dx = target_col - player_col
-        dy = target_row - player_row
-        distance = (dx * dx + dy * dy) ** 0.5
-
-        return distance <= self.player.light_radius
+        # Calculate distance
+        dx = abs(p_col - t_col)
+        dy = abs(p_row - t_row)
+        
+        # Square distance check (Standard for 'Circle' feel on a grid)
+        # If the radius is 2, this will only reveal a 2-tile diamond/circle
+        distance = (dx**2 + dy**2)**0.5
+        
+        # SUBTLE TWEAK: 
+        # Use self.player.light_radius - 0.5 to 'shrink' the map's reveal 
+        # so it matches the visual fade of the fog.
+        return distance <= (self.player.light_radius - 0.1)
 
     def refresh_map_snapshot(self):
         """Update remembered map data using only what the player can currently see."""
