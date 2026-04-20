@@ -17,19 +17,19 @@ class AudioManager:
 
     def play_move_sound(self):
         """Play the movement sound effect."""
-        if AudioSettings.MUTED: return
+        if AudioSettings.MUTE or DebugSettings.MUTE: return
         # Using a specific channel prevents the sound from being 
         # cut off by other random sounds
         self.movement_channel.play(self.move_sound)
 
     def play_boundary_sound(self):
         """Play the boundary collision sound effect."""
-        if AudioSettings.MUTED: return
+        if AudioSettings.MUTE or DebugSettings.MUTE: return
         self.boundary_channel.play(self.boundary_sound)
 
     def play_key_sound(self):
         """Play a sound effect for when the key is discovered."""
-        if AudioSettings.MUTED: return
+        if AudioSettings.MUTE or DebugSettings.MUTE: return
         self.key_channel.play(self.key_sound)
 
     def update(self):

@@ -8,7 +8,6 @@ from audio import AudioManager
 from sprites import Player, Monster, Door
 from windows import MessageLog, InventoryWindow
 from tilemaps import DUNGEONS
-import debug
 
 class GameManager:
     def __init__(self):
@@ -178,7 +177,7 @@ class GameManager:
                     else:
                         self.screen.blit(tile["dirt_surface"], (x, y))
 
-                if UISettings.DEBUG_OUTLINES: # Toggle grey outlines for debugging
+                if DebugSettings.GRID: # Toggle grey outlines for debugging
                     tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
                     pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
 
@@ -365,7 +364,9 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            # self.draw_fog_of_war() # Draw the fog of war overlay (after sprites so they appear under the fog), comment out to disable fog of war for testing
+            
+            if not DebugSettings.NO_FOG: # Toggle Fog of War for testing
+                self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)

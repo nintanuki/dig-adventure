@@ -48,9 +48,6 @@ class UISettings:
     MAP_WIDTH = SIDEBAR_WIDTH
     MAP_HEIGHT = BOTTOM_LOG_HEIGHT
 
-    # Toggle grey outlines for debugging
-    DEBUG_OUTLINES = False
-
 class WindowSettings:
     MAX_MESSAGES = 5
     LINE_HEIGHT = 22
@@ -141,7 +138,7 @@ class FontSettings:
     LAST_MESSAGE_COLOR = 'yellow'
 
 class AudioSettings:
-    MUTED = True
+    MUTE = False
 
 class AssetPaths:
     # Images
@@ -200,3 +197,9 @@ class AssetPaths:
     MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
     BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')
     KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
+
+class DebugSettings:
+    """Settings related to debugging features."""
+    GRID = False # Toggle grey outlines for debugging
+    MUTE = True # Set to True to mute all sounds during testing, False to enable sounds
+    NO_FOG = False # Set to True to disable fog of war
