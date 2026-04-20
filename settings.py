@@ -7,6 +7,7 @@ class ScreenSettings:
     HEIGHT = 600
     RESOLUTION = (WIDTH,HEIGHT)
     FPS = 60
+    CRT_ALPHA_RANGE = (75, 90)
 
 class GridSettings:
     RAW_TILE_SIZE = 32 # The actual size of the image files (in pixels)
@@ -201,11 +202,15 @@ class AssetPaths:
     DUG_TILE = os.path.join(GRAPHICS_DIR, 'cobble_blood6.png')
     WALL_TILE = os.path.join(GRAPHICS_DIR, 'brick_brown_0.png')
 
+    # CRT Effect
+    TV = os.path.join(GRAPHICS_DIR, 'tv.png')
+
     # Audio
     SOUND_DIR = 'sound/'
     MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
     BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')
     KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
+    SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
 
 class DebugSettings:
     """Settings related to debugging features."""

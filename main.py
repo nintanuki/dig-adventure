@@ -8,6 +8,7 @@ from audio import AudioManager
 from sprites import Player, Monster, Door
 from windows import MessageLog, InventoryWindow, MapWindow
 from tilemaps import DUNGEONS
+from crt import CRT
 
 class GameManager:
     def __init__(self):
@@ -41,6 +42,9 @@ class GameManager:
         self.last_seen_monster_pos = set()
         self.last_seen_door_pos = None
         self.map_snapshot_lines = []
+
+        # CRT Effect
+        self.crt = CRT(self.screen)
 
     def load_random_dungeon(self):
         """Pick one dungeon and cache all map info for this run."""
@@ -177,6 +181,7 @@ class GameManager:
         for monster in self.monsters:
             if self.player.position == monster.position:
                 self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
+                self.audio.play_scream_sound()
                 self.game_active = False
                 break
             
@@ -477,6 +482,7 @@ class GameManager:
             self.inventory_window.draw(self.screen)
             self.map_window.draw(self.screen)
             self.draw_end_game_screens()
+            self.crt.draw() # CRT Effect on top of everything else
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)
