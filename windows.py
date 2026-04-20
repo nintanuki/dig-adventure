@@ -76,11 +76,32 @@ class InventoryWindow:
         surface.blit(header_surf, (start_x, start_y))
 
         # Loop through the player's inventory dictionary
-        for index, (item, count) in enumerate(self.game.player.inventory.items()):
-            item_text = f"{item}: {count}"
-            # Offset y-position for each line using LINE_HEIGHT
-            text_surf = self.font.render(item_text, False, FontSettings.DEFAULT_COLOR)
-            surface.blit(text_surf, (start_x, start_y + 40 + (index * WindowSettings.LINE_HEIGHT)))
+        # Use a counter for visual row indexing, as we might skip some items
+        visual_row = 0
+
+        for item, count in self.game.player.inventory.items():
+            # LOGIC: Only show if they have it OR if they've found it before
+            has_it = count > 0
+            discovered = item in self.game.player.discovered_items
+
+            if has_it or discovered:
+                # 1. Render the Label (Always White)
+                label_text = f"{item}: "
+                label_surf = self.font.render(label_text, False, FontSettings.DEFAULT_COLOR)
+                
+                # 2. Render the Number (Red if 0, otherwise White)
+                num_color = 'red' if count <= 0 else FontSettings.DEFAULT_COLOR
+                num_surf = self.font.render(str(count), False, num_color)
+
+                # 3. Calculate Positions
+                y_pos = start_y + 40 + (visual_row * WindowSettings.LINE_HEIGHT)
+                
+                # Blit Label
+                surface.blit(label_surf, (start_x, y_pos))
+                # Blit Number immediately after the label
+                surface.blit(num_surf, (start_x + label_surf.get_width(), y_pos))
+                
+                visual_row += 1
 
 class MapWindow:
     """Displays the frozen snapshot of the map when the player uses a map item."""
