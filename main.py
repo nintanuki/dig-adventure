@@ -394,9 +394,10 @@ class GameManager:
             self.last_seen_door_pos = door_grid_pos
 
         # Remember monster location only if currently visible
-        monster_grid_pos = self.screen_to_grid(self.monster.position.x, self.monster.position.y)
-        if self.player_can_see_grid_pos(monster_grid_pos):
-            self.last_seen_monster_pos = monster_grid_pos
+        for monster in self.monsters:
+            monster_grid_pos = self.screen_to_grid(monster.position.x, monster.position.y)
+            if self.player_can_see_grid_pos(monster_grid_pos):
+                self.last_seen_monster_pos.add(monster_grid_pos)
 
         # Build the frozen text snapshot for the UI
         self.build_map_snapshot_lines()

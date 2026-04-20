@@ -74,20 +74,17 @@ class MonsterSettings:
 
 class LightSettings:
     DEFAULT_RADIUS = 0    # Game starts in total darkness
-    BASE_RADIUS = 0.5
-    BASE_DURATION = 1
+    BASE_RADIUS = 2
+    BASE_DURATION = 3
     
-    # Match: 0.5 radius for 1 turn (doesn't really have room to shrink)
-    MATCH_RADIUS = BASE_DURATION * 1
-    MATCH_DURATION = BASE_RADIUS * 1
+    MATCH_RADIUS = BASE_RADIUS * 1
+    MATCH_DURATION = BASE_DURATION * 1
     
-    # Torch: Starts at 2.0, shrinks over 4 turns
-    TORCH_RADIUS = BASE_RADIUS * 4
-    TORCH_DURATION = BASE_RADIUS * 4
+    TORCH_RADIUS = BASE_RADIUS * 1.5
+    TORCH_DURATION = BASE_DURATION * 1.5
     
-    # Lantern: Starts at 5.0, shrinks over 10 turns
-    LANTERN_RADIUS = BASE_RADIUS * 10
-    LANTERN_DURATION = BASE_RADIUS * 10
+    LANTERN_RADIUS = BASE_RADIUS * 3
+    LANTERN_DURATION = BASE_DURATION * 3
 
 class ItemSettings:
     # Point values for treasures, we will use this later when we make our score system
@@ -102,14 +99,14 @@ class ItemSettings:
     # Digging probabilities (must be between 0.0 and 1.0)
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
-        'GOLD COINS': 0.25,
         'MONSTER REPELLENT': 0.10,
-        'MATCH': 0.25,
-        'TORCH': 0.15,
+        'MATCH': 0.20,
+        'TORCH': 0.10,
         'LANTERN': 0.05,
+        'GOLD COINS': 0.20,
         'RUBY': 0.10,
         'SAPPHIRE': 0.05,
-        'EMERALD': 0.025,
+        'EMERALD': 0.02,
         'DIAMOND': 0.01
     }
 
