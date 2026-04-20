@@ -364,7 +364,7 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            self.draw_fog_of_war()
+            # self.draw_fog_of_war() # Draw the fog of war overlay (after sprites so they appear under the fog), comment out to disable fog of war for testing
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)
