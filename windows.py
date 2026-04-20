@@ -75,10 +75,12 @@ class InventoryWindow:
         header_surf = self.font.render("INVENTORY", False, 'yellow')
         surface.blit(header_surf, (start_x, start_y))
 
+        
+        visual_row = 0
+        tight_line_height = WindowSettings.LINE_HEIGHT - 1
+
         # Loop through the player's inventory dictionary
         # Use a counter for visual row indexing, as we might skip some items
-        visual_row = 0
-
         for item, count in self.game.player.inventory.items():
             # LOGIC: Only show if they have it OR if they've found it before
             has_it = count > 0
@@ -94,7 +96,7 @@ class InventoryWindow:
                 num_surf = self.font.render(str(count), False, num_color)
 
                 # 3. Calculate Positions
-                y_pos = start_y + 40 + (visual_row * WindowSettings.LINE_HEIGHT)
+                y_pos = start_y + 25 + (visual_row * tight_line_height)
                 
                 # Blit Label
                 surface.blit(label_surf, (start_x, y_pos))

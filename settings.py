@@ -120,12 +120,19 @@ class ItemSettings:
         # Anything not here will default to 1
     }
 
-    # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
-        'MATCH': 1, 'TORCH': 0, 'LANTERN': 0,
-        'MONSTER REPELLENT': 0,
-        'GOLD COINS': 0, 'RUBY': 0, 'SAPPHIRE': 0, 'EMERALD': 0, 'DIAMOND': 0, 
-        'KEY DETECTOR': 0, 'MAP': 0, 'KEY': 0
+        'MATCH': 1,
+        # 'TORCH': 0,
+        # 'LANTERN': 0,
+        # 'MONSTER REPELLENT': 0,
+        # 'GOLD COINS': 0,
+        # 'RUBY': 0,
+        # 'SAPPHIRE': 0,
+        # 'EMERALD': 0,
+        # 'DIAMOND': 0,
+        # 'KEY DETECTOR': 0,
+        # 'MAP': 0,
+        # 'KEY': 0
         }
 
 class FontSettings:

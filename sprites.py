@@ -25,7 +25,9 @@ class Player(pygame.sprite.Sprite):
         self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
         self.time_of_last_move = 0
 
-        self.inventory = ItemSettings.INITIAL_INVENTORY
+        self.inventory = ItemSettings.INITIAL_INVENTORY.copy()
+        self.discovered_items = set(self.inventory.keys())
+        
         self.repellent_turns = 0
 
         self.light_radius = LightSettings.DEFAULT_RADIUS
@@ -232,8 +234,11 @@ class Player(pygame.sprite.Sprite):
             if found_item == "KEY":
                 self.game.audio.play_key_sound()
 
-            if found_item in self.inventory:
-                self.inventory[found_item] += amount
+            if found_item:
+                # Add it to the inventory (create it if it doesn't exist)
+                self.inventory[found_item] = self.inventory.get(found_item, 0) + amount
+                # Add it to discovered_items so the window draws it
+                self.discovered_items.add(found_item)
         else:
             self.game.log_message("NOTHING BUT DIRT HERE.")
         self.game.audio.play_dig_sound()
