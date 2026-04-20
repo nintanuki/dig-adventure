@@ -133,16 +133,16 @@ class Player(pygame.sprite.Sprite):
             # self.rect.topleft = self.position
             
             # Log messages for movement
-            if vertical_step == -1: self.game.log_message("You moved North.")
-            elif vertical_step == 1: self.game.log_message("You moved South.")
-            elif horizontal_step == -1: self.game.log_message("You moved West.")
-            elif horizontal_step == 1: self.game.log_message("You moved East.")
+            if vertical_step == -1: self.game.log_message("YOU MOVED NORTH.")
+            elif vertical_step == 1: self.game.log_message("YOU MOVED SOUTH.")
+            elif horizontal_step == -1: self.game.log_message("YOU MOVED WEST.")
+            elif horizontal_step == 1: self.game.log_message("YOU MOVED EAST.")
 
             self.game.audio.play_move_sound() # Play the movement sound effect
             self.game.advance_turn()
         else:
             # ...if the move is invalid (e.g., out of bounds), don't update the position and instead
-            self.game.log_message("You can't go that way!")
+            self.game.log_message("YOU CAN'T GO THAT WAY!")
             self.game.audio.play_boundary_sound() # play a sound effect to indicate the collision
 
     def process_movement_and_actions(self):
@@ -168,12 +168,12 @@ class Player(pygame.sprite.Sprite):
             elif action == 'light':
                 # Setup helper variables to avoid repeating code
                 source = None
-                if self.inventory.get('Lantern', 0) > 0:
-                    source = ('Lantern', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
-                elif self.inventory.get('Torch', 0) > 0:
-                    source = ('Torch', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
-                elif self.inventory.get('Match', 0) > 0:
-                    source = ('Match', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
+                if self.inventory.get('LANTERN', 0) > 0:
+                    source = ('LANTERN', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
+                elif self.inventory.get('TORCH', 0) > 0:
+                    source = ('TORCH', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
+                elif self.inventory.get('MATCH', 0) > 0:
+                    source = ('MATCH', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
 
                 if source:
                     name, radius, duration = source
@@ -185,29 +185,29 @@ class Player(pygame.sprite.Sprite):
                     self.light_radius = radius
                     self.light_turns_left = duration + 1 # fix off by one error
                     
-                    self.game.log_message(f"You light a {name.lower()}!")
+                    self.game.log_message(f"YOU LIGHT A {name.upper()}!")
                     self.game.advance_turn()
                 else:
-                    self.game.log_message("You have no light sources!")
+                    self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
                 self.time_of_last_move = current_time
 
             elif action == 'detector':
-                if self.inventory.get('Key Detector', 0) > 0:
+                if self.inventory.get('KEY DETECTOR', 0) > 0:
                     self.use_key_detector()
                     self.game.advance_turn()
                 else:
-                    self.game.log_message("You don't have a Key Detector!")
+                    self.game.log_message("YOU DON'T HAVE A KEY DETECTOR!")
                 self.time_of_last_move = current_time
 
             elif action == 'repellent':
-                if self.inventory.get('Monster Repellent', 0) > 0:
-                    self.inventory['Monster Repellent'] -= 1
+                if self.inventory.get('MONSTER REPELLENT', 0) > 0:
+                    self.inventory['MONSTER REPELLENT'] -= 1
                     self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
-                    self.game.log_message("You spray the repellent.")
+                    self.game.log_message("YOU SPRAY THE REPELLENT.")
                     # self.game.audio.play_repellent_sound() # doesn't exist yet
                     self.game.advance_turn()
                 else:
-                    self.game.log_message("You have no monster repellent left!")
+                    self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
                 self.time_of_last_move = current_time
 
     def dig(self):
@@ -217,12 +217,12 @@ class Player(pygame.sprite.Sprite):
         """
         # Unlocking Door Logic
         if self.position == self.game.door.position:
-            if self.inventory.get('Key', 0) > 0:
+            if self.inventory.get('KEY', 0) > 0:
                 self.game.door.open_door()
-                self.game.log_message("You use the key and escape the dungeon!")
+                self.game.log_message("YOU USE THE KEY AND ESCAPE THE DUNGEON!")
                 self.game.game_active = False
             else:
-                self.game.log_message("The door is locked. You need a key!")
+                self.game.log_message("THE DOOR IS LOCKED. YOU NEED A KEY!")
                 self.game.audio.play_boundary_sound()
             return  # Stop here so we don't dig under the door!
 
@@ -247,21 +247,21 @@ class Player(pygame.sprite.Sprite):
                     display_name = found_item
                     if amount > 1:
                         # Handle pluralization for the log message
-                        if found_item == "Torch":
-                            display_name = "Torches" # Fixes "torchs" -> "torches"
-                        elif found_item == "Match":
-                            display_name = "Matches" # Fixes "matchs" -> "matches"
-                        elif found_item.endswith('y'):
-                            display_name = found_item[:-1] + "ies" # Ruby -> Rubies
-                        elif not found_item.endswith('s'):
-                            display_name = found_item + "s" # Emerald -> Emeralds
+                        if found_item == "TORCH":
+                            display_name = "TORCHES" # Fixes "torchs" -> "torches"
+                        elif found_item == "MATCH":
+                            display_name = "MATCHES" # Fixes "matchs" -> "matches"
+                        elif found_item.endswith('Y'):
+                            display_name = found_item[:-1] + "IES" # RUBY -> RUBIES
+                        elif not found_item.endswith('S'):
+                            display_name = found_item + "S" # EMERALD -> EMERALDS
                     if amount > 1:
-                        self.game.log_message(f"You found {amount} {display_name}!")
+                        self.game.log_message(f"YOU FOUND {amount} {display_name}!")
                     else:
-                        self.game.log_message(f"You found a {found_item}!")
+                        self.game.log_message(f"YOU FOUND A {found_item}!")
 
-                    # Check if the item found is the Key to play the special sound
-                    if found_item == "Key":
+                    # Check if the item found is the KEY to play the special sound
+                    if found_item == "KEY":
                         self.game.audio.play_key_sound()
                     # Update inventory
                     if found_item in self.inventory:
@@ -271,7 +271,7 @@ class Player(pygame.sprite.Sprite):
                     #     self.score += ItemSettings.TREASURE_SCORE_VALUES[found_item]
                 else:
                     # if None is returned from game.get_item_at_tile
-                    self.game.log_message("Nothing but dirt here.")
+                    self.game.log_message("NOTHING BUT DIRT HERE.")
                 self.game.advance_turn() # Digging costs a turn
 
     def use_key_detector(self):
@@ -287,14 +287,14 @@ class Player(pygame.sprite.Sprite):
         distance = abs(p_x - k_x) + abs(p_y - k_y)
 
         if distance == 0:
-            self.game.log_message("The Key Detector is going wild!")
+            self.game.log_message("THE KEY DETECTOR IS GOING WILD!")
         elif distance == 1:
-            self.game.log_message("The Key Detector beeps rapidly!.")
+            self.game.log_message("THE KEY DETECTOR BEEPS RAPIDLY!")
         elif distance <= 3:
-            self.game.log_message("The Key Detector gives a steady pulse...")
+            self.game.log_message("THE KEY DETECTOR GIVES A STEADY PULSE...")
         else:
             # "Dead silent" for anything further than 3 steps
-            self.game.log_message("The Key Detector is silent.")
+            self.game.log_message("THE KEY DETECTOR IS SILENT.")
 
     def animate(self):
         """Handles the animation of the player sprite when moving."""

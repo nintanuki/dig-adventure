@@ -51,13 +51,13 @@ class UISettings:
 class WindowSettings:
     MAX_MESSAGES = 5
     LINE_HEIGHT = 22
-    TEXT_PADDING = 10
+    TEXT_PADDING = 16
     WELCOME_MESSAGE = [
-        "You find yourself in pitch black darkness...",
-        "Press B to Light your surroundings",
-        "Press A to Dig for treasure or tools",
-        "Press Y to use a Monster Repellent if you have one.",
-        "Press X to use a Key Detector if you have one.",]
+        "YOU FIND YOURSELF IN PITCH BLACK DARKNESS...",
+        "B - LIGHT A TORCH OR LANTERN",
+        "A - DIG AND UNLOCK DOORS",
+        "X - USE KEY DETECTOR",
+        "Y - USE MONSTER REPELLENT"]
     TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
@@ -89,56 +89,56 @@ class LightSettings:
     LANTERN_DURATION = BASE_RADIUS * 10
 
 class ItemSettings:
-    # Point values for treasures
+    # Point values for treasures, we will use this later when we make our score system
     TREASURE_SCORE_VALUES = {
-        'Gold': 1,
-        'Ruby': 50,
-        'Sapphire': 100,
-        'Emerald': 150,
-        'Diamond': 500
+        'GOLD COINS': 1,
+        'RUBY': 50,
+        'SAPPHIRE': 100,
+        'EMERALD': 150,
+        'DIAMOND': 500
     }
 
     # Digging probabilities (must be between 0.0 and 1.0)
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
-        'Gold Coins': 0.25,
-        'Monster Repellent': 0.10,
-        'Match': 0.25,
-        'Torch': 0.15,
-        'Lantern': 0.01,
-        'Ruby': 0.10,
-        'Sapphire': 0.05,
-        'Emerald': 0.025,
-        'Diamond': 0.01
+        'GOLD COINS': 0.25,
+        'MONSTER REPELLENT': 0.10,
+        'MATCH': 0.25,
+        'TORCH': 0.15,
+        'LANTERN': 0.01,
+        'RUBY': 0.10,
+        'SAPPHIRE': 0.05,
+        'EMERALD': 0.025,
+        'DIAMOND': 0.01
     }
 
     SPAWN_QUANTITIES = {
-        'Gold Coins': (1, 100),
-        'Ruby': (1, 3),
-        'Sapphire': (1, 2),
-        'Match': (1, 5),
-        'Torch': (1, 3),
-        'Monster Repellent': (1, 1)
+        'GOLD COINS': (1, 100),
+        'RUBY': (1, 3),
+        'SAPPHIRE': (1, 2),
+        'MATCH': (1, 5),
+        'TORCH': (1, 3),
+        'MONSTER REPELLENT': (1, 1)
         # Anything not here will default to 1
     }
 
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
-        'Match': 1, 'Torch': 0, 'Lantern': 0,
-        'Monster Repellent': 1,
-        'Gold Coins': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
-        'Key Detector': 0, 'Key': 0
+        'MATCH': 1, 'TORCH': 0, 'LANTERN': 0,
+        'MONSTER REPELLENT': 1,
+        'GOLD COINS': 0, 'RUBY': 0, 'DIAMOND': 0, 'EMERALD': 0,
+        'KEY DETECTOR': 0, 'KEY': 0
         }
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
-    MESSAGE_SIZE = 20
-    ENDGAME_SIZE = 80
+    MESSAGE_SIZE = 8
+    ENDGAME_SIZE = 32
     DEFAULT_COLOR = 'white'
     LAST_MESSAGE_COLOR = 'yellow'
 
 class AudioSettings:
-    pass
+    MUTED = True
 
 class AssetPaths:
     # Images

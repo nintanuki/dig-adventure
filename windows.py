@@ -5,7 +5,7 @@ class MessageLog:
     def __init__(self, game):
         self.game = game
         self.messages = list(WindowSettings.WELCOME_MESSAGE) 
-        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
+        self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
         # Typewriter state
         self.pending_message = None # Holds the message until sprites finish moving
@@ -40,15 +40,14 @@ class MessageLog:
 
         # Draw History (Static white text)
         for index, message in enumerate(self.messages):
-            text_surface = self.font.render(message, True, FontSettings.DEFAULT_COLOR)
+            text_surface = self.font.render(message, False, FontSettings.DEFAULT_COLOR)
             surface.blit(text_surface, (start_x, start_y + (index * WindowSettings.LINE_HEIGHT)))
 
         # Draw Active Message (Typewriter effect in Yellow)
         if self.full_text:
             # Position it right after the last historical message
             y_pos = start_y + (len(self.messages) * WindowSettings.LINE_HEIGHT)
-            display_text = f">>> {self.active_message}"
-            text_surface = self.font.render(display_text, True, FontSettings.LAST_MESSAGE_COLOR)
+            text_surface = self.font.render(self.active_message, False, FontSettings.LAST_MESSAGE_COLOR)
             surface.blit(text_surface, (start_x, y_pos))
 
     def update(self):
@@ -64,7 +63,7 @@ class MessageLog:
 class InventoryWindow:
     def __init__(self, game):
         self.game = game
-        self.font = pygame.font.SysFont(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
+        self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
     def draw(self, surface):
         """Renders the player's inventory items in the sidebar."""
@@ -73,12 +72,12 @@ class InventoryWindow:
         start_y = UISettings.SIDEBAR_Y + WindowSettings.TEXT_PADDING
         
         # Header
-        header_surf = self.font.render("INVENTORY", True, 'yellow')
+        header_surf = self.font.render("INVENTORY", False, 'yellow')
         surface.blit(header_surf, (start_x, start_y))
 
         # Loop through the player's inventory dictionary
         for index, (item, count) in enumerate(self.game.player.inventory.items()):
             item_text = f"{item}: {count}"
             # Offset y-position for each line using LINE_HEIGHT
-            text_surf = self.font.render(item_text, True, FontSettings.DEFAULT_COLOR)
+            text_surf = self.font.render(item_text, False, FontSettings.DEFAULT_COLOR)
             surface.blit(text_surf, (start_x, start_y + 40 + (index * WindowSettings.LINE_HEIGHT)))

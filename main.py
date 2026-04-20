@@ -114,19 +114,19 @@ class GameManager:
             else:
                 # It hit zero
                 self.player.light_radius = LightSettings.DEFAULT_RADIUS
-                self.log_message("Your light flickers out...")
+                self.log_message("YOUR LIGHT FLICKERS OUT...")
 
         # Handle Repellent Duration
         if self.player.repellent_turns > 0:
             self.player.repellent_turns -= 1
             if self.player.repellent_turns == 0:
-                self.log_message("The scent of the repellent fades away...")
+                self.log_message("THE SCENT OF THE REPELLENT FADES AWAY...")
 
         self.monster.take_turn()
 
         # Check for Monster Collision (Loss)
         if self.player.position == self.monster.position:
-            self.log_message("You were caught by the monster!")
+            self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
             self.game_active = False
             
     def draw_grid_background(self):
@@ -347,7 +347,7 @@ class GameManager:
             self.screen.fill('black')
             self.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            # self.draw_fog_of_war()
+            self.draw_fog_of_war()
             self.draw_ui_frames() # Draw the UI frames and outlines
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)
