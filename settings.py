@@ -147,6 +147,14 @@ class AssetPaths:
 
     # Sprites
     PLAYER = os.path.join(GRAPHICS_DIR, 'human_male.png')
+    CHAINMAIL = os.path.join(GRAPHICS_DIR, 'chainmail_3.png')
+    ARAGORN_SHIRT = os.path.join(GRAPHICS_DIR, 'aragorn.png')
+    LEG_ARMOR1 = os.path.join(GRAPHICS_DIR, 'leg_armor_1.png')
+    LEG_ARMOR4 = os.path.join(GRAPHICS_DIR, 'leg_armor_4.png')
+    BLUE_GOLD_BOOTS = os.path.join(GRAPHICS_DIR, 'blue_gold.png')
+    MIDDLE_BROWN_BOOTS = os.path.join(GRAPHICS_DIR, 'middle_ybrown.png')
+    BROWN_WIZARD_HAT = os.path.join(GRAPHICS_DIR, 'wizard_brown.png')
+
     MONSTER = os.path.join(GRAPHICS_DIR, 'dragon.png')
 
     # Door

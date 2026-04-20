@@ -13,9 +13,31 @@ class Player(pygame.sprite.Sprite):
             groups (list): A list of sprite groups this sprite belongs to.
         """
         super().__init__(groups)
-        surface = pygame.image.load(AssetPaths.PLAYER).convert_alpha()
-        # Scale the image according to the tile size defined in settings, so it fits the grid.
-        self.image = pygame.transform.scale(surface, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        # Load the player image and armor pieces, then scale them to fit the grid.
+        body = pygame.image.load(AssetPaths.PLAYER).convert_alpha()
+        aragorn_shirt = pygame.image.load(AssetPaths.ARAGORN_SHIRT).convert_alpha()
+        leg_armor = pygame.image.load(AssetPaths.LEG_ARMOR4).convert_alpha()
+        boots = pygame.image.load(AssetPaths.MIDDLE_BROWN_BOOTS).convert_alpha()
+        hat = pygame.image.load(AssetPaths.BROWN_WIZARD_HAT).convert_alpha()
+
+        # Scale all the images to the tile size defined in settings, so they fit the grid.
+        size = (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+        body = pygame.transform.scale(body, size)
+        aragorn_shirt = pygame.transform.scale(aragorn_shirt, size)
+        leg_armor = pygame.transform.scale(leg_armor, size)
+        boots = pygame.transform.scale(boots, size)
+        hat = pygame.transform.scale(hat, size)
+
+        # Create ONE final surface
+        self.image = pygame.Surface(size, pygame.SRCALPHA)
+
+        # Draw layers in order (bottom → top)
+        self.image.blit(body, (0, 0))
+        self.image.blit(aragorn_shirt, (0, 0))
+        self.image.blit(leg_armor, (0, 0))
+        self.image.blit(boots, (0, 0))
+        self.image.blit(hat, (0, 0))
+
 
         # Set the rect's top-left corner to the given position
         self.rect = self.image.get_rect(topleft = position)
@@ -235,7 +257,7 @@ class Player(pygame.sprite.Sprite):
 
         if tile:
             if tile['is_dug']:
-                self.game.log_message("You've already dug here.")
+                self.game.log_message("YOU'VE ALREADY DUG HERE.")
             else:
                 tile['is_dug'] = True
                 
