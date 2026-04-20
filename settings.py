@@ -124,7 +124,7 @@ class ItemSettings:
 
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
-        'Match': 1, 'Torch': 1, 'Lantern': 1,
+        'Match': 1, 'Torch': 0, 'Lantern': 0,
         'Monster Repellent': 1,
         'Gold Coins': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
         'Key Detector': 0, 'Key': 0
