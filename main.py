@@ -26,7 +26,7 @@ class GameManager:
         self.spawn_door()
         self.spawn_player() # Spawn the player at a safe location
         self.spawn_monster()
-        self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT))
+        self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
         # Initialize Windows
         self.message_log = MessageLog(self)
@@ -195,19 +195,41 @@ class GameManager:
         pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, map_frame_rect, 2, UISettings.BORDER_RADIUS)
 
     def draw_fog_of_war(self):
-        self.fog_surface.fill((0, 0, 0)) # Reset to pure black
-        
-        # Calculate player position relative to the action window
-        p_x = self.player.position.x - UISettings.ACTION_WINDOW_X + (GridSettings.TILE_SIZE // 2)
-        p_y = self.player.position.y - UISettings.ACTION_WINDOW_Y + (GridSettings.TILE_SIZE // 2)
-        
-        # Draw a "white" circle on the black surface (Alpha mask)
-        # The radius is in pixels: (radius * tile_size)
-        radius_px = self.player.light_radius * GridSettings.TILE_SIZE
-        pygame.draw.circle(self.fog_surface, (255, 255, 255), (p_x, p_y), radius_px)
-        
-        # Use BLEND_RGBA_MULT to treat the fog_surface as a mask
-        self.fog_surface.set_colorkey((255, 255, 255)) 
+        self.fog_surface.fill((0, 0, 0, 255)) # Start with a fully opaque black surface
+
+        # We are going to create a circular gradient mask that will "punch through" the fog of war to create our light radius effect.
+        # This will create a more natural looking light effect with smooth edges
+        if self.player.light_radius > 0:
+            radius_px = int(self.player.light_radius * GridSettings.TILE_SIZE)
+            
+            # Create the mask surface (Twice the radius)
+            # This must be SRCALPHA and we start it COMPLETELY transparent
+            light_mask = pygame.Surface((radius_px * 2, radius_px * 2), pygame.SRCALPHA)
+            light_mask.fill((0, 0, 0, 0)) 
+            
+            # Draw a WHITE gradient from the center outwards
+            # Center = White (Alpha 255)
+            # Edge = Transparent (Alpha 0)
+            for i in range(radius_px, 0, -1):
+                # Inner circles are more opaque (brighter)
+                alpha = int(255 * (1 - (i / radius_px)))
+                pygame.draw.circle(light_mask, (255, 255, 255, alpha), (radius_px, radius_px), i)
+            
+            # Center it on the player
+            player_center = (
+                self.player.rect.centerx - UISettings.ACTION_WINDOW_X,
+                self.player.rect.centery - UISettings.ACTION_WINDOW_Y
+            )
+            mask_rect = light_mask.get_rect(center=player_center)
+            
+            # THE MAGIC BLEND MODE: BLEND_RGBA_SUB
+            # We are SUBTRACTING our white gradient from the black fog.
+            # (Black 255 Alpha) - (White 255 Alpha) = (Black 0 Alpha) -> Transparent!
+            # Since the area outside the circle is 0 alpha, nothing gets subtracted, 
+            # so the fog stays black and square-free.
+            self.fog_surface.blit(light_mask, mask_rect, special_flags=pygame.BLEND_RGBA_SUB)
+
+        # Blit the fog to the screen
         self.screen.blit(self.fog_surface, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
 
     def log_message(self, text):
