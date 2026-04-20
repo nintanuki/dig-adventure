@@ -165,15 +165,6 @@ class Player(pygame.sprite.Sprite):
                 # self.game.advance_turn()
                 self.time_of_last_move = current_time
 
-            elif action == 'detector':
-                if self.inventory.get('Key Detector', 0) > 0:
-                    self.use_key_detector()
-                    self.game.advance_turn()
-                else:
-                    self.game.log_message("You don't have a Key Detector!")
-                self.time_of_last_move = current_time
-
-
             elif action == 'light':
                 # Setup helper variables to avoid repeating code
                 source = None
@@ -191,15 +182,32 @@ class Player(pygame.sprite.Sprite):
                     # Store the "Max" values for the shrinking math
                     self.active_light_max_radius = radius
                     self.active_light_max_duration = duration
-                    
-                    # Set current state (with the +1 buffer for the off-by-one fix)
                     self.light_radius = radius
-                    self.light_turns_left = duration + 1 
+                    self.light_turns_left = duration + 1 # fix off by one error
                     
                     self.game.log_message(f"You light a {name.lower()}!")
                     self.game.advance_turn()
                 else:
                     self.game.log_message("You have no light sources!")
+                self.time_of_last_move = current_time
+
+            elif action == 'detector':
+                if self.inventory.get('Key Detector', 0) > 0:
+                    self.use_key_detector()
+                    self.game.advance_turn()
+                else:
+                    self.game.log_message("You don't have a Key Detector!")
+                self.time_of_last_move = current_time
+
+            elif action == 'repellent':
+                if self.inventory.get('Monster Repellent', 0) > 0:
+                    self.inventory['Monster Repellent'] -= 1
+                    self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
+                    self.game.log_message("You spray the repellent.")
+                    # self.game.audio.play_repellent_sound() # doesn't exist yet
+                    self.game.advance_turn()
+                else:
+                    self.game.log_message("You have no monster repellent left!")
                 self.time_of_last_move = current_time
 
     def dig(self):
