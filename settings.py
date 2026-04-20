@@ -105,7 +105,7 @@ class ItemSettings:
         'MONSTER REPELLENT': 0.10,
         'MATCH': 0.25,
         'TORCH': 0.15,
-        'LANTERN': 0.01,
+        'LANTERN': 0.05,
         'RUBY': 0.10,
         'SAPPHIRE': 0.05,
         'EMERALD': 0.025,
@@ -124,10 +124,10 @@ class ItemSettings:
 
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
-        'MATCH': 1, 'TORCH': 0, 'LANTERN': 1000,
-        'MONSTER REPELLENT': 1,
-        'GOLD COINS': 0, 'RUBY': 0, 'DIAMOND': 0, 'EMERALD': 0,
-        'KEY DETECTOR': 0, 'MAP': 1, 'KEY': 0
+        'MATCH': 1, 'TORCH': 0, 'LANTERN': 0,
+        'MONSTER REPELLENT': 0,
+        'GOLD COINS': 0, 'RUBY': 0, 'SAPPHIRE': 0, 'EMERALD': 0, 'DIAMOND': 0, 
+        'KEY DETECTOR': 0, 'MAP': 0, 'KEY': 0
         }
 
 class FontSettings:
@@ -136,6 +136,15 @@ class FontSettings:
     ENDGAME_SIZE = 32
     DEFAULT_COLOR = 'white'
     LAST_MESSAGE_COLOR = 'yellow'
+
+    WORD_COLORS = {
+        "RUBY": "red",
+        "SAPPHIRE": "blue",
+        "EMERALD": "green",
+        "KEY": "yellow",
+        "MONSTER": "purple",
+        "MONSTER REPELLENT": "purple"
+    }
 
 class AudioSettings:
     MUTE = False
@@ -201,5 +210,5 @@ class AssetPaths:
 class DebugSettings:
     """Settings related to debugging features."""
     GRID = False # Toggle grey outlines for debugging
-    MUTE = True # Set to True to mute all sounds during testing, False to enable sounds
-    NO_FOG = False # Set to True to disable fog of war
+    MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
+    NO_FOG = True # Set to True to disable fog of war

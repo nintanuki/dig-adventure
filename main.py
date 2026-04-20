@@ -38,7 +38,7 @@ class GameManager:
         # Variables to track what the player has seen for map drawing
         self.seen_tiles = {}
         self.last_map_player_pos = None
-        self.last_seen_monster_pos = None
+        self.last_seen_monster_pos = set()
         self.last_seen_door_pos = None
         self.map_snapshot_lines = []
 
@@ -87,12 +87,22 @@ class GameManager:
         """Tiles the player can dig/search."""
         return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T", "C"}
 
-    def find_marker(self, marker):
+    def find_single_marker(self, marker):
         for row_idx, row in enumerate(self.current_grid):
             for col_idx, cell in enumerate(row):
                 if cell == marker:
                     return (col_idx, row_idx)
         raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
+
+    def find_multiple_markers(self, marker):
+        positions = []
+        for row_idx, row in enumerate(self.current_grid):
+            for col_idx, cell in enumerate(row):
+                if cell == marker:
+                    positions.append((col_idx, row_idx))
+        if not positions:
+            raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
+        return positions
 
     def setup_controllers(self):
         """Initializes connected gamepads or joysticks."""
@@ -119,17 +129,19 @@ class GameManager:
         self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
     def spawn_player(self):
-        col, row = self.find_marker("P")
+        col, row = self.find_single_marker("P")
         x, y = self.grid_to_screen(col, row)
         self.player = Player(self, (x, y), self.all_sprites)
 
     def spawn_monster(self):
-        col, row = self.find_marker("M")
-        x, y = self.grid_to_screen(col, row)
-        self.monster = Monster(self, (x, y), self.all_sprites)
+        self.monsters = []
+        for col, row in self.find_multiple_markers("M"):
+            x, y = self.grid_to_screen(col, row)
+            monster = Monster(self, (x, y), self.all_sprites)
+            self.monsters.append(monster)
 
     def spawn_door(self):
-        col, row = self.find_marker("D")
+        col, row = self.find_single_marker("D")
         x, y = self.grid_to_screen(col, row)
         self.door = Door(self, (x, y), self.all_sprites)
 
@@ -158,12 +170,15 @@ class GameManager:
             if self.player.repellent_turns == 0:
                 self.log_message("THE SCENT OF THE REPELLENT FADES AWAY...")
 
-        self.monster.take_turn()
+        for monster in self.monsters:
+            monster.take_turn()
 
         # Check for Monster Collision (Loss)
-        if self.player.position == self.monster.position:
-            self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
-            self.game_active = False
+        for monster in self.monsters:
+            if self.player.position == monster.position:
+                self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
+                self.game_active = False
+                break
             
     def draw_grid_background(self):
         """
@@ -302,13 +317,13 @@ class GameManager:
                     }
 
         # Pre-place special items from map markers
-        self.key_grid_pos = self.find_marker("K")
+        self.key_grid_pos = self.find_single_marker("K")
         self.tile_data[self.key_grid_pos]["item"] = "KEY"
 
-        detector_pos = self.find_marker("T")
+        detector_pos = self.find_single_marker("T")
         self.tile_data[detector_pos]["item"] = "KEY DETECTOR"
 
-        self.map_grid_pos = self.find_marker("C")
+        self.map_grid_pos = self.find_single_marker("C")
         self.tile_data[self.map_grid_pos]["item"] = "MAP"
 
     def get_item_at_tile(self, grid_pos):
@@ -413,7 +428,7 @@ class GameManager:
     def is_busy(self):
         """Centralized check to see if the game is currently animating."""
         return (self.player.is_moving or 
-                self.monster.is_moving or 
+                any(monster.is_moving for monster in self.monsters) or
                 self.message_log.is_typing)
 
     def run(self):
