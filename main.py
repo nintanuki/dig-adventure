@@ -357,22 +357,17 @@ class GameManager:
         return None, 0
 
     def player_can_see_grid_pos(self, target_grid_pos):
-        """Check if a specific grid coordinate is within the player's light radius."""
+        """Check if a grid coordinate should be revealed on the minimap."""
         p_col, p_row = self.screen_to_grid(self.player.position.x, self.player.position.y)
         t_col, t_row = target_grid_pos
 
-        # Calculate distance
         dx = abs(p_col - t_col)
         dy = abs(p_row - t_row)
-        
-        # Square distance check (Standard for 'Circle' feel on a grid)
-        # If the radius is 2, this will only reveal a 2-tile diamond/circle
-        distance = (dx**2 + dy**2)**0.5
-        
-        # SUBTLE TWEAK: 
-        # Use self.player.light_radius - 0.5 to 'shrink' the map's reveal 
-        # so it matches the visual fade of the fog.
-        return distance <= (self.player.light_radius - 0.1)
+
+        distance = dx + dy
+        reveal_radius = int(self.player.light_radius - 1)
+
+        return distance <= reveal_radius
 
     def remember_visible_map_info(self):
         """Persist anything currently visible to the minimap memory."""
