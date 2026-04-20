@@ -248,7 +248,7 @@ class GameManager:
         """Logic to decide what item is found when digging."""
         # 1. Check if a specific item (like the Key) was pre-placed
         if self.tile_data[grid_pos]['item']:
-            return self.tile_data[grid_pos]['item']
+            return self.tile_data[grid_pos]['item'], 1
         
         # 2. Otherwise, roll for a random item using your SPAWN_RATES
         roll = random.random()
@@ -256,9 +256,12 @@ class GameManager:
         for item, chance in ItemSettings.SPAWN_CHANCE.items():
             cumulative_chance += chance
             if roll < cumulative_chance:
-                return item
+                # If this item is selected to spawn, we then check how many should spawn
+                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1)) # Default to 1 if not specified
+                amount = random.randint(min_qty, max_qty) # Random quantity within the defined range for this item
+                return item, amount
                 
-        return None
+        return None, 0
 
     @property
     def is_busy(self):

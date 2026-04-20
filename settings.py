@@ -56,7 +56,7 @@ class WindowSettings:
     TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
-    MOVEMENT_COOLDOWN = 2000 # Time in milliseconds between allowed movements to prevent spamming
+    MOVEMENT_COOLDOWN = 1000 # Time in milliseconds between allowed movements to prevent spamming
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class MonsterSettings:
@@ -75,7 +75,7 @@ class LightSettings:
 class ItemSettings:
     # Point values for treasures
     TREASURE_SCORE_VALUES = {
-        'Gold': 10,
+        'Gold': 1,
         'Ruby': 50,
         'Sapphire': 100,
         'Emerald': 150,
@@ -85,21 +85,30 @@ class ItemSettings:
     # Digging probabilities (must be between 0.0 and 1.0)
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
-        'Gold': 0.25,
-        'Monster Repellent': 0.20,
-        'Torch': 0.25,
-        'Lantern': 0.10,
+        'Gold Coins': 0.25,
+        'Monster Repellent': 0.10,
+        'Torch': 0.15,
+        'Lantern': 0.05,
         'Ruby': 0.10,
         'Sapphire': 0.05,
         'Emerald': 0.025,
         'Diamond': 0.01
     }
 
+    SPAWN_QUANTITIES = {
+        'Gold Coins': (1, 100),
+        'Ruby': (1, 3),
+        'Sapphire': (1, 2),
+        'Torch': (1, 3),
+        'Monster Repellent': (1, 1)
+        # Anything not here will default to 1
+    }
+
     # UI Sort Order (The requested layout)
     INITIAL_INVENTORY = {
         'Candle': 1, 'Shovel': 1, 'Map': 1,
         'Torch': 3, 'Lantern': 0, 'Monster Repellent': 2,
-        'Gold': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
+        'Gold Coins': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
         'Key': 0
         }
 

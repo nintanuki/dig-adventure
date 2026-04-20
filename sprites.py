@@ -229,17 +229,30 @@ class Player(pygame.sprite.Sprite):
                 tile['is_dug'] = True
                 
                 # Ask the game manager what is here (it checks Key first, then SPAWN_CHANCE)
-                found_item = self.game.get_item_at_tile(grid_pos)
+                found_item, amount = self.game.get_item_at_tile(grid_pos)
 
                 # Then check to see if it's worth something
                 if found_item:
-                    self.game.log_message(f"You found a {found_item}!")
+                    display_name = found_item
+                    if amount > 1:
+                        # Handle pluralization for the log message
+                        if found_item == "Torch":
+                            display_name = "Torches" # Fixes "torchs" -> "torches"
+                        elif found_item.endswith('y'):
+                            display_name = found_item[:-1] + "ies" # Ruby -> Rubies
+                        elif not found_item.endswith('s'):
+                            display_name = found_item + "s" # Emerald -> Emeralds
+                    if amount > 1:
+                        self.game.log_message(f"You found {amount} {display_name}!")
+                    else:
+                        self.game.log_message(f"You found a {found_item}!")
+
                     # Check if the item found is the Key to play the special sound
                     if found_item == "Key":
                         self.game.audio.play_key_sound()
                     # Update inventory
                     if found_item in self.inventory:
-                        self.inventory[found_item] += 1
+                        self.inventory[found_item] += amount
                     # # Add to score when that part is ready
                     # if found_item in ItemSettings.TREASURE_SCORE_VALUES:
                     #     self.score += ItemSettings.TREASURE_SCORE_VALUES[found_item]
