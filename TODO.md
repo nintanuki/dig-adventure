@@ -6,6 +6,8 @@
 - [ ] Figure out why text is so blurry
 - [ ] Fix "you found a emerald -> an emerald"
 - [ ] Entire map should be revealed upon escape or gameover
+- [ ] Refactor code, game manager has way too many functions!
+- [ ] Properly comment everything
 
 Gameplay:
 - [ ] Add premade maps will walls and obstacles using 2D lists like the Zelda Pygame tutorial (with a randomize option?)
