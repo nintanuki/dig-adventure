@@ -115,16 +115,16 @@ class MapWindow:
 
     def draw(self, surface):
         # 1. Calculation for centering
-        padding = WindowSettings.TEXT_PADDING
+        padding = 10
         available_w = UISettings.SIDEBAR_WIDTH - (padding * 2)
         mini_tile_size = available_w // UISettings.COLS
         
         start_x = UISettings.SIDEBAR_X + padding
-        start_y = UISettings.MAP_Y + 50 
+        start_y = UISettings.MAP_Y + padding
 
-        # Draw Header
-        header_surf = self.font.render("MINIMAP", False, 'yellow')
-        surface.blit(header_surf, (start_x, UISettings.MAP_Y + padding))
+        # Draw Header Got rid of this as it was taking up too much space and the map is pretty self-explanatory
+        # header_surf = self.font.render("MINIMAP", False, 'yellow')
+        # surface.blit(header_surf, (start_x, UISettings.MAP_Y + padding))
 
         # 2. Iterate through the grid ONCE
         for r in range(UISettings.ROWS):
