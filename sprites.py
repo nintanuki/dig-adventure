@@ -162,10 +162,14 @@ class Player(pygame.sprite.Sprite):
                 # self.game.advance_turn()
                 self.time_of_last_move = current_time
 
-            elif action == 'map':
-                self.game.log_message("You check your map...")
-                self.game.advance_turn()
+            elif action == 'detector':
+                if self.inventory.get('Key Detector', 0) > 0:
+                    self.use_key_detector()
+                    self.game.advance_turn()
+                else:
+                    self.game.log_message("You don't have a Key Detector!")
                 self.time_of_last_move = current_time
+
 
             elif action == 'torch':
                 # 1. Check for the Lantern first (The "Better" light)
@@ -260,6 +264,28 @@ class Player(pygame.sprite.Sprite):
                     # if None is returned from game.get_item_at_tile
                     self.game.log_message("Nothing but dirt here.")
                 self.game.advance_turn() # Digging costs a turn
+
+    def use_key_detector(self):
+        """Calculates distance to key and logs proximity message."""
+        # Current player grid position
+        p_x = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
+        p_y = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
+        
+        # Key grid position (from main.py)
+        k_x, k_y = self.game.key_grid_pos
+        
+        # Manhattan Distance: |x1 - x2| + |y1 - y2|
+        distance = abs(p_x - k_x) + abs(p_y - k_y)
+
+        if distance == 0:
+            self.game.log_message("The Key Detector is going wild!")
+        elif distance == 1:
+            self.game.log_message("The Key Detector beeps rapidly!.")
+        elif distance <= 3:
+            self.game.log_message("The Key Detector gives a steady pulse...")
+        else:
+            # "Dead silent" for anything further than 3 steps
+            self.game.log_message("The Key Detector is silent.")
 
     def animate(self):
         """Handles the animation of the player sprite when moving."""

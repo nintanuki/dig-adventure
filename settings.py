@@ -109,7 +109,7 @@ class ItemSettings:
         'Candle': 1, 'Shovel': 1, 'Map': 1,
         'Torch': 3, 'Lantern': 0, 'Monster Repellent': 2,
         'Gold Coins': 0, 'Ruby': 0, 'Diamond': 0, 'Emerald': 0,
-        'Metal Detector': 0, 'Key': 0
+        'Key Detector': 0, 'Key': 0
         }
 
 class FontSettings:

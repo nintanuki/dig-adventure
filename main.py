@@ -238,11 +238,17 @@ class GameManager:
                     'dirt_surface': random.choice(self.scaled_dirt_tiles)
                 }
                 
-        # Randomly place the "Key" at a specific location
-        # We turn the "dictionary keys" (the coordinates) into a list and pick one
+        # Get all valid dirt tile coordinates
         random_coords = list(self.tile_data.keys())
-        key_pos = random.choice(random_coords)
-        self.tile_data[key_pos]['item'] = 'Key'
+
+        # Place the Key
+        self.key_grid_pos = random.choice(random_coords)
+        self.tile_data[self.key_grid_pos]['item'] = 'Key'
+        
+        # Place the Key Detector (ensure it's not on the same tile as the Key)
+        random_coords.remove(self.key_grid_pos)
+        detector_pos = random.choice(random_coords)
+        self.tile_data[detector_pos]['item'] = 'Key Detector'
 
     def get_item_at_tile(self, grid_pos):
         """Logic to decide what item is found when digging."""
