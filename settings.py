@@ -127,7 +127,7 @@ class ItemSettings:
         'MATCH': 1, 'TORCH': 0, 'LANTERN': 0,
         'MONSTER REPELLENT': 1,
         'GOLD COINS': 0, 'RUBY': 0, 'DIAMOND': 0, 'EMERALD': 0,
-        'KEY DETECTOR': 0, 'KEY': 0
+        'KEY DETECTOR': 0, 'MAP': 0, 'KEY': 0
         }
 
 class FontSettings:
@@ -202,4 +202,4 @@ class DebugSettings:
     """Settings related to debugging features."""
     GRID = False # Toggle grey outlines for debugging
     MUTE = True # Set to True to mute all sounds during testing, False to enable sounds
-    NO_FOG = False # Set to True to disable fog of war
+    NO_FOG = True # Set to True to disable fog of war

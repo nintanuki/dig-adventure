@@ -77,7 +77,7 @@ class GameManager:
 
     def is_diggable(self, col, row):
         """Tiles the player can dig/search."""
-        return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T"}
+        return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T", "C"}
 
     def find_marker(self, marker):
         for row_idx, row in enumerate(self.current_grid):
@@ -299,6 +299,9 @@ class GameManager:
 
         detector_pos = self.find_marker("T")
         self.tile_data[detector_pos]["item"] = "KEY DETECTOR"
+
+        self.map_grid_pos = self.find_marker("C")
+        self.tile_data[self.map_grid_pos]["item"] = "MAP"
 
     def get_item_at_tile(self, grid_pos):
         """Logic to decide what item is found when digging."""
