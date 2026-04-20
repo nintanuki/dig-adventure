@@ -21,6 +21,9 @@ class AudioManager:
         self.scream_sound = pygame.mixer.Sound(AssetPaths.SCREAM_SOUND)
         self.scream_channel = pygame.mixer.Channel(3)
 
+        self.dig_sound = pygame.mixer.Sound(AssetPaths.DIG_SOUND)
+        self.dig_channel = pygame.mixer.Channel(4)
+
     def play_move_sound(self):
         """Play the movement sound effect."""
         if AudioSettings.MUTE or DebugSettings.MUTE: return
@@ -42,6 +45,11 @@ class AudioManager:
         """Play a scream sound effect for when the player dies."""
         if AudioSettings.MUTE or DebugSettings.MUTE: return
         self.scream_channel.play(self.scream_sound)
+
+    def play_dig_sound(self):
+        """Play a digging sound effect for when the player digs."""
+        if AudioSettings.MUTE or DebugSettings.MUTE: return
+        self.dig_channel.play(self.dig_sound)
 
     def update(self):
         """Update method for the audio manager, used for volume control and looping music."""

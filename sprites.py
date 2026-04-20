@@ -236,7 +236,7 @@ class Player(pygame.sprite.Sprite):
                 self.inventory[found_item] += amount
         else:
             self.game.log_message("NOTHING BUT DIRT HERE.")
-
+        self.game.audio.play_dig_sound()
         self.game.advance_turn()
 
     def use_key_detector(self):

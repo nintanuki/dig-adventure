@@ -10,8 +10,8 @@ class ScreenSettings:
     CRT_ALPHA_RANGE = (75, 90)
 
 class GridSettings:
-    RAW_TILE_SIZE = 32 # The actual size of the image files (in pixels)
-    SCALE_FACTOR = 1 # The multiplier for how big they will appear in-game
+    RAW_TILE_SIZE = 16 # The actual size of the image files (in pixels)
+    SCALE_FACTOR = 2 # The multiplier for how big they will appear in-game
     TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
 
 class UISettings:
@@ -162,7 +162,7 @@ class AssetPaths:
     CLOSED_DOOR = os.path.join(GRAPHICS_DIR, 'tile_0045.png')
     OPEN_DOOR = os.path.join(GRAPHICS_DIR, 'tile_0021.png')
 
-    # Floor Tiles
+    # Floor Tiles (this no longer needs to be a list, unless we want to add variety later.)
     DIRT_TILES = [
         os.path.join(GRAPHICS_DIR, 'tile_0000.png'),
     ]
@@ -176,6 +176,7 @@ class AssetPaths:
     # Audio
     SOUND_DIR = 'sound/'
     MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
+    DIG_SOUND = os.path.join(SOUND_DIR, 'minecraft_digging_dirt_sound_effect.mp3')
     BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')
     KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
     SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
@@ -184,4 +185,4 @@ class DebugSettings:
     """Settings related to debugging features."""
     GRID = True # Toggle grey outlines for debugging
     MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
-    NO_FOG = False # Set to True to disable fog of war
+    NO_FOG = True # Set to True to disable fog of war
