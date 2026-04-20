@@ -16,6 +16,7 @@ Gameplay:
 - [ ] Add premade maps will walls and obstacles using 2D lists like the Zelda Pygame tutorial (with a randomize option?)
 - [ ] Add a second monster
 - [ ] Pacing is slow, move player faster? But somehow it's waiting until the text is down which I like
+- [ ] Add door, digged locations, and last known monster locations to minimap
 
 ## Ideas
 - [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, THEN trigger the type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
