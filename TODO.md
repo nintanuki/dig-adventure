@@ -16,6 +16,7 @@ Gameplay:
 - [ ] Randomly load in different monster sprites
 - [ ] Add random obstacles
 - [ ] Add text highlighting (e.g. Emerald is green)
+- [ ] Instead of the monster chasing you when it gets close, make the monster attracted to the light! Stronger light sources are more dangerous
 
 What to do next:
 - [ ] add metal detector so player isn't wandering aimlessly
