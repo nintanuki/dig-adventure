@@ -73,18 +73,20 @@ class MonsterSettings:
 
 class LightSettings:
     DEFAULT_RADIUS = 0    # Game starts in total darkness
+    BASE_RADIUS = 0.5
+    BASE_DURATION = 1
     
     # Match: 0.5 radius for 1 turn (doesn't really have room to shrink)
-    MATCH_RADIUS = 0.5
-    MATCH_DURATION = 1
+    MATCH_RADIUS = BASE_DURATION * 1
+    MATCH_DURATION = BASE_RADIUS * 1
     
     # Torch: Starts at 2.0, shrinks over 4 turns
-    TORCH_RADIUS = 2.0
-    TORCH_DURATION = 4
+    TORCH_RADIUS = BASE_RADIUS * 4
+    TORCH_DURATION = BASE_RADIUS * 4
     
     # Lantern: Starts at 5.0, shrinks over 10 turns
-    LANTERN_RADIUS = 5.0
-    LANTERN_DURATION = 10
+    LANTERN_RADIUS = BASE_RADIUS * 10
+    LANTERN_DURATION = BASE_RADIUS * 10
 
 class ItemSettings:
     # Point values for treasures

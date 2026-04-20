@@ -115,6 +115,12 @@ class GameManager:
                 self.player.light_radius = LightSettings.DEFAULT_RADIUS
                 self.log_message("Your light flickers out...")
 
+        # Handle Repellent Duration
+        if self.player.repellent_turns > 0:
+            self.player.repellent_turns -= 1
+            if self.player.repellent_turns == 0:
+                self.log_message("The scent of the repellent fades away...")
+
         self.monster.take_turn()
 
         # Check for Monster Collision (Loss)
