@@ -352,6 +352,17 @@ class Player(pygame.sprite.Sprite):
 
 class Monster(pygame.sprite.Sprite):
     def __init__(self, game, position: tuple[int, int], groups) -> None:
+        """
+        Initialize the monster sprite and its movement state.
+
+        Sets up the monster's visual representation, position tracking,
+        and animation state used for turn-based movement.
+
+        Args:
+            game: The active GameManager instance.
+            position (tuple[int, int]): Starting screen position.
+            groups: Sprite groups this monster belongs to.
+        """
         super().__init__(groups)
         self.game = game
         
@@ -368,46 +379,58 @@ class Monster(pygame.sprite.Sprite):
         self.is_chasing = False
 
     def take_turn(self) -> None:
-        """Determines the monster's behavior each turn, including chasing the player if they are close enough."""
+        """
+        Determine the monster's behavior for a single turn.
+
+        The monster can:
+        - move away from the player if repelled
+        - chase the player if within range and line of sight
+        - move randomly or idle otherwise
+
+        Behavior priority:
+            1. Repelled → move away
+            2. In range + visible → chase
+            3. Otherwise → random movement or idle
+        """
        
         # Check if the monster is currently repelled
         is_repelled = self.game.player.repellent_turns > 0
 
         # Calculate the Manhattan distance to the player
-        horizontal_difference = self.game.player.position.x - self.position.x
-        vertical_difference = self.game.player.position.y - self.position.y
-        manhattan_distance = (abs(horizontal_difference) // GridSettings.TILE_SIZE) + (abs(vertical_difference) // GridSettings.TILE_SIZE)
+        delta_x = self.game.player.position.x - self.position.x
+        delta_y = self.game.player.position.y - self.position.y
+        manhattan_distance = (abs(delta_x) // GridSettings.TILE_SIZE) + (abs(delta_y) // GridSettings.TILE_SIZE)
 
         # If the monster is repelled, it will try to move away from the player instead of towards them.
         if is_repelled:
             self.is_chasing = False
-            move_horizontal = 0
-            move_vertical = 0
+            step_x = 0
+            step_y = 0
 
             # The logic is basically the same as chasing, but reversed. =
             # The monster will try to move in the direction that increases the distance between itself and the player.
-            if abs(horizontal_difference) >= abs(vertical_difference):
-                if horizontal_difference > 0:
-                    move_horizontal = -GridSettings.TILE_SIZE
-                elif horizontal_difference < 0:
-                    move_horizontal = GridSettings.TILE_SIZE
-                elif vertical_difference > 0:
-                    move_vertical = -GridSettings.TILE_SIZE
-                elif vertical_difference < 0:
-                    move_vertical = GridSettings.TILE_SIZE
+            if abs(delta_x) >= abs(delta_y):
+                if delta_x > 0:
+                    step_x = -GridSettings.TILE_SIZE
+                elif delta_x < 0:
+                    step_x = GridSettings.TILE_SIZE
+                elif delta_y > 0:
+                    step_y = -GridSettings.TILE_SIZE
+                elif delta_y < 0:
+                    step_y = GridSettings.TILE_SIZE
             else: # If the player is more vertical than horizontal, prioritize moving vertically to get away
-                if vertical_difference > 0:
-                    move_vertical = -GridSettings.TILE_SIZE
-                elif vertical_difference < 0:
-                    move_vertical = GridSettings.TILE_SIZE
-                elif horizontal_difference > 0:
-                    move_horizontal = -GridSettings.TILE_SIZE
-                elif horizontal_difference < 0:
-                    move_horizontal = GridSettings.TILE_SIZE
+                if delta_y > 0:
+                    step_y = -GridSettings.TILE_SIZE
+                elif delta_y < 0:
+                    step_y = GridSettings.TILE_SIZE
+                elif delta_x > 0:
+                    step_x = -GridSettings.TILE_SIZE
+                elif delta_x < 0:
+                    step_x = GridSettings.TILE_SIZE
 
             # After calculating the movement, we apply it.
             # The apply_movement function will handle boundary checks to make sure the monster doesn't move out of bounds.
-            self.apply_movement(move_horizontal, move_vertical)
+            self.apply_movement(step_x, step_y)
             return
 
         # If the monster is not repelled, it will check if the player is within its chase radius.
@@ -423,34 +446,34 @@ class Monster(pygame.sprite.Sprite):
 
         # If the monster is chasing, it will try to move towards the player. Otherwise, it will move randomly or idle.
         if self.is_chasing:
-            move_horizontal = 0
-            move_vertical = 0
+            step_x = 0
+            step_y = 0
 
             # The monster will prioritize moving in the direction where the player is farther away,
             # to close the distance more efficiently.
             # This is the same logic as the repellent, but instead of moving away from the player, it moves towards them.
             # Can this be moved into a function since it's so similar? But the signs are different...
-            if abs(horizontal_difference) >= abs(vertical_difference):
-                if horizontal_difference > 0:
-                    move_horizontal = GridSettings.TILE_SIZE
-                elif horizontal_difference < 0:
-                    move_horizontal = -GridSettings.TILE_SIZE
-                elif vertical_difference > 0:
-                    move_vertical = GridSettings.TILE_SIZE
-                elif vertical_difference < 0:
-                    move_vertical = -GridSettings.TILE_SIZE
+            if abs(delta_x) >= abs(delta_y):
+                if delta_x > 0:
+                    step_x = GridSettings.TILE_SIZE
+                elif delta_x < 0:
+                    step_x = -GridSettings.TILE_SIZE
+                elif delta_y > 0:
+                    step_y = GridSettings.TILE_SIZE
+                elif delta_y < 0:
+                    step_y = -GridSettings.TILE_SIZE
             else:
-                if vertical_difference > 0:
-                    move_vertical = GridSettings.TILE_SIZE
-                elif vertical_difference < 0:
-                    move_vertical = -GridSettings.TILE_SIZE
-                elif horizontal_difference > 0:
-                    move_horizontal = GridSettings.TILE_SIZE
-                elif horizontal_difference < 0:
-                    move_horizontal = -GridSettings.TILE_SIZE
+                if delta_y > 0:
+                    step_y = GridSettings.TILE_SIZE
+                elif delta_y < 0:
+                    step_y = -GridSettings.TILE_SIZE
+                elif delta_x > 0:
+                    step_x = GridSettings.TILE_SIZE
+                elif delta_x < 0:
+                    step_x = -GridSettings.TILE_SIZE
 
             # After calculating the movement, we apply it.
-            self.apply_movement(move_horizontal, move_vertical)
+            self.apply_movement(step_x, step_y)
             return
 
         # If the monster is not chasing, it has a chance to move randomly or do nothing (idle).
@@ -458,7 +481,11 @@ class Monster(pygame.sprite.Sprite):
             self.move_randomly()
 
     def move_randomly(self) -> None:
-        """Picks a random cardinal direction."""
+        """
+        Move the monster in a random cardinal direction.
+
+        Used when the monster is not actively chasing the player.
+        """
         direction = random.choice(['up', 'down', 'left', 'right'])
         step_x, step_y = 0, 0
         if direction == 'up': step_y = -GridSettings.TILE_SIZE
@@ -469,6 +496,16 @@ class Monster(pygame.sprite.Sprite):
         self.apply_movement(step_x, step_y)
 
     def apply_movement(self, horizontal_amount: int, vertical_amount: int) -> None:
+        """
+        Attempt to move the monster by a pixel offset.
+
+        Converts the movement into grid space, checks if the target tile
+        is walkable, and starts movement animation if valid.
+
+        Args:
+            horizontal_amount (int): Pixel movement in the x direction.
+            vertical_amount (int): Pixel movement in the y direction.
+        """
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
         target_col = current_col + (horizontal_amount // GridSettings.TILE_SIZE)
         target_row = current_row + (vertical_amount // GridSettings.TILE_SIZE)
@@ -479,7 +516,15 @@ class Monster(pygame.sprite.Sprite):
             self.is_moving = True
 
     def has_line_of_sight(self) -> bool:
-        """Checks if there are any walls between the monster and the player."""
+        """
+        Check if the monster has a clear path to the player.
+
+        Only straight-line (row or column) visibility is considered.
+        Walls block line of sight.
+
+        Returns:
+            bool: True if no walls block the view, False otherwise.
+        """
         m_col, m_row = self.game.screen_to_grid(self.position.x, self.position.y)
         p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
 
@@ -501,7 +546,9 @@ class Monster(pygame.sprite.Sprite):
         return False
 
     def animate(self) -> None:
-        """The visual sliding logic."""
+        """
+        Advance the monster's movement animation toward its target position.
+        """
         if self.is_moving:
             direction = self.target_pos - self.position
             if direction.length() < self.anim_speed:
@@ -515,8 +562,9 @@ class Monster(pygame.sprite.Sprite):
 
     def update(self):
         """
-        I don't think we need this since the monster doesn't take controller input
-        and this is not an action game, but I'm leaving it here just in case
+        Placeholder for per-frame behavior.
+
+        Monster actions are currently turn-based, so this method is unused.
         """
         pass
 

@@ -131,44 +131,6 @@ class GameManager:
             int((x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE),
             int((y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE),
         )
-    
-    # -------------------------
-    # Because Player still expects to ask the DungeonMaster about the map layout,
-    # we need to have these helper methods here that just pass through to the DungeonMaster.
-    # This keeps the Player from needing a direct reference to the DungeonMaster, which keeps our dependencies cleaner.
-    # These "bridge properties" are a temporary solution until we can update Player to ask the DungeonMaster directly for this info
-    # instead of going through the GameManager.
-    # -------------------------
-
-    # @property
-    # def tile_data(self):
-    #     return self.dungeon.tile_data
-
-    # @property
-    # def key_grid_pos(self):
-    #     return self.dungeon.key_grid_pos
-
-    # @property
-    # def map_grid_pos(self):
-    #     return self.dungeon.map_grid_pos
-
-    # def get_map_cell(self, col, row):
-    #     return self.dungeon.get_map_cell(col, row)
-
-    # def is_walkable(self, col, row):
-    #     return self.dungeon.is_walkable(col, row)
-
-    # def is_diggable(self, col, row):
-    #     return self.dungeon.is_diggable(col, row)
-
-    # def find_single_marker(self, marker):
-    #     return self.dungeon.find_single_marker(marker)
-
-    # def find_multiple_markers(self, marker):
-    #     return self.dungeon.find_multiple_markers(marker)
-
-    # def get_item_at_tile(self, grid_pos):
-    #     return self.dungeon.get_item_at_tile(grid_pos)
 
     # -------------------------
     # VISIBILITY / MAP MEMORY + SNAPSHOT LOGIC
