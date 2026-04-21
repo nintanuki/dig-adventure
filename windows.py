@@ -106,9 +106,6 @@ class InventoryWindow:
                 
                 visual_row += 1
 
-# windows.py
-
-# windows.py
 class MapWindow:
     def __init__(self, game):
         self.game = game

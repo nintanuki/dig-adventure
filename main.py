@@ -27,6 +27,7 @@ class GameManager:
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.game_active = True
+        self.score = 0
 
         self.dungeon.load_random_dungeon()
         self.dungeon.setup_tile_map()
@@ -194,6 +195,14 @@ class GameManager:
     def log_message(self, text):
         """The central hub for all game objects to send text to the UI."""
         self.message_log.add_message(text)
+
+    # -------------------------
+    # Score
+    # -------------------------
+
+    def add_score(self, item_name: str, amount: int = 1) -> None:
+        value = ItemSettings.TREASURE_SCORE_VALUES.get(item_name, 0)
+        self.score += value * amount
 
     # -------------------------
     # MAIN LOOP

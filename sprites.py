@@ -250,6 +250,9 @@ class Player(pygame.sprite.Sprite):
                 elif not found_item.endswith("S"):
                     display_name = found_item + "S"
 
+            if found_item in ItemSettings.TREASURE_SCORE_VALUES:
+                self.game.add_score(found_item, amount)
+
             if amount > 1:
                 self.game.log_message(f"YOU FOUND {amount} {display_name}!")
             else:

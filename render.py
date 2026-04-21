@@ -69,6 +69,14 @@ class RenderManager:
                 UISettings.BORDER_RADIUS
             )
 
+        score_font = pygame.font.Font(FontSettings.FONT, 12)
+        score_surf = score_font.render(f"SCORE: {self.game.score}", False, 'white')
+
+        score_x = UISettings.SCORE_X
+        score_y = UISettings.SCORE_Y
+
+        self.screen.blit(score_surf, (score_x, score_y))
+
     def draw_fog_of_war(self):
         """
         Build a soft-edged light reveal over a fully dark dungeon.

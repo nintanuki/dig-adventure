@@ -15,39 +15,40 @@ class GridSettings:
     TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
 
 class UISettings:
-    WINDOW_PADDING = GridSettings.TILE_SIZE
+    LEFT_MARGIN = 64
+    TOP_MARGIN = 56
+    GAP = GridSettings.TILE_SIZE
+
     BORDER_COLOR = 'white'
     BORDER_RADIUS = 5
-    
-    # SIDEBAR & LOG FIXED SIZES
-    SIDEBAR_WIDTH = 200 
+
+    SIDEBAR_WIDTH = 200
     BOTTOM_LOG_HEIGHT = 150
 
-    # ACTION WINDOW (The Dungeon)
-    ACTION_WINDOW_X = WINDOW_PADDING
-    ACTION_WINDOW_Y = WINDOW_PADDING
-    # Forcing it to a specific number of columns and rows.
-    COLS = 14 
+    COLS = 14
     ROWS = 10
     ACTION_WINDOW_WIDTH = COLS * GridSettings.TILE_SIZE
     ACTION_WINDOW_HEIGHT = ROWS * GridSettings.TILE_SIZE
 
-    # SIDEBAR (Right)
-    SIDEBAR_X = ACTION_WINDOW_X + ACTION_WINDOW_WIDTH + WINDOW_PADDING
-    SIDEBAR_Y = WINDOW_PADDING
+    ACTION_WINDOW_X = LEFT_MARGIN
+    ACTION_WINDOW_Y = TOP_MARGIN
+
+    SIDEBAR_X = ACTION_WINDOW_X + ACTION_WINDOW_WIDTH + GAP
+    SIDEBAR_Y = TOP_MARGIN
     SIDEBAR_HEIGHT = ACTION_WINDOW_HEIGHT
 
-    # MESSAGE LOG (Bottom Left)
-    LOG_X = WINDOW_PADDING
-    LOG_Y = ACTION_WINDOW_Y + ACTION_WINDOW_HEIGHT + WINDOW_PADDING
+    LOG_X = LEFT_MARGIN
+    LOG_Y = ACTION_WINDOW_Y + ACTION_WINDOW_HEIGHT + GAP
     LOG_WIDTH = ACTION_WINDOW_WIDTH
     LOG_HEIGHT = BOTTOM_LOG_HEIGHT
 
-    # MAP WINDOW (Bottom Right)
     MAP_X = SIDEBAR_X
     MAP_Y = LOG_Y
     MAP_WIDTH = SIDEBAR_WIDTH
     MAP_HEIGHT = BOTTOM_LOG_HEIGHT
+
+    SCORE_X = 72
+    SCORE_Y = 20
 
 class WindowSettings:
     MAX_MESSAGES = 5
@@ -136,6 +137,7 @@ class ItemSettings:
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
     MESSAGE_SIZE = 8
+    SCORE_SIZE = 12
     ENDGAME_SIZE = 32
     DEFAULT_COLOR = 'white'
     LAST_MESSAGE_COLOR = 'yellow'
