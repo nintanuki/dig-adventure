@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 from settings import *
 
 class AudioManager:
@@ -8,6 +9,8 @@ class AudioManager:
         Initialize the audio manager and load all necessary sound effects.
         Uses fixed channels for important sounds to prevent them from being cut off by other effects.
         """
+        # Initialize Music
+        self.play_random_bgm()
 
         # Load the movement sound effect and set up a channel for it
         self.move_sound = pygame.mixer.Sound(AssetPaths.MOVE_SOUND)
@@ -34,6 +37,26 @@ class AudioManager:
         self.short_spray_sound = pygame.mixer.Sound(AssetPaths.SHORT_SPRAY_SOUND)
         self.long_spray_sound = pygame.mixer.Sound(AssetPaths.LONG_SPRAY_SOUND)
         self.spray_channel = pygame.mixer.Channel(7)
+
+    def play_random_bgm(self):
+        """Selects a random track and starts looping it."""
+        if AudioSettings.MUTE or AudioSettings.MUTE_MUSIC:
+            return
+
+        if not AssetPaths.MUSIC_TRACKS:
+            print("Warning: No music tracks found in AssetPaths.MUSIC_TRACKS")
+            return
+
+        # Pick a random track
+        track = random.choice(AssetPaths.MUSIC_TRACKS)
+        
+        try:
+            pygame.mixer.music.load(track)
+            pygame.mixer.music.set_volume(AudioSettings.MUSIC_VOLUME)
+            # Play with loops=-1 to loop indefinitely
+            pygame.mixer.music.play(loops=-1)
+        except pygame.error as e:
+            print(f"Could not load music track {track}: {e}") # Handle missing file or unsupported format gracefully
 
     def play_move_sound(self):
         """Play the movement sound effect."""

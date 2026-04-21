@@ -175,6 +175,7 @@ class GameManager:
         for monster in self.monsters:
             if self.player.position == monster.position:
                 self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
+                pygame.mixer.music.stop() # Stop the music immediately on death
                 self.audio.play_scream_sound()
                 self.game_active = False
                 break

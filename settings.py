@@ -151,6 +151,8 @@ class FontSettings:
 
 class AudioSettings:
     MUTE = False
+    MUTE_MUSIC = False  # Mute music but keep SFX
+    MUSIC_VOLUME = 0.5  # Hardcoded volume (0.0 to 1.0)
 
 class AssetPaths:
     # Images
@@ -186,6 +188,13 @@ class AssetPaths:
     COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.wav')
     SHORT_SPRAY_SOUND = os.path.join(SOUND_DIR, 'short_spray.mp3')
     LONG_SPRAY_SOUND = os.path.join(SOUND_DIR, 'long_spray.mp3')
+
+    # Music
+    MUSIC_DIR = 'music/'
+    MUSIC_TRACKS = [
+        os.path.join(MUSIC_DIR, 'Goof Troop SNES - Illusion.mp3'),
+        os.path.join(MUSIC_DIR, 'Goof Troop SNES - Lose My Way.mp3'),
+    ]
 
 class DebugSettings:
     """Settings related to debugging features."""
