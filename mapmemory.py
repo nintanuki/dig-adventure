@@ -51,11 +51,10 @@ class MapMemory:
         if self.player_can_see_grid_pos(door_grid_pos):
             self.last_seen_door_pos = door_grid_pos
 
-        # remember monster positions when seen
-        for monster in self.game.monsters:
-            monster_grid_pos = self.game.screen_to_grid(monster.position.x, monster.position.y)
-            if self.player_can_see_grid_pos(monster_grid_pos):
-                self.last_seen_monster_pos.add(monster_grid_pos)
+        visible_monster_positions = self.get_visible_monster_positions()
+
+        if visible_monster_positions:
+            self.last_seen_monster_pos = visible_monster_positions
 
     def refresh_map_snapshot(self):
         """Update remembered map data using only what the player can currently see."""
@@ -86,11 +85,10 @@ class MapMemory:
         if self.player_can_see_grid_pos(door_grid_pos):
             self.last_seen_door_pos = door_grid_pos
 
-        # Remember monster location only if currently visible
-        for monster in self.game.monsters:
-            monster_grid_pos = self.game.screen_to_grid(monster.position.x, monster.position.y)
-            if self.player_can_see_grid_pos(monster_grid_pos):
-                self.last_seen_monster_pos.add(monster_grid_pos)
+        visible_monster_positions = self.get_visible_monster_positions()
+
+        if visible_monster_positions:
+            self.last_seen_monster_pos = visible_monster_positions
 
         # Build the frozen text snapshot for the UI
         self.build_map_snapshot_lines()
@@ -112,7 +110,7 @@ class MapMemory:
                 # Overlay remembered special markers
                 if self.last_seen_door_pos == grid_pos:
                     char = "D"
-                if self.last_seen_monster_pos == grid_pos:
+                if grid_pos in self.last_seen_monster_pos:
                     char = "M"
                 if self.last_map_player_pos == grid_pos:
                     char = "P"
@@ -122,3 +120,18 @@ class MapMemory:
             lines.append("".join(chars))
 
         self.map_snapshot_lines = lines
+
+    def get_visible_monster_positions(self):
+        """Return a set of monster grid positions currently visible to the player."""
+        visible_positions = set()
+
+        for monster in self.game.monsters:
+            monster_grid_pos = self.game.screen_to_grid(
+                monster.position.x,
+                monster.position.y
+            )
+
+            if self.player_can_see_grid_pos(monster_grid_pos):
+                visible_positions.add(monster_grid_pos)
+
+        return visible_positions
