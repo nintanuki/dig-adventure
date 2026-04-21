@@ -48,7 +48,8 @@ class Player(pygame.sprite.Sprite):
         self.anim_speed = PlayerSettings.ANIMATION_SPEED
 
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
-        
+        self.dungeon = self.game.dungeon # Reference to the dungeon for checking tile states during movement and actions
+
     def get_input(self) -> tuple[int, int, str | None]:
         """
         Read player input and translate it into movement or action intent.
@@ -122,7 +123,7 @@ class Player(pygame.sprite.Sprite):
         target_col = current_col + horizontal_step
         target_row = current_row + vertical_step
 
-        if self.game.dungeon.is_walkable(target_col, target_row):
+        if self.dungeon.is_walkable(target_col, target_row):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
@@ -235,7 +236,7 @@ class Player(pygame.sprite.Sprite):
             return
 
         grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
-        tile = self.game.dungeon.tile_data.get(grid_pos)
+        tile = self.dungeon.tile_data.get(grid_pos)
 
         # This should never happen since the player can only be on valid tiles,
         # but we are adding this just in case to prevent crashes.
@@ -249,7 +250,7 @@ class Player(pygame.sprite.Sprite):
 
         tile["is_dug"] = True
         self.game.remember_visible_map_info()
-        found_item, amount = self.game.dungeon.get_item_at_tile(grid_pos)
+        found_item, amount = self.dungeon.get_item_at_tile(grid_pos)
 
         # Pluralization logic, which is a bit hacky but it works for now.
         # WE may want to use a helper function later.
@@ -305,7 +306,7 @@ class Player(pygame.sprite.Sprite):
         player_row = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
         
         # Key grid position (from main.py)
-        key_column, key_row = self.game.dungeon.key_grid_pos
+        key_column, key_row = self.dungeon.key_grid_pos
         
         # Manhattan Distance: |x1 - x2| + |y1 - y2|
         distance = abs(player_column - key_column) + abs(player_row - key_row)
@@ -365,6 +366,7 @@ class Monster(pygame.sprite.Sprite):
         """
         super().__init__(groups)
         self.game = game
+        self.dungeon = self.game.dungeon
         
         # Load and scale the monster image
         surface = pygame.image.load(AssetPaths.MONSTER).convert_alpha()
@@ -510,7 +512,7 @@ class Monster(pygame.sprite.Sprite):
         target_col = current_col + (horizontal_amount // GridSettings.TILE_SIZE)
         target_row = current_row + (vertical_amount // GridSettings.TILE_SIZE)
 
-        if self.game.dungeon.is_walkable(target_col, target_row):
+        if self.dungeon.is_walkable(target_col, target_row):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
@@ -532,7 +534,7 @@ class Monster(pygame.sprite.Sprite):
         if m_col == p_col:
             start, end = min(m_row, p_row), max(m_row, p_row)
             for row in range(start + 1, end):
-                if not self.game.dungeon.is_walkable(m_col, row):
+                if not self.dungeon.is_walkable(m_col, row):
                     return False
             return True
 
@@ -540,7 +542,7 @@ class Monster(pygame.sprite.Sprite):
         if m_row == p_row:
             start, end = min(m_col, p_col), max(m_col, p_col)
             for col in range(start + 1, end):
-                if not self.game.dungeon.is_walkable(col, m_row):
+                if not self.dungeon.is_walkable(col, m_row):
                     return False
             return True
         return False
