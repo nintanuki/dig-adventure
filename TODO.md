@@ -62,6 +62,8 @@ Do NOT add new features until steps 1–4 are complete.
 - [ ] Make key detector more sensitive
 - [ ] Provide clues when monsters are near?
 - [ ] Randomize key, player, door and monster locations. The maps should just be based on walls.
+- [ ] When the monster starts chasing the player, without repellent it's basically impossible to get away,
+add 1 in 5 chanse of doing nothing? Just like random, player should be "faster"
 
 ## Progression
 - [ ] Add scoring system for treasure
