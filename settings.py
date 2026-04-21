@@ -121,7 +121,7 @@ class ItemSettings:
     INITIAL_INVENTORY = {
         'MATCH': 1,
         # 'TORCH': 3,
-        # 'LANTERN': 0,
+        'LANTERN': 100,
         # 'MONSTER REPELLENT': 0,
         # 'GOLD COINS': 0,
         # 'RUBY': 0,
@@ -152,7 +152,7 @@ class FontSettings:
 class AudioSettings:
     MUTE = False
     MUTE_MUSIC = False  # Mute music but keep SFX
-    MUSIC_VOLUME = 0.3  # Hardcoded volume (0.0 to 1.0)
+    MUSIC_VOLUME = 0.2  # Hardcoded volume (0.0 to 1.0)
 
 class AssetPaths:
     # Images

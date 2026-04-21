@@ -387,6 +387,10 @@ class Monster(pygame.sprite.Sprite):
         delta_y = self.game.player.position.y - self.position.y
         manhattan_distance = (abs(delta_x) // GridSettings.TILE_SIZE) + (abs(delta_y) // GridSettings.TILE_SIZE)
 
+        # Helper variables for readability
+        player_has_light = self.game.player.light_radius > 0
+        is_adjacent = manhattan_distance <= 1
+
         # If the monster is repelled, it will try to move away from the player instead of towards them.
         if is_repelled:
             self.is_chasing = False
@@ -419,19 +423,29 @@ class Monster(pygame.sprite.Sprite):
             self.apply_movement(step_x, step_y)
             return
 
-        # If the monster is not repelled, it will check if the player is within its chase radius.
-        # The monster also needs line of sight to the player to start chasing (can't see through walls).
-        if manhattan_distance <= MonsterSettings.CHASE_RADIUS and self.has_line_of_sight():
-            # Only play the sound if we weren't already chasing
+        # Chasing rules:
+        # - if the player has no light, the monster should only chase when adjacent
+        # - otherwise use the current chase radius + line of sight rules
+        if is_adjacent:
+            if not self.is_chasing:
+                self.is_chasing = True
+                self.game.audio.play_monster_chase_sound()
+
+        elif not player_has_light:
+            self.is_chasing = False
+
+        elif manhattan_distance <= int(self.game.player.light_radius) and self.has_line_of_sight():
             if not self.is_chasing:
                 self.is_chasing = True
                 self.game.audio.play_monster_chase_sound()
         else:
-            # Optional: Reset chasing status if they lose the player
             self.is_chasing = False
 
-        # If the monster is chasing, it will try to move towards the player. Otherwise, it will move randomly or idle.
+        # If the monster is chasing, it still has a 20% chance to hesitate.
         if self.is_chasing:
+            if random.random() < MonsterSettings.IDLE_CHANCE:
+                return
+
             step_x = 0
             step_y = 0
 
