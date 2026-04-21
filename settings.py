@@ -152,7 +152,7 @@ class FontSettings:
 class AudioSettings:
     MUTE = False
     MUTE_MUSIC = False  # Mute music but keep SFX
-    MUSIC_VOLUME = 0.4  # Hardcoded volume (0.0 to 1.0)
+    MUSIC_VOLUME = 0.3  # Hardcoded volume (0.0 to 1.0)
 
 class AssetPaths:
     # Images
