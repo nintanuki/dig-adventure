@@ -8,6 +8,7 @@ from audio import AudioManager
 from sprites import Player, Monster, Door
 from windows import MessageLog, InventoryWindow, MapWindow
 from tilemaps import DUNGEONS
+from dungeon import DungeonMaster
 from crt import CRT
 
 class GameManager:
@@ -20,12 +21,13 @@ class GameManager:
         
         self.setup_controllers() # Controller Setup
         self.load_assets() # Pre-load dirt asset to avoid loading it 60 times per second
+        self.dungeon = DungeonMaster(self.scaled_dirt_tiles) # Initialize the DungeonMaster with the pre-scaled dirt tiles from load_assets()
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.game_active = True
 
-        self.load_random_dungeon()
-        self.setup_tile_map()
+        self.dungeon.load_random_dungeon()
+        self.dungeon.setup_tile_map()
         self.spawn_door()
         self.spawn_monster()
         self.spawn_player() # Spawn the player at a safe location
@@ -76,101 +78,28 @@ class GameManager:
         self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
 
     # -------------------------
-    # DUNGEON / MAP BUILDING --> DungeonState / MapState Class
-    # -------------------------
-
-    def load_random_dungeon(self):
-        """Pick one dungeon and cache all map info for this run."""
-        self.dungeon_name, dungeon_data = random.choice(list(DUNGEONS.items()))
-        self.dungeon_desc = dungeon_data["desc"]
-
-        # Normalize map symbols so '.' also counts as walkable dirt
-        self.current_grid = []
-        for row in dungeon_data["grid"]:
-            normalized_row = []
-            for cell in row:
-                normalized_row.append(" " if cell == "." else cell)
-            self.current_grid.append(normalized_row)
-
-        # Optional safety check
-        if len(self.current_grid) != UISettings.ROWS:
-            raise ValueError(f"{self.dungeon_name} has wrong row count.")
-        for row in self.current_grid:
-            if len(row) != UISettings.COLS:
-                raise ValueError(f"{self.dungeon_name} has wrong column count.")
-
-    def setup_tile_map(self):
-        """
-        Create the per-tile runtime state for the selected dungeon.
-
-        The dungeon layout defines the fixed structure, while tile_data stores
-        the mutable state that can change during play, such as digging and items.
-        """
-        self.tile_data = {}
-
-        for row in range(UISettings.ROWS):
-            for col in range(UISettings.COLS):
-                cell_type = self.get_map_cell(col, row)
-
-                if self.is_diggable(col, row):
-                    self.tile_data[(col, row)] = {
-                        "is_dug": False,
-                        "item": None,
-                        "dirt_surface": random.choice(self.scaled_dirt_tiles),
-                    }
-
-        # Pre-place special items from map markers
-        self.key_grid_pos = self.find_single_marker("K")
-        self.tile_data[self.key_grid_pos]["item"] = "KEY"
-
-        detector_pos = self.find_single_marker("T")
-        self.tile_data[detector_pos]["item"] = "KEY DETECTOR"
-
-        self.map_grid_pos = self.find_single_marker("C")
-        self.tile_data[self.map_grid_pos]["item"] = "MAP"
-
-    def get_item_at_tile(self, grid_pos):
-        """Logic to decide what item is found when digging."""
-        # 1. Check if a specific item (like the Key) was pre-placed
-        if self.tile_data[grid_pos]['item']:
-            return self.tile_data[grid_pos]['item'], 1
-        
-        # 2. Otherwise, roll for a random item using your SPAWN_RATES
-        roll = random.random()
-        cumulative_chance = 0
-        for item, chance in ItemSettings.SPAWN_CHANCE.items():
-            cumulative_chance += chance
-            if roll < cumulative_chance:
-                # If this item is selected to spawn, we then check how many should spawn
-                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1)) # Default to 1 if not specified
-                amount = random.randint(min_qty, max_qty) # Random quantity within the defined range for this item
-                return item, amount
-                
-        return None, 0
-    
-    # -------------------------
     # ENTITY SPAWNING --> SpawnManager Class? (probably not a priority)
     # -------------------------
 
     def spawn_player(self):
-        col, row = self.find_single_marker("P")
+        col, row = self.dungeon.find_single_marker("P")
         x, y = self.grid_to_screen(col, row)
         self.player = Player(self, (x, y), self.all_sprites)
 
     def spawn_monster(self):
         self.monsters = []
-        for col, row in self.find_multiple_markers("M"):
+        for col, row in self.dungeon.find_multiple_markers("M"):
             x, y = self.grid_to_screen(col, row)
             monster = Monster(self, (x, y), self.all_sprites)
             self.monsters.append(monster)
 
     def spawn_door(self):
-        col, row = self.find_single_marker("D")
+        col, row = self.dungeon.find_single_marker("D")
         x, y = self.grid_to_screen(col, row)
         self.door = Door(self, (x, y), self.all_sprites)
 
     # -------------------------
-    # COORDINATE + MAP HELPERS --> MapUtils Class
+    # COORDINATE + MAP HELPERS --> Future MapUtils Class?
     # -------------------------
 
     def grid_to_screen(self, col, row):
@@ -184,38 +113,45 @@ class GameManager:
             int((x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE),
             int((y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE),
         )
+    
+    # -------------------------
+    # Because Player still expects to ask the DungeonMaster about the map layout,
+    # we need to have these helper methods here that just pass through to the DungeonMaster.
+    # This keeps the Player from needing a direct reference to the DungeonMaster, which keeps our dependencies cleaner.
+    # These "bridge properties" are a temporary solution until we can update Player to ask the DungeonMaster directly for this info
+    # instead of going through the GameManager.
+    # -------------------------
+
+    @property
+    def tile_data(self):
+        return self.dungeon.tile_data
+
+    @property
+    def key_grid_pos(self):
+        return self.dungeon.key_grid_pos
+
+    @property
+    def map_grid_pos(self):
+        return self.dungeon.map_grid_pos
 
     def get_map_cell(self, col, row):
-        if 0 <= row < len(self.current_grid) and 0 <= col < len(self.current_grid[row]):
-            return self.current_grid[row][col]
-        return "x"  # treat out of bounds as wall
+        return self.dungeon.get_map_cell(col, row)
 
     def is_walkable(self, col, row):
-        """Tiles entities can stand on."""
-        return self.get_map_cell(col, row) != "x"
+        return self.dungeon.is_walkable(col, row)
 
     def is_diggable(self, col, row):
-        """Tiles the player can dig/search."""
-        return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T", "C"}
+        return self.dungeon.is_diggable(col, row)
 
     def find_single_marker(self, marker):
-        for row_idx, row in enumerate(self.current_grid):
-            for col_idx, cell in enumerate(row):
-                if cell == marker:
-                    return (col_idx, row_idx)
-        raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
+        return self.dungeon.find_single_marker(marker)
 
     def find_multiple_markers(self, marker):
-        positions = []
-        for row_idx, row in enumerate(self.current_grid):
-            for col_idx, cell in enumerate(row):
-                if cell == marker:
-                    positions.append((col_idx, row_idx))
-        if not positions:
-            raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
-        return positions
+        return self.dungeon.find_multiple_markers(marker)
 
-    
+    def get_item_at_tile(self, grid_pos):
+        return self.dungeon.get_item_at_tile(grid_pos)
+
     # -------------------------
     # VISIBILITY / MAP MEMORY + SNAPSHOT LOGIC
     # -------------------------
@@ -244,12 +180,12 @@ class GameManager:
                 grid_pos = (col, row)
 
                 if self.player_can_see_grid_pos(grid_pos):
-                    cell_type = self.get_map_cell(col, row)
+                    cell_type = self.dungeon.get_map_cell(col, row)
 
                     if cell_type == "x":
                         self.seen_tiles[grid_pos] = "#"
                     else:
-                        tile_state = self.tile_data.get(grid_pos)
+                        tile_state = self.dungeon.tile_data.get(grid_pos)
                         if tile_state and tile_state["is_dug"]:
                             self.seen_tiles[grid_pos] = "o"
                         else:
@@ -277,13 +213,13 @@ class GameManager:
                 grid_pos = (col, row)
 
                 if self.player_can_see_grid_pos(grid_pos):
-                    cell_type = self.get_map_cell(col, row)
+                    cell_type = self.dungeon.get_map_cell(col, row)
 
                     # Store remembered terrain
                     if cell_type == "x":
                         self.seen_tiles[grid_pos] = "#"
                     else:
-                        tile_state = self.tile_data.get(grid_pos)
+                        tile_state = self.dungeon.tile_data.get(grid_pos)
 
                         if tile_state and tile_state["is_dug"]:
                             self.seen_tiles[grid_pos] = "o"
@@ -408,12 +344,12 @@ class GameManager:
         for row in range(UISettings.ROWS):
             for col in range(UISettings.COLS):
                 x, y = self.grid_to_screen(col, row)
-                cell_type = self.get_map_cell(col, row)
+                cell_type = self.dungeon.get_map_cell(col, row)
 
                 if cell_type == "x":
                     self.screen.blit(self.scaled_wall_tile, (x, y))
                 else:
-                    tile_state = self.tile_data.get((col, row))
+                    tile_state = self.dungeon.tile_data.get((col, row))
                     if tile_state and tile_state["is_dug"]:
                         self.screen.blit(self.scaled_dug_tile, (x, y))
                     elif tile_state:
