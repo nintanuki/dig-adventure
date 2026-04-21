@@ -58,6 +58,9 @@ Do NOT add new features until steps 1–4 are complete.
 - [ ] Game is too hard early on
 - [ ] Some maps are overly punishing
 - [ ] Reduce frustration from “useless” loot
+- [ ] Make key detector more sensitive
+- [ ] Provide clues when monsters are near?
+- [ ] Randomize key, player, door and monster locations. The maps should just be based on walls.
 
 ## Progression
 - [ ] Add scoring system for treasure
