@@ -229,9 +229,10 @@ class GameManager:
 
             # Only update sprites if the game is active. 
             # This prevents the player from moving after death.
+            self.message_log.update()
             if self.game_active:
                 # Always update the log (it handles its own typing timer)
-                self.message_log.update()
+                # self.message_log.update()
                 # Call sprites update functions ONLY if not busy
                 if not self.is_busy:
                     self.all_sprites.update()
