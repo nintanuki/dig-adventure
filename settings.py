@@ -62,8 +62,6 @@ class WindowSettings:
     TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
-    MOVEMENT_COOLDOWN = 0 # Time in milliseconds between allowed movements to prevent spamming
-    # ^ it doesn't seem like we need this? The game waits for the text to finish before letting you move
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class MonsterSettings:

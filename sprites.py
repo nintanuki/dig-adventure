@@ -24,14 +24,6 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft = position)
         self.position = pygame.math.Vector2(self.rect.topleft) # Using Vector2 for easier movement calculations
 
-        # Cooldown Timer (in milliseconds) so the player can't spam movement input
-        # Review later:
-        # This cooldown may now be redundant because GameManager.is_busy()
-        # already prevents overlapping actions while movement and message typing
-        # are in progress.
-        self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
-        self.time_of_last_move = 0
-
         self.inventory = ItemSettings.INITIAL_INVENTORY.copy()
         self.discovered_items = set(self.inventory.keys())
         
@@ -150,72 +142,64 @@ class Player(pygame.sprite.Sprite):
         This method gates actions behind the current cooldown/timer logic,
         then dispatches movement, digging, detector use, light use, or repellent use.
         """
-        current_time = pygame.time.get_ticks()
-        
-        # Check if enough time has passed (The Cooldown)
-        if current_time - self.time_of_last_move >= self.move_cooldown:
-            # Get the direction the player wants to go
-            horizontal_step, vertical_step, action_type = self.get_input()
-            # If there is input, execute the movement and reset the timer
-            if action_type == 'move':
-                self.apply_grid_snap_movement(int(horizontal_step), int(vertical_step))
-                self.time_of_last_move = current_time
 
-            elif action_type == 'dig':
-                self.dig()
-                # advance turn is handled in the dig function because
-                # we need to check if the player already dug there
-                # self.game.advance_turn()
-                self.time_of_last_move = current_time
+        # Get the direction the player wants to go
+        horizontal_step, vertical_step, action_type = self.get_input()
+        # If there is input, execute the movement and reset the timer
+        if action_type == 'move':
+            self.apply_grid_snap_movement(int(horizontal_step), int(vertical_step))
 
-            elif action_type == 'light':
-                # Setup helper variables to avoid repeating code
-                light_source = None
-                if self.inventory.get('LANTERN', 0) > 0:
-                    light_source = ('LANTERN', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
-                elif self.inventory.get('TORCH', 0) > 0:
-                    light_source = ('TORCH', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
-                elif self.inventory.get('MATCH', 0) > 0:
-                    light_source = ('MATCH', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
+        elif action_type == 'dig':
+            self.dig()
+            # advance turn is handled in the dig function because
+            # we need to check if the player already dug there
+            # self.game.advance_turn()
 
-                if light_source:
-                    name, radius, duration = light_source
-                    self.inventory[name] -= 1
-                    
-                    # Store the "Max" values for the shrinking math
-                    self.active_light_max_radius = radius
-                    self.active_light_max_duration = duration
-                    self.light_radius = radius
-                    self.light_turns_left = duration + 1 # fix off by one error
-                    
-                    if self.inventory.get("MAP", 0) > 0:
-                        self.game.refresh_map_snapshot()
-                        self.game.log_message(f"YOU LIGHT A {name.upper()}, YOU CHECK YOUR MAP.")
-                    else:
-                        self.game.log_message(f"YOU LIGHT A {name.upper()}!")
-                    self.game.advance_turn()
+        elif action_type == 'light':
+            # Setup helper variables to avoid repeating code
+            light_source = None
+            if self.inventory.get('LANTERN', 0) > 0:
+                light_source = ('LANTERN', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
+            elif self.inventory.get('TORCH', 0) > 0:
+                light_source = ('TORCH', LightSettings.TORCH_RADIUS, LightSettings.TORCH_DURATION)
+            elif self.inventory.get('MATCH', 0) > 0:
+                light_source = ('MATCH', LightSettings.MATCH_RADIUS, LightSettings.MATCH_DURATION)
+
+            if light_source:
+                name, radius, duration = light_source
+                self.inventory[name] -= 1
+                
+                # Store the "Max" values for the shrinking math
+                self.active_light_max_radius = radius
+                self.active_light_max_duration = duration
+                self.light_radius = radius
+                self.light_turns_left = duration + 1 # fix off by one error
+                
+                if self.inventory.get("MAP", 0) > 0:
+                    self.game.refresh_map_snapshot()
+                    self.game.log_message(f"YOU LIGHT A {name.upper()}, YOU CHECK YOUR MAP.")
                 else:
-                    self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
-                self.time_of_last_move = current_time
+                    self.game.log_message(f"YOU LIGHT A {name.upper()}!")
+                self.game.advance_turn()
+            else:
+                self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
 
-            elif action_type == 'detector':
-                if self.inventory.get('KEY DETECTOR', 0) > 0:
-                    self.use_key_detector()
-                    self.game.advance_turn()
-                else:
-                    self.game.log_message("YOU DON'T HAVE A KEY DETECTOR!")
-                self.time_of_last_move = current_time
+        elif action_type == 'detector':
+            if self.inventory.get('KEY DETECTOR', 0) > 0:
+                self.use_key_detector()
+                self.game.advance_turn()
+            else:
+                self.game.log_message("YOU DON'T HAVE A KEY DETECTOR!")
 
-            elif action_type == 'repellent':
-                if self.inventory.get('MONSTER REPELLENT', 0) > 0:
-                    self.inventory['MONSTER REPELLENT'] -= 1
-                    self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
-                    self.game.log_message("YOU SPRAY THE REPELLENT.")
-                    self.game.audio.play_repellent_sound()
-                    self.game.advance_turn()
-                else:
-                    self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
-                self.time_of_last_move = current_time
+        elif action_type == 'repellent':
+            if self.inventory.get('MONSTER REPELLENT', 0) > 0:
+                self.inventory['MONSTER REPELLENT'] -= 1
+                self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
+                self.game.log_message("YOU SPRAY THE REPELLENT.")
+                self.game.audio.play_repellent_sound()
+                self.game.advance_turn()
+            else:
+                self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
 
     def dig(self) -> None:
         """
@@ -348,7 +332,7 @@ class Player(pygame.sprite.Sprite):
 
         The player only processes new input when not already moving.
         """
-        if not self.is_moving: # We aren't using the cooldown timer so this entire function is probably unnecessary now
+        if not self.is_moving:
             self.process_movement_and_actions()
 
 class Monster(pygame.sprite.Sprite):
