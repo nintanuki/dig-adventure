@@ -99,19 +99,19 @@ class GameManager:
     # -------------------------
 
     def spawn_player(self):
-        col, row = self.dungeon.find_single_marker("P")
+        col, row = self.dungeon.player_grid_pos
         x, y = self.grid_to_screen(col, row)
         self.player = Player(self, (x, y), self.all_sprites)
 
     def spawn_monster(self):
         self.monsters = []
-        for col, row in self.dungeon.find_multiple_markers("M"):
+        for col, row in self.dungeon.monster_grid_positions:
             x, y = self.grid_to_screen(col, row)
             monster = Monster(self, (x, y), self.all_sprites)
             self.monsters.append(monster)
 
     def spawn_door(self):
-        col, row = self.dungeon.find_single_marker("D")
+        col, row = self.dungeon.door_grid_pos
         x, y = self.grid_to_screen(col, row)
         self.door = Door(self, (x, y), self.all_sprites)
 

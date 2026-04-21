@@ -22,6 +22,9 @@ class DungeonMaster:
         self.current_grid = []
         self.tile_data = {}
 
+        self.player_grid_pos = None
+        self.door_grid_pos = None
+        self.monster_grid_positions = []
         self.key_grid_pos = None
         self.map_grid_pos = None
 
@@ -80,15 +83,38 @@ class DungeonMaster:
                         "dirt_surface": random.choice(self.scaled_dirt_tiles),
                     }
 
-        # Pre-place special items from map markers
-        self.key_grid_pos = self.find_single_marker("K")
+        # Randomize all important positions
+        self.player_grid_pos = self.get_random_walkable_position()
+        self.door_grid_pos = self.get_random_walkable_position()
+
+        monster_count = 2
+        self.monster_grid_positions = [
+            self.get_random_walkable_position()
+            for _ in range(monster_count)
+        ]
+
+        self.key_grid_pos = self.get_random_walkable_position()
         self.tile_data[self.key_grid_pos]["item"] = "KEY"
 
-        detector_grid_pos = self.find_single_marker("T")
+        detector_grid_pos = self.get_random_walkable_position()
         self.tile_data[detector_grid_pos]["item"] = "KEY DETECTOR"
 
-        self.map_grid_pos = self.find_single_marker("C")
+        self.map_grid_pos = self.get_random_walkable_position()
         self.tile_data[self.map_grid_pos]["item"] = "MAP"
+
+    def get_walkable_positions(self) -> list[tuple[int, int]]:
+        positions = []
+
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                if self.is_walkable(col, row):
+                    positions.append((col, row))
+
+        return positions
+
+
+    def get_random_walkable_position(self) -> tuple[int, int]:
+        return random.choice(self.get_walkable_positions())
 
     def get_item_at_tile(self, grid_pos: tuple[int, int]) -> tuple[str | None, int]:
         """
@@ -162,21 +188,7 @@ class DungeonMaster:
         return self.get_map_cell(col, row) != "x"
 
     def is_diggable(self, col: int, row: int) -> bool:
-        """
-        Check whether the player can dig or search a grid position.
-
-        Marker tiles are included so special items can still be discovered even
-        when a tile originally contained something other than plain terrain.
-
-        Args:
-            col (int): Grid column.
-            row (int): Grid row.
-
-        Returns:
-            bool: True if the tile should have mutable dig/search state. False
-                for walls and out-of-bounds positions.
-        """
-        return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T", "C"}
+        return self.get_map_cell(col, row) == " "
 
     def blocks_vision(self, col: int, row: int) -> bool:
         """
