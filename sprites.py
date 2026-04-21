@@ -176,7 +176,7 @@ class Player(pygame.sprite.Sprite):
                 self.light_turns_left = duration + 1 # fix off by one error
                 
                 if self.inventory.get("MAP", 0) > 0:
-                    self.game.refresh_map_snapshot()
+                    self.game.map_memory.refresh_map_snapshot()
                     self.game.log_message(f"YOU LIGHT A {name.upper()}, YOU CHECK YOUR MAP.")
                 else:
                     self.game.log_message(f"YOU LIGHT A {name.upper()}!")
@@ -233,7 +233,7 @@ class Player(pygame.sprite.Sprite):
             return
 
         tile["is_dug"] = True
-        self.game.remember_visible_map_info()
+        self.game.map_memory.remember_visible_map_info()
         found_item, amount = self.dungeon.get_item_at_tile(grid_pos)
 
         # Pluralization logic, which is a bit hacky but it works for now.

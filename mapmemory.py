@@ -1,0 +1,120 @@
+from settings import UISettings
+
+class MapMemory:
+    def __init__(self, game) -> None:
+        self.game = game
+
+        self.seen_tiles = {}
+        self.last_map_player_pos = None
+        self.last_seen_monster_pos = set()
+        self.last_seen_door_pos = None
+        self.map_snapshot_lines = []
+
+    
+    def player_can_see_grid_pos(self, target_grid_pos):
+        """Check if a grid coordinate should be revealed on the minimap."""
+        p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
+        t_col, t_row = target_grid_pos
+
+        dx = abs(p_col - t_col)
+        dy = abs(p_row - t_row)
+
+        distance = dx + dy
+        reveal_radius = int(self.game.player.light_radius - 1)
+
+        return distance <= reveal_radius
+
+    def remember_visible_map_info(self):
+        """Persist anything currently visible to the minimap memory."""
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                grid_pos = (col, row)
+
+                if self.game.player_can_see_grid_pos(grid_pos):
+                    cell_type = self.game.dungeon.get_map_cell(col, row)
+
+                    if cell_type == "x":
+                        self.seen_tiles[grid_pos] = "#"
+                    else:
+                        tile_state = self.game.dungeon.tile_data.get(grid_pos)
+                        if tile_state and tile_state["is_dug"]:
+                            self.seen_tiles[grid_pos] = "o"
+                        else:
+                            self.seen_tiles[grid_pos] = " "
+                            
+        # remember door once seen
+        door_grid_pos = self.game.screen_to_grid(self.game.door.position.x, self.game.door.position.y)
+        if self.game.player_can_see_grid_pos(door_grid_pos):
+            self.last_seen_door_pos = door_grid_pos
+
+        # remember monster positions when seen
+        for monster in self.game.monsters:
+            monster_grid_pos = self.game.screen_to_grid(monster.position.x, monster.position.y)
+            if self.game.player_can_see_grid_pos(monster_grid_pos):
+                self.last_seen_monster_pos.add(monster_grid_pos)
+
+    def refresh_map_snapshot(self):
+        """Update remembered map data using only what the player can currently see."""
+        # Remember where the player was when they checked the map
+        self.last_map_player_pos = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
+
+        # Reveal all tiles currently inside light radius
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                grid_pos = (col, row)
+
+                if self.game.player_can_see_grid_pos(grid_pos):
+                    cell_type = self.game.dungeon.get_map_cell(col, row)
+
+                    # Store remembered terrain
+                    if cell_type == "x":
+                        self.seen_tiles[grid_pos] = "#"
+                    else:
+                        tile_state = self.game.dungeon.tile_data.get(grid_pos)
+
+                        if tile_state and tile_state["is_dug"]:
+                            self.seen_tiles[grid_pos] = "o"
+                        else:
+                            self.seen_tiles[grid_pos] = " "
+
+        # Remember door location only if currently visible
+        door_grid_pos = self.game.screen_to_grid(self.game.door.position.x, self.game.door.position.y)
+        if self.game.player_can_see_grid_pos(door_grid_pos):
+            self.last_seen_door_pos = door_grid_pos
+
+        # Remember monster location only if currently visible
+        for monster in self.game.monsters:
+            monster_grid_pos = self.game.screen_to_grid(monster.position.x, monster.position.y)
+            if self.game.player_can_see_grid_pos(monster_grid_pos):
+                self.last_seen_monster_pos.add(monster_grid_pos)
+
+        # Build the frozen text snapshot for the UI
+        self.build_map_snapshot_lines()
+
+    def build_map_snapshot_lines(self):
+        """Build the text rows that the map window will render."""
+        lines = []
+
+        for row in range(UISettings.ROWS):
+            chars = []
+
+            for col in range(UISettings.COLS):
+                grid_pos = (col, row)
+                char = " "
+
+                if grid_pos in self.seen_tiles:
+                    char = self.seen_tiles[grid_pos]
+
+                # Overlay remembered special markers
+                if self.last_seen_door_pos == grid_pos:
+                    char = "D"
+                if self.last_seen_monster_pos == grid_pos:
+                    char = "M"
+                if self.last_map_player_pos == grid_pos:
+                    char = "P"
+
+                chars.append(char)
+
+            lines.append("".join(chars))
+
+        self.map_snapshot_lines = lines

@@ -7,8 +7,9 @@ from settings import *
 from audio import AudioManager
 from sprites import Player, Monster, Door
 from windows import MessageLog, InventoryWindow, MapWindow
-from tilemaps import DUNGEONS
+# from tilemaps import DUNGEONS # is this being used outside of DungeonMaster?
 from dungeon import DungeonMaster
+from mapmemory import MapMemory
 from crt import CRT
 
 class GameManager:
@@ -39,15 +40,46 @@ class GameManager:
         self.inventory_window = InventoryWindow(self)
         self.map_window = MapWindow(self)
 
-        # Variables to track what the player has seen for map drawing
-        self.seen_tiles = {}
-        self.last_map_player_pos = None
-        self.last_seen_monster_pos = set()
-        self.last_seen_door_pos = None
-        self.map_snapshot_lines = []
+        self.map_memory = MapMemory(self)
 
         # CRT Effect
         self.crt = CRT(self.screen)
+
+    #-------------------------
+    # MAP MEMORY PROPERTIES + METHODS --> MapMemory Class
+    #-------------------------
+
+    @property
+    def seen_tiles(self):
+        return self.map_memory.seen_tiles
+
+    @property
+    def last_map_player_pos(self):
+        return self.map_memory.last_map_player_pos
+
+    @property
+    def last_seen_monster_pos(self):
+        return self.map_memory.last_seen_monster_pos
+
+    @property
+    def last_seen_door_pos(self):
+        return self.map_memory.last_seen_door_pos
+
+    @property
+    def map_snapshot_lines(self):
+        return self.map_memory.map_snapshot_lines
+
+    def player_can_see_grid_pos(self, target_grid_pos):
+        return self.map_memory.player_can_see_grid_pos(target_grid_pos)
+
+    def remember_visible_map_info(self):
+        return self.map_memory.remember_visible_map_info()
+
+    def refresh_map_snapshot(self):
+        return self.map_memory.refresh_map_snapshot()
+
+    def build_map_snapshot_lines(self):
+        return self.map_memory.build_map_snapshot_lines()
 
     def reset_game(self):
         """
@@ -263,7 +295,7 @@ class GameManager:
 
         if not self.game_active: return
 
-        self.remember_visible_map_info()
+        self.map_memory.remember_visible_map_info()
 
         # Handle Light Shrinking
         if self.player.light_turns_left > 0:
@@ -343,38 +375,33 @@ class GameManager:
                     pygame.draw.rect(self.screen, (60, 60, 60), tile_outline, 1)
 
     def draw_ui_frames(self):
-        """Draws the aesthetic borders around the game and UI sections."""
-        # The Action Window Frame
-        action_frame_rect = pygame.Rect(
-            UISettings.ACTION_WINDOW_X, 
-            UISettings.ACTION_WINDOW_Y, 
-            UISettings.ACTION_WINDOW_WIDTH, 
-            UISettings.ACTION_WINDOW_HEIGHT)
-        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, action_frame_rect, 2, UISettings.BORDER_RADIUS)
+        """Draw borders around all UI sections."""
         
-        # Sidebar Window Frame
-        sidebar_frame_rect = pygame.Rect(
-            UISettings.SIDEBAR_X,
-            UISettings.SIDEBAR_Y,
-            UISettings.SIDEBAR_WIDTH,
-            UISettings.SIDEBAR_HEIGHT)
-        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, sidebar_frame_rect, 2, UISettings.BORDER_RADIUS)
-        
-        # Message Window Log Frame
-        message_log_frame_rect = pygame.Rect(
-            UISettings.LOG_X,
-            UISettings.LOG_Y,
-            UISettings.LOG_WIDTH,
-            UISettings.LOG_HEIGHT)
-        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, message_log_frame_rect, 2, UISettings.BORDER_RADIUS)
+        # We define the frames as a list of tuples so we can easily loop through them and draw them with the same style.
+        frames = [
+            (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y,
+            UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT),
 
-        # Map Window Frame
-        map_frame_rect = pygame.Rect(
-            UISettings.MAP_X,
-            UISettings.MAP_Y,
-            UISettings.MAP_WIDTH,
-            UISettings.MAP_HEIGHT)
-        pygame.draw.rect(self.screen, UISettings.BORDER_COLOR, map_frame_rect, 2, UISettings.BORDER_RADIUS)
+            (UISettings.SIDEBAR_X, UISettings.SIDEBAR_Y,
+            UISettings.SIDEBAR_WIDTH, UISettings.SIDEBAR_HEIGHT),
+
+            (UISettings.LOG_X, UISettings.LOG_Y,
+            UISettings.LOG_WIDTH, UISettings.LOG_HEIGHT),
+
+            (UISettings.MAP_X, UISettings.MAP_Y,
+            UISettings.MAP_WIDTH, UISettings.MAP_HEIGHT),
+        ]
+
+        # We loop through each frame definition and draw a rounded rectangle with the specified border color, thickness, and radius.
+        for x, y, width, height in frames:
+            rect = pygame.Rect(x, y, width, height)
+            pygame.draw.rect(
+                self.screen,
+                UISettings.BORDER_COLOR,
+                rect,
+                2,
+                UISettings.BORDER_RADIUS
+            )
 
     def draw_fog_of_war(self):
         """
