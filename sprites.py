@@ -203,6 +203,8 @@ class Player(pygame.sprite.Sprite):
         grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
         tile = self.game.tile_data.get(grid_pos)
 
+        # This should never happen since the player can only be on valid tiles,
+        # but we are adding this just in case to prevent crashes.
         if not tile:
             self.game.log_message("YOU CAN'T DIG HERE.")
             return
