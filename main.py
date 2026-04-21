@@ -47,6 +47,38 @@ class GameManager:
         # CRT Effect
         self.crt = CRT(self.screen)
 
+    # -------------------------
+    # BOOT / SETUP
+    # -------------------------
+
+    def setup_controllers(self):
+        """Initializes connected gamepads or joysticks."""
+        pygame.joystick.init()
+        # Create a list of all connected controllers
+        self.connected_joysticks = [pygame.joystick.Joystick(index) for index in range(pygame.joystick.get_count())]
+
+    def load_assets(self):
+        """Handle all image loading and scaling in one place."""
+        self.scaled_dirt_tiles = []
+
+        for dirt_path in AssetPaths.DIRT_TILES:
+            dirt_surf = pygame.image.load(dirt_path).convert_alpha()
+            scaled_dirt = pygame.transform.scale(
+                dirt_surf,
+                (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+            )
+            self.scaled_dirt_tiles.append(scaled_dirt)
+        
+        dug_surf = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
+        self.scaled_dug_tile = pygame.transform.scale(dug_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+
+        wall_surf = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
+        self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+
+    # -------------------------
+    # DUNGEON / MAP BUILDING --> DungeonState / MapState Class
+    # -------------------------
+
     def load_random_dungeon(self):
         """Pick one dungeon and cache all map info for this run."""
         self.dungeon_name, dungeon_data = random.choice(list(DUNGEONS.items()))
@@ -66,6 +98,75 @@ class GameManager:
         for row in self.current_grid:
             if len(row) != UISettings.COLS:
                 raise ValueError(f"{self.dungeon_name} has wrong column count.")
+
+    def setup_tile_map(self):
+        """Build per-tile state from the selected dungeon grid."""
+        self.tile_data = {}
+
+        for row in range(UISettings.ROWS):
+            for col in range(UISettings.COLS):
+                cell_type = self.get_map_cell(col, row)
+
+                if self.is_diggable(col, row):
+                    self.tile_data[(col, row)] = {
+                        "is_dug": False,
+                        "item": None,
+                        "dirt_surface": random.choice(self.scaled_dirt_tiles),
+                    }
+
+        # Pre-place special items from map markers
+        self.key_grid_pos = self.find_single_marker("K")
+        self.tile_data[self.key_grid_pos]["item"] = "KEY"
+
+        detector_pos = self.find_single_marker("T")
+        self.tile_data[detector_pos]["item"] = "KEY DETECTOR"
+
+        self.map_grid_pos = self.find_single_marker("C")
+        self.tile_data[self.map_grid_pos]["item"] = "MAP"
+
+    def get_item_at_tile(self, grid_pos):
+        """Logic to decide what item is found when digging."""
+        # 1. Check if a specific item (like the Key) was pre-placed
+        if self.tile_data[grid_pos]['item']:
+            return self.tile_data[grid_pos]['item'], 1
+        
+        # 2. Otherwise, roll for a random item using your SPAWN_RATES
+        roll = random.random()
+        cumulative_chance = 0
+        for item, chance in ItemSettings.SPAWN_CHANCE.items():
+            cumulative_chance += chance
+            if roll < cumulative_chance:
+                # If this item is selected to spawn, we then check how many should spawn
+                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1)) # Default to 1 if not specified
+                amount = random.randint(min_qty, max_qty) # Random quantity within the defined range for this item
+                return item, amount
+                
+        return None, 0
+    
+    # -------------------------
+    # ENTITY SPAWNING --> SpawnManager Class
+    # -------------------------
+
+    def spawn_player(self):
+        col, row = self.find_single_marker("P")
+        x, y = self.grid_to_screen(col, row)
+        self.player = Player(self, (x, y), self.all_sprites)
+
+    def spawn_monster(self):
+        self.monsters = []
+        for col, row in self.find_multiple_markers("M"):
+            x, y = self.grid_to_screen(col, row)
+            monster = Monster(self, (x, y), self.all_sprites)
+            self.monsters.append(monster)
+
+    def spawn_door(self):
+        col, row = self.find_single_marker("D")
+        x, y = self.grid_to_screen(col, row)
+        self.door = Door(self, (x, y), self.all_sprites)
+
+    # -------------------------
+    # COORDINATE + MAP HELPERS --> MapUtils Class
+    # -------------------------
 
     def grid_to_screen(self, col, row):
         return (
@@ -109,46 +210,9 @@ class GameManager:
             raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
         return positions
 
-    def setup_controllers(self):
-        """Initializes connected gamepads or joysticks."""
-        pygame.joystick.init()
-        # Create a list of all connected controllers
-        self.connected_joysticks = [pygame.joystick.Joystick(index) for index in range(pygame.joystick.get_count())]
-
-    def load_assets(self):
-        """Handle all image loading and scaling in one place."""
-        self.scaled_dirt_tiles = []
-
-        for dirt_path in AssetPaths.DIRT_TILES:
-            dirt_surf = pygame.image.load(dirt_path).convert_alpha()
-            scaled_dirt = pygame.transform.scale(
-                dirt_surf,
-                (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
-            )
-            self.scaled_dirt_tiles.append(scaled_dirt)
-        
-        dug_surf = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
-        self.scaled_dug_tile = pygame.transform.scale(dug_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
-
-        wall_surf = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
-        self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
-
-    def spawn_player(self):
-        col, row = self.find_single_marker("P")
-        x, y = self.grid_to_screen(col, row)
-        self.player = Player(self, (x, y), self.all_sprites)
-
-    def spawn_monster(self):
-        self.monsters = []
-        for col, row in self.find_multiple_markers("M"):
-            x, y = self.grid_to_screen(col, row)
-            monster = Monster(self, (x, y), self.all_sprites)
-            self.monsters.append(monster)
-
-    def spawn_door(self):
-        col, row = self.find_single_marker("D")
-        x, y = self.grid_to_screen(col, row)
-        self.door = Door(self, (x, y), self.all_sprites)
+    # -------------------------
+    # TURN / GAME STATE --> TurnManager Class (maybe not is_busy())
+    # -------------------------
 
     def advance_turn(self):
         """Called whenever the player performs an action."""
@@ -187,7 +251,26 @@ class GameManager:
                 self.audio.play_scream_sound()
                 self.game_active = False
                 break
-            
+
+    @property
+    def is_busy(self):
+        """Centralized check to see if the game is currently animating."""
+        return (self.player.is_moving or 
+                any(monster.is_moving for monster in self.monsters) or
+                self.message_log.is_typing)
+
+    # -------------------------
+    # UI / GAME FEEDBACK --> Leave in GameManager for now
+    # -------------------------
+    
+    def log_message(self, text):
+        """The central hub for all game objects to send text to the UI."""
+        self.message_log.add_message(text)
+
+    # -------------------------
+    # RENDERING --> RenderManager Class
+    # -------------------------
+
     def draw_grid_background(self):
         """
         Loops through the screen and draws the dirt tiles with grey outlines.
@@ -287,10 +370,6 @@ class GameManager:
         # Blit the fog to the screen
         self.screen.blit(self.fog_surface, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
 
-    def log_message(self, text):
-        """The central hub for all game objects to send text to the UI."""
-        self.message_log.add_message(text)
-
     def draw_end_game_screens(self):
         # Draw Game Over Overlay
         if not self.game_active:
@@ -312,49 +391,9 @@ class GameManager:
             text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH/2, ScreenSettings.HEIGHT/2))
             self.screen.blit(text_surf, text_rect)
 
-    def setup_tile_map(self):
-        """Build per-tile state from the selected dungeon grid."""
-        self.tile_data = {}
-
-        for row in range(UISettings.ROWS):
-            for col in range(UISettings.COLS):
-                cell_type = self.get_map_cell(col, row)
-
-                if self.is_diggable(col, row):
-                    self.tile_data[(col, row)] = {
-                        "is_dug": False,
-                        "item": None,
-                        "dirt_surface": random.choice(self.scaled_dirt_tiles),
-                    }
-
-        # Pre-place special items from map markers
-        self.key_grid_pos = self.find_single_marker("K")
-        self.tile_data[self.key_grid_pos]["item"] = "KEY"
-
-        detector_pos = self.find_single_marker("T")
-        self.tile_data[detector_pos]["item"] = "KEY DETECTOR"
-
-        self.map_grid_pos = self.find_single_marker("C")
-        self.tile_data[self.map_grid_pos]["item"] = "MAP"
-
-    def get_item_at_tile(self, grid_pos):
-        """Logic to decide what item is found when digging."""
-        # 1. Check if a specific item (like the Key) was pre-placed
-        if self.tile_data[grid_pos]['item']:
-            return self.tile_data[grid_pos]['item'], 1
-        
-        # 2. Otherwise, roll for a random item using your SPAWN_RATES
-        roll = random.random()
-        cumulative_chance = 0
-        for item, chance in ItemSettings.SPAWN_CHANCE.items():
-            cumulative_chance += chance
-            if roll < cumulative_chance:
-                # If this item is selected to spawn, we then check how many should spawn
-                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1)) # Default to 1 if not specified
-                amount = random.randint(min_qty, max_qty) # Random quantity within the defined range for this item
-                return item, amount
-                
-        return None, 0
+    # -------------------------
+    # VISIBILITY / MAP MEMORY + SNAPSHOT LOGIC
+    # -------------------------
 
     def player_can_see_grid_pos(self, target_grid_pos):
         """Check if a grid coordinate should be revealed on the minimap."""
@@ -464,6 +503,10 @@ class GameManager:
 
         self.map_snapshot_lines = lines
 
+    # -------------------------
+    # LEGACY / REVIEW
+    # -------------------------
+
     def update_map_data(self):
         """Scan the grid and update what the player has discovered."""
         for r in range(UISettings.ROWS):
@@ -478,12 +521,9 @@ class GameManager:
                         # We use a set so we can clear/update the red dot
                         self.last_seen_monster_pos = {(m_col, m_row)}
 
-    @property
-    def is_busy(self):
-        """Centralized check to see if the game is currently animating."""
-        return (self.player.is_moving or 
-                any(monster.is_moving for monster in self.monsters) or
-                self.message_log.is_typing)
+    # -------------------------
+    # MAIN LOOP
+    # -------------------------
 
     def run(self):
         """
