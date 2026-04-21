@@ -227,14 +227,9 @@ class GameManager:
                     if not self.game_active and event.button == 7:
                         self.reset_game()
 
-            # Only update sprites if the game is active. 
-            # This prevents the player from moving after death.
-            self.message_log.update()
+            self.message_log.update() # Update message log to handle typing effect and message timing
             if self.game_active:
-                # Always update the log (it handles its own typing timer)
-                # self.message_log.update()
-                # Call sprites update functions ONLY if not busy
-                if not self.is_busy:
+                if not self.is_busy: # Only allow player input if we're not in the middle of an animation or message
                     self.all_sprites.update()
                 # Always run the animation math (so sprites can finish their slide)
                 for sprite in self.all_sprites:
