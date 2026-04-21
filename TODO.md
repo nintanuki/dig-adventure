@@ -168,3 +168,7 @@ def find_marker(...)
 def find_marker_positions(...)
 
 ^ This feels awkward. Is there a better solution?
+
+- smake metal detector more sensitive, more levels + a real sound
+- add shop or something you can do with gems + gold
+- show gold at end of game
