@@ -121,7 +121,7 @@ class ItemSettings:
     INITIAL_INVENTORY = {
         'MATCH': 1,
         # 'TORCH': 3,
-        'LANTERN': 100,
+        # 'LANTERN': 0,
         # 'MONSTER REPELLENT': 0,
         # 'GOLD COINS': 0,
         # 'RUBY': 0,

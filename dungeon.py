@@ -178,6 +178,73 @@ class DungeonMaster:
         """
         return self.get_map_cell(col, row) in {" ", "P", "M", "D", "K", "T", "C"}
 
+    def blocks_vision(self, col: int, row: int) -> bool:
+        """
+        Return True if this tile blocks sight.
+
+        For now, walls are the only vision blockers.
+        """
+        return self.get_map_cell(col, row) == "x"
+    
+    def manhattan_distance(self, a: tuple[int, int], b: tuple[int, int]) -> int:
+        """
+        Return Manhattan distance between two grid positions.
+        """
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+    
+    def get_line_points(self, start: tuple[int, int], end: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Return all grid points on a line from start to end using Bresenham's algorithm.
+        """
+        x1, y1 = start
+        x2, y2 = end
+
+        points = []
+
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+
+        x, y = x1, y1
+        sx = 1 if x2 > x1 else -1
+        sy = 1 if y2 > y1 else -1
+
+        if dx > dy:
+            err = dx / 2.0
+            while x != x2:
+                points.append((x, y))
+                err -= dy
+                if err < 0:
+                    y += sy
+                    err += dx
+                x += sx
+        else:
+            err = dy / 2.0
+            while y != y2:
+                points.append((x, y))
+                err -= dx
+                if err < 0:
+                    x += sx
+                    err += dy
+                y += sy
+
+        points.append((x2, y2))
+        return points
+    
+    def has_line_of_sight(self, start: tuple[int, int], end: tuple[int, int]) -> bool:
+        """
+        Return True if sight from start to end is not blocked by walls.
+
+        The start tile and end tile themselves are allowed; only tiles in between
+        can block vision.
+        """
+        line_points = self.get_line_points(start, end)
+
+        for col, row in line_points[1:-1]:
+            if self.blocks_vision(col, row):
+                return False
+
+        return True
+    
     # Future refactor: consider replacing find_single_marker / find_multiple_markers
     # with a more unified marker lookup API.
 

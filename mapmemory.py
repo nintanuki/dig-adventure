@@ -16,17 +16,22 @@ class MapMemory:
         # If the player has the map, the whole minimap is revealed.
         if self.game.player.inventory.get("MAP", 0) > 0:
             return True
-        
-        p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
-        t_col, t_row = target_grid_pos
 
-        dx = abs(p_col - t_col)
-        dy = abs(p_row - t_row)
+        player_grid_pos = self.game.screen_to_grid(
+            self.game.player.position.x,
+            self.game.player.position.y
+        )
 
-        distance = dx + dy
         reveal_radius = int(self.game.player.light_radius - 1)
 
-        return distance <= reveal_radius
+        if reveal_radius < 0:
+            return False
+
+        distance = self.dungeon.manhattan_distance(player_grid_pos, target_grid_pos)
+        if distance > reveal_radius:
+            return False
+
+        return self.dungeon.has_line_of_sight(player_grid_pos, target_grid_pos)
 
     def remember_visible_map_info(self):
         """Persist anything currently visible to the minimap memory."""
