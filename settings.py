@@ -186,6 +186,8 @@ class AssetPaths:
     SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
     MONSTER_CHASE_SOUND = os.path.join(SOUND_DIR, 'sfx_sound_nagger1.wav')
     COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.wav')
+    SHORT_SPRAY_SOUND = os.path.join(SOUND_DIR, 'short_spray.mp3')
+    LONG_SPRAY_SOUND = os.path.join(SOUND_DIR, 'long_spray.mp3')
 
 class DebugSettings:
     """Settings related to debugging features."""

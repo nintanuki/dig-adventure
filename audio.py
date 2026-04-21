@@ -1,4 +1,5 @@
 import pygame
+import random
 from settings import *
 
 class AudioManager:
@@ -29,6 +30,10 @@ class AudioManager:
 
         self.coin_sound = pygame.mixer.Sound(AssetPaths.COIN_SOUND)
         self.coin_channel = pygame.mixer.Channel(6)
+
+        self.short_spray_sound = pygame.mixer.Sound(AssetPaths.SHORT_SPRAY_SOUND)
+        self.long_spray_sound = pygame.mixer.Sound(AssetPaths.LONG_SPRAY_SOUND)
+        self.spray_channel = pygame.mixer.Channel(7)
 
     def play_move_sound(self):
         """Play the movement sound effect."""
@@ -66,6 +71,25 @@ class AudioManager:
         """Play a sound effect for when the player collects a coin."""
         if AudioSettings.MUTE or DebugSettings.MUTE: return
         self.coin_channel.play(self.coin_sound)
+
+    def play_short_spray_sound(self):
+        """Play the normal effect for when the player uses the monster repellent spray."""
+        if AudioSettings.MUTE or DebugSettings.MUTE: return
+        self.spray_channel.play(self.short_spray_sound)
+
+    def play_long_spray_sound(self):
+        """Play a funnier sound effect for when the player uses the monster repellent spray."""
+        if AudioSettings.MUTE or DebugSettings.MUTE: return
+        self.spray_channel.play(self.long_spray_sound)
+
+    def play_repellent_sound(self):
+        """Play a random spray sound effect for when the player uses the monster repellent spray."""
+        if random.random() < 0.1:
+            # 10% chance for the long spray
+            self.play_long_spray_sound()
+        else:
+            # 90% chance for the short spray
+            self.play_short_spray_sound()
 
     def update(self):
         """Update method for the audio manager, used for volume control and looping music."""
