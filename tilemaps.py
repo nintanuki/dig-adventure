@@ -104,7 +104,7 @@ DUNGEONS = {'The Clover': {'desc': 'Four interconnected rooms with a central pil
  'The Zig-Zag': {'desc': 'Sharp corners that hide the monster.',
                  'grid': [['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'],
                           ['x', 'P', ' ', ' ', ' ', ' ', 'x', ' ', ' ', ' ', ' ', ' ', ' ', 'x'],
-                          ['x', 'x', 'x', 'x', ' ', '', 'x', ' ', ' ', 'x', 'x', 'x', 'x', 'x'],
+                          ['x', 'x', 'x', 'x', ' ', ' ', 'x', ' ', ' ', 'x', 'x', 'x', 'x', 'x'],
                           ['x', ' ', ' ', ' ', ' ', 'C', 'x', ' ', ' ', ' ', ' ', ' ', 'D', 'x'],
                           ['x', ' ', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x', 'M', 'x'],
                           ['x', ' ', ' ', ' ', ' ', ' ', 'x', ' ', ' ', ' ', ' ', ' ', ' ', 'x'],

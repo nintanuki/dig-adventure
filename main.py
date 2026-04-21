@@ -49,6 +49,24 @@ class GameManager:
         # CRT Effect
         self.crt = CRT(self.screen)
 
+    def reset_game(self):
+        """
+        Restart the game by replacing the current GameManager instance
+        with a brand new one.
+
+        This is safer than trying to manually reset every subsystem,
+        because it reuses the same startup path the game already uses
+        when it first launches.
+
+        We will implement a more elegant reset in the future,
+        but this is a good quick solution for now to speed up testing.
+        """
+        new_game_manager = GameManager()
+        new_game_manager.run()
+        sys.exit()
+
+        # note, it does not stay in fullscreen.
+
     # -------------------------
     # BOOT / SETUP
     # -------------------------
@@ -496,13 +514,20 @@ class GameManager:
                     pygame.quit()
                     sys.exit()
 
-                # Handle fullscreen toggle with F11 key and select button
+                # Keyboard Inputs for fullscreen toggle and game restart
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_F11:
                         pygame.display.toggle_fullscreen()
+                    # Restart only after game over / escape
+                    if not self.game_active and event.key == pygame.K_RETURN:
+                        self.reset_game()
+                # Gamepad Inputs for fullscreen toggle and game restart
                 if event.type == pygame.JOYBUTTONDOWN:
                     if event.button == 6:
                         pygame.display.toggle_fullscreen()
+                    # Restart only after game over / escape
+                    if not self.game_active and event.button == 7:
+                        self.reset_game()
 
             # Only update sprites if the game is active. 
             # This prevents the player from moving after death.
