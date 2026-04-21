@@ -1,6 +1,6 @@
 import random
-from settings import UISettings, ItemSettings
-from tilemaps import DUNGEONS # Rename this dictionary to Dungeon_Maps or Blueprints or something
+from settings import UISettings, ItemSettings, MonsterSettings
+from tilemaps import DUNGEONS
 
 class DungeonMaster:
     def __init__(self, scaled_dirt_tiles: list) -> None:
@@ -18,7 +18,6 @@ class DungeonMaster:
         self.scaled_dirt_tiles = scaled_dirt_tiles
 
         self.dungeon_name = None
-        self.dungeon_desc = None
         self.current_grid = []
         self.tile_data = {}
 
@@ -26,7 +25,6 @@ class DungeonMaster:
         self.door_grid_pos = None
         self.monster_grid_positions = []
         self.key_grid_pos = None
-        self.map_grid_pos = None
 
     # -------------------------
     # DUNGEON / MAP BUILDING
@@ -46,7 +44,6 @@ class DungeonMaster:
                 row or column count.
         """
         self.dungeon_name, dungeon_data = random.choice(list(DUNGEONS.items()))
-        self.dungeon_desc = dungeon_data["desc"]
 
         # Normalize map symbols so '.' also counts as walkable dirt
         self.current_grid = []
@@ -87,20 +84,15 @@ class DungeonMaster:
         self.player_grid_pos = self.get_random_walkable_position()
         self.door_grid_pos = self.get_random_walkable_position()
 
-        monster_count = 2
+        monster_count = MonsterSettings.COUNT
         self.monster_grid_positions = [
             self.get_random_walkable_position()
             for _ in range(monster_count)
         ]
 
-        self.key_grid_pos = self.get_random_walkable_position()
-        self.tile_data[self.key_grid_pos]["item"] = "KEY"
-
-        detector_grid_pos = self.get_random_walkable_position()
-        self.tile_data[detector_grid_pos]["item"] = "KEY DETECTOR"
-
-        self.map_grid_pos = self.get_random_walkable_position()
-        self.tile_data[self.map_grid_pos]["item"] = "MAP"
+        self.key_grid_pos = self.place_fixed_item("KEY")
+        self.place_fixed_item("KEY DETECTOR")
+        self.place_fixed_item("MAP")
 
     def get_walkable_positions(self) -> list[tuple[int, int]]:
         positions = []
@@ -115,6 +107,12 @@ class DungeonMaster:
 
     def get_random_walkable_position(self) -> tuple[int, int]:
         return random.choice(self.get_walkable_positions())
+
+    def place_fixed_item(self, item_name: str) -> tuple[int, int]:
+        """Place a fixed item on a random walkable tile and return its position."""
+        grid_pos = self.get_random_walkable_position()
+        self.tile_data[grid_pos]["item"] = item_name
+        return grid_pos
 
     def get_item_at_tile(self, grid_pos: tuple[int, int]) -> tuple[str | None, int]:
         """
@@ -256,50 +254,3 @@ class DungeonMaster:
                 return False
 
         return True
-    
-    # Future refactor: consider replacing find_single_marker / find_multiple_markers
-    # with a more unified marker lookup API.
-
-    def find_single_marker(self, marker: str) -> tuple[int, int]:
-        """
-        Find the position of a unique marker in the current dungeon.
-
-        Args:
-            marker (str): The map symbol to search for.
-
-        Returns:
-            tuple[int, int]: The marker's grid position as (col, row).
-
-        Raises:
-            ValueError: If the marker does not exist in the current dungeon.
-        """
-        for row_index, row in enumerate(self.current_grid):
-            for col_index, cell in enumerate(row):
-                if cell == marker:
-                    return (col_index, row_index)
-        raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
-
-    def find_multiple_markers(self, marker: str) -> list[tuple[int, int]]:
-        """
-        Find all positions of a repeated marker in the current dungeon.
-
-        Args:
-            marker (str): The map symbol to search for.
-
-        Returns:
-            list[tuple[int, int]]: A list of grid positions as (col, row).
-
-        Raises:
-            ValueError: If the marker does not appear anywhere in the dungeon.
-        """
-        positions: list[tuple[int, int]] = [] # Initialize an empty list to store found positions
-
-        for row_index, row in enumerate(self.current_grid):
-            for col_index, cell in enumerate(row):
-                if cell == marker:
-                    positions.append((col_index, row_index))
-
-        if not positions:
-            raise ValueError(f"Marker {marker!r} not found in dungeon {self.dungeon_name}")
-        
-        return positions

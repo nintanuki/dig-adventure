@@ -176,7 +176,7 @@ class Player(pygame.sprite.Sprite):
                 self.light_turns_left = duration + 1 # fix off by one error
                 
                 if self.inventory.get("MAP", 0) > 0:
-                    self.game.map_memory.refresh_map_snapshot()
+                    self.game.map_memory.remember_visible_map_info()
                     self.game.log_message(f"YOU LIGHT A {name.upper()}, YOU CHECK YOUR MAP.")
                 else:
                     self.game.log_message(f"YOU LIGHT A {name.upper()}!")
@@ -261,13 +261,7 @@ class Player(pygame.sprite.Sprite):
             if found_item == "KEY":
                 self.game.audio.play_key_sound()
 
-            if found_item in ["TORCH", "LANTERN", "MATCH"]:
-                pass # add a sound for lighting something
-
-            # This can all be collapsed into one treasure/reward sound rule if we are keeping the same sounds for both
-            if found_item == "GOLD COINS":
-                self.game.audio.play_coin_sound()
-            if found_item in ["RUBY", "SAPPHIRE", "EMERALD", "DIAMOND"]:
+            if found_item == "GOLD COINS" or found_item in ["RUBY", "SAPPHIRE", "EMERALD", "DIAMOND"]:
                 self.game.audio.play_coin_sound() # using coin sound for treasures for now
                 # change this to something different later
 
@@ -288,15 +282,9 @@ class Player(pygame.sprite.Sprite):
         The detector uses Manhattan distance in grid space and gives stronger
         feedback as the player gets closer.
         """
-        # Current player grid position
-        player_column = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
-        player_row = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
-        
-        # Key grid position (from main.py)
-        key_column, key_row = self.dungeon.key_grid_pos
-        
-        # Manhattan Distance: |x1 - x2| + |y1 - y2|
-        distance = abs(player_column - key_column) + abs(player_row - key_row)
+        player_grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
+        key_grid_pos = self.dungeon.key_grid_pos
+        distance = self.dungeon.manhattan_distance(player_grid_pos, key_grid_pos)
 
         if distance == 0:
             self.game.log_message("THE KEY DETECTOR IS GOING WILD!")

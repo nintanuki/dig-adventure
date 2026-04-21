@@ -69,7 +69,7 @@ class RenderManager:
                 UISettings.BORDER_RADIUS
             )
 
-        score_font = pygame.font.Font(FontSettings.FONT, 12)
+        score_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
         score_surf = score_font.render(f"SCORE: {self.game.score}", False, 'white')
 
         score_x = UISettings.SCORE_X

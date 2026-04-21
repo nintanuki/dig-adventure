@@ -8,6 +8,7 @@ class ScreenSettings:
     RESOLUTION = (WIDTH,HEIGHT)
     FPS = 60
     CRT_ALPHA_RANGE = (75, 90)
+    CRT_SCANLINE_HEIGHT = 3
 
 class GridSettings:
     RAW_TILE_SIZE = 16 # The actual size of the image files (in pixels)
@@ -46,6 +47,7 @@ class UISettings:
     MAP_Y = LOG_Y
     MAP_WIDTH = SIDEBAR_WIDTH
     MAP_HEIGHT = BOTTOM_LOG_HEIGHT
+    MINIMAP_PADDING = 10
 
     SCORE_X = 72
     SCORE_Y = 20
@@ -66,6 +68,7 @@ class PlayerSettings:
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class MonsterSettings:
+    COUNT = 2
     CHASE_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.2 # 1 in 5 chance to stand still
     REPELLENT_DURATION = 5 # Number of turns the repellent effect lasts

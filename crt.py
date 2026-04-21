@@ -16,7 +16,7 @@ class CRT:
 
     def create_crt_lines(self, surf):
         """Draws horizontal scan lines across the surface to enhance the CRT effect."""
-        line_height = 3
+        line_height = ScreenSettings.CRT_SCANLINE_HEIGHT
         for y in range(0, ScreenSettings.HEIGHT, line_height):
             pygame.draw.line(surf, 'black', (0, y), (ScreenSettings.WIDTH, y), 1)
 

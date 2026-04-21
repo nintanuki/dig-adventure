@@ -1,6 +1,5 @@
 import pygame
 import random
-import os
 from settings import *
 
 class AudioManager:
@@ -113,7 +112,3 @@ class AudioManager:
         else:
             # 90% chance for the short spray
             self.play_short_spray_sound()
-
-    def update(self):
-        """Update method for the audio manager, used for volume control and looping music."""
-        pass

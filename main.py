@@ -142,7 +142,8 @@ class GameManager:
         together helps the game stay consistently turn-based.
         """
 
-        if not self.game_active: return
+        if not self.game_active:
+            return
 
         self.map_memory.remember_visible_map_info()
 
