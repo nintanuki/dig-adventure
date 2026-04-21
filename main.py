@@ -1,13 +1,10 @@
 import pygame
 import sys
-import random
-import json
 
 from settings import *
 from audio import AudioManager
 from sprites import Player, Monster, Door
 from windows import MessageLog, InventoryWindow, MapWindow
-# from tilemaps import DUNGEONS # is this being used outside of DungeonMaster?
 from dungeon import DungeonMaster
 from mapmemory import MapMemory
 from render import RenderManager

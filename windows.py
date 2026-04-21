@@ -1,5 +1,4 @@
 import pygame
-from mapmemory import MapMemory
 from settings import UISettings, FontSettings, WindowSettings
 
 class MessageLog:
@@ -9,7 +8,6 @@ class MessageLog:
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
         # Typewriter state
-        self.pending_message = None # Holds the message until sprites finish moving
         self.full_text = ""
         self.active_message = ""
         self.char_index = 0
