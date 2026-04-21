@@ -292,8 +292,12 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("THE KEY DETECTOR BEEPS RAPIDLY!")
         elif distance <= 3:
             self.game.log_message("THE KEY DETECTOR GIVES A STEADY PULSE...")
+        elif distance <= 5:
+            self.game.log_message("THE KEY DETECTOR BEEPS SLOWLY...")
+        elif distance <= 7:
+            self.game.log_message("A FAINT BEEP COMES FROM THE DETECTOR.")
         else:
-            # "Dead silent" for anything further than 3 steps
+            # Dead silent only when very far away.
             self.game.log_message("THE KEY DETECTOR IS SILENT.")
 
     def animate(self) -> None:
