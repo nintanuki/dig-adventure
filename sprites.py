@@ -3,14 +3,17 @@ import random
 from settings import *
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, game, position, groups):
+    def __init__(self, game, position: tuple[int, int], groups) -> None:
         """
-        Initialize the player sprite.
+        Initialize the player sprite and its gameplay state.
+
+        This sets up the player's visual sprite, movement state, inventory,
+        temporary status effects, and animation data.
 
         Args:
-            game (GameManager): The game manager instance.
-            position (tuple): The initial position of the player.
-            groups (list): A list of sprite groups this sprite belongs to.
+            game: The active GameManager instance that coordinates the game.
+            position (tuple[int, int]): The player's starting screen position.
+            groups: Sprite groups this player should be added to.
         """
         super().__init__(groups)
         # Load the player image and armor pieces, then scale them to fit the grid.
@@ -22,6 +25,10 @@ class Player(pygame.sprite.Sprite):
         self.position = pygame.math.Vector2(self.rect.topleft) # Using Vector2 for easier movement calculations
 
         # Cooldown Timer (in milliseconds) so the player can't spam movement input
+        # Review later:
+        # This cooldown may now be redundant because GameManager.is_busy()
+        # already prevents overlapping actions while movement and message typing
+        # are in progress.
         self.move_cooldown = PlayerSettings.MOVEMENT_COOLDOWN
         self.time_of_last_move = 0
 
@@ -44,13 +51,17 @@ class Player(pygame.sprite.Sprite):
         
     def get_input(self) -> tuple[int, int, str | None]:
         """
-        Handle player input for movement,
-        including both keyboard and controller input.
+        Read player input and translate it into movement or action intent.
+
+        Checks both keyboard and controller input and returns a single action
+        for the current frame.
 
         Returns:
-            horizontal_step (int): The number of steps to move horizontally. -1, 0, or 1
-            vertical_step (int): The number of steps to move vertically. -1, 0, or 1
-            action_type (str): 'move', 'dig', 'detector', 'light', 'repellent', or None
+            tuple[int, int, str | None]: A tuple of
+                (horizontal_step, vertical_step, action_type).
+                Movement steps are -1, 0, or 1.
+                action_type is one of 'move', 'dig', 'detector', 'light',
+                'repellent', or None.
         """
         keys = pygame.key.get_pressed()
         horizontal_step = 0 # 0 means no movement, but we are also initializing here
@@ -96,6 +107,17 @@ class Player(pygame.sprite.Sprite):
         return horizontal_step, vertical_step, action_type
 
     def apply_grid_snap_movement(self, horizontal_step: int = 0, vertical_step: int = 0) -> None:
+        """
+        Attempt to move the player by one tile.
+
+        If the target tile is walkable, this starts movement animation,
+        logs the direction, plays the movement sound, and advances the turn.
+        If the target tile is blocked, it logs a boundary message instead.
+
+        Args:
+            horizontal_step (int): Horizontal tile step, usually -1, 0, or 1.
+            vertical_step (int): Vertical tile step, usually -1, 0, or 1.
+        """
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
         target_col = current_col + horizontal_step
         target_row = current_row + vertical_step
@@ -120,27 +142,32 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("YOU CAN'T GO THAT WAY!")
             self.game.audio.play_boundary_sound()
 
-    def process_movement_and_actions(self):
-        """Checks the timer and input before deciding to move."""
+    def process_movement_and_actions(self) -> None:
+        """
+        Process one player input action when the player is allowed to act.
+
+        This method gates actions behind the current cooldown/timer logic,
+        then dispatches movement, digging, detector use, light use, or repellent use.
+        """
         current_time = pygame.time.get_ticks()
         
         # Check if enough time has passed (The Cooldown)
         if current_time - self.time_of_last_move >= self.move_cooldown:
             # Get the direction the player wants to go
-            horizontal_step, vertical_step, action = self.get_input()
+            horizontal_step, vertical_step, action_type = self.get_input()
             # If there is input, execute the movement and reset the timer
-            if action == 'move':
+            if action_type == 'move':
                 self.apply_grid_snap_movement(int(horizontal_step), int(vertical_step))
                 self.time_of_last_move = current_time
 
-            elif action == 'dig':
+            elif action_type == 'dig':
                 self.dig()
                 # advance turn is handled in the dig function because
                 # we need to check if the player already dug there
                 # self.game.advance_turn()
                 self.time_of_last_move = current_time
 
-            elif action == 'light':
+            elif action_type == 'light':
                 # Setup helper variables to avoid repeating code
                 light_source = None
                 if self.inventory.get('LANTERN', 0) > 0:
@@ -170,7 +197,7 @@ class Player(pygame.sprite.Sprite):
                     self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
                 self.time_of_last_move = current_time
 
-            elif action == 'detector':
+            elif action_type == 'detector':
                 if self.inventory.get('KEY DETECTOR', 0) > 0:
                     self.use_key_detector()
                     self.game.advance_turn()
@@ -178,7 +205,7 @@ class Player(pygame.sprite.Sprite):
                     self.game.log_message("YOU DON'T HAVE A KEY DETECTOR!")
                 self.time_of_last_move = current_time
 
-            elif action == 'repellent':
+            elif action_type == 'repellent':
                 if self.inventory.get('MONSTER REPELLENT', 0) > 0:
                     self.inventory['MONSTER REPELLENT'] -= 1
                     self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
@@ -189,7 +216,14 @@ class Player(pygame.sprite.Sprite):
                     self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
                 self.time_of_last_move = current_time
 
-    def dig(self):
+    def dig(self) -> None:
+        """
+        Resolve the player's dig action at the current tile.
+
+        If the player is standing on the door, digging becomes an unlock attempt.
+        Otherwise, this reveals the tile, resolves any discovered item,
+        updates remembered map state, and advances the turn.
+        """
         if self.position == self.game.door.position:
             if self.inventory.get('KEY', 0) > 0:
                 self.game.door.open_door()
@@ -217,6 +251,8 @@ class Player(pygame.sprite.Sprite):
         self.game.remember_visible_map_info()
         found_item, amount = self.game.dungeon.get_item_at_tile(grid_pos)
 
+        # Pluralization logic, which is a bit hacky but it works for now.
+        # WE may want to use a helper function later.
         if found_item:
             display_name = found_item
             if amount > 1:
@@ -240,9 +276,9 @@ class Player(pygame.sprite.Sprite):
             if found_item in ["TORCH", "LANTERN", "MATCH"]:
                 pass # add a sound for lighting something
 
+            # This can all be collapsed into one treasure/reward sound rule if we are keeping the same sounds for both
             if found_item == "GOLD COINS":
                 self.game.audio.play_coin_sound()
-
             if found_item in ["RUBY", "SAPPHIRE", "EMERALD", "DIAMOND"]:
                 self.game.audio.play_coin_sound() # using coin sound for treasures for now
                 # change this to something different later
@@ -257,17 +293,22 @@ class Player(pygame.sprite.Sprite):
         self.game.audio.play_dig_sound()
         self.game.advance_turn()
 
-    def use_key_detector(self):
-        """Calculates distance to key and logs proximity message."""
+    def use_key_detector(self) -> None:
+        """
+        Check the player's distance from the hidden key and log a hint.
+
+        The detector uses Manhattan distance in grid space and gives stronger
+        feedback as the player gets closer.
+        """
         # Current player grid position
-        p_x = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
-        p_y = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
+        player_column = int((self.position.x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE)
+        player_row = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
         
         # Key grid position (from main.py)
-        k_x, k_y = self.game.dungeon.key_grid_pos
+        key_column, key_row = self.game.dungeon.key_grid_pos
         
         # Manhattan Distance: |x1 - x2| + |y1 - y2|
-        distance = abs(p_x - k_x) + abs(p_y - k_y)
+        distance = abs(player_column - key_column) + abs(player_row - key_row)
 
         if distance == 0:
             self.game.log_message("THE KEY DETECTOR IS GOING WILD!")
@@ -279,8 +320,12 @@ class Player(pygame.sprite.Sprite):
             # "Dead silent" for anything further than 3 steps
             self.game.log_message("THE KEY DETECTOR IS SILENT.")
 
-    def animate(self):
-        """Handles the animation of the player sprite when moving."""
+    def animate(self) -> None:
+        """
+        Advance the player's movement animation toward the current target position.
+
+        This keeps the game visually smooth while gameplay still resolves in grid steps.
+        """
         if self.is_moving:
             # Calculate the direction vector towards the target position
             direction = self.target_pos - self.position
@@ -296,13 +341,17 @@ class Player(pygame.sprite.Sprite):
                 self.position += direction
                 self.rect.topleft = (int(self.position.x), int(self.position.y))
 
-    def update(self):
-        """Update the player's state. This method is called every frame."""
-        if not self.is_moving:
+    def update(self) -> None:
+        """
+        Update the player's per-frame behavior.
+
+        The player only processes new input when not already moving.
+        """
+        if not self.is_moving: # We aren't using the cooldown timer so this entire function is probably unnecessary now
             self.process_movement_and_actions()
 
 class Monster(pygame.sprite.Sprite):
-    def __init__(self, game, position, groups):
+    def __init__(self, game, position: tuple[int, int], groups) -> None:
         super().__init__(groups)
         self.game = game
         
@@ -318,7 +367,7 @@ class Monster(pygame.sprite.Sprite):
         self.anim_speed = PlayerSettings.ANIMATION_SPEED
         self.is_chasing = False
 
-    def take_turn(self):
+    def take_turn(self) -> None:
         """Determines the monster's behavior each turn, including chasing the player if they are close enough."""
        
         # Check if the monster is currently repelled
@@ -408,7 +457,7 @@ class Monster(pygame.sprite.Sprite):
         if random.random() > MonsterSettings.IDLE_CHANCE:
             self.move_randomly()
 
-    def move_randomly(self):
+    def move_randomly(self) -> None:
         """Picks a random cardinal direction."""
         direction = random.choice(['up', 'down', 'left', 'right'])
         step_x, step_y = 0, 0
@@ -419,7 +468,7 @@ class Monster(pygame.sprite.Sprite):
         
         self.apply_movement(step_x, step_y)
 
-    def apply_movement(self, horizontal_amount, vertical_amount):
+    def apply_movement(self, horizontal_amount: int, vertical_amount: int) -> None:
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
         target_col = current_col + (horizontal_amount // GridSettings.TILE_SIZE)
         target_row = current_row + (vertical_amount // GridSettings.TILE_SIZE)
@@ -429,7 +478,7 @@ class Monster(pygame.sprite.Sprite):
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
 
-    def has_line_of_sight(self):
+    def has_line_of_sight(self) -> bool:
         """Checks if there are any walls between the monster and the player."""
         m_col, m_row = self.game.screen_to_grid(self.position.x, self.position.y)
         p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
@@ -451,7 +500,7 @@ class Monster(pygame.sprite.Sprite):
             return True
         return False
 
-    def animate(self):
+    def animate(self) -> None:
         """The visual sliding logic."""
         if self.is_moving:
             direction = self.target_pos - self.position
@@ -472,7 +521,7 @@ class Monster(pygame.sprite.Sprite):
         pass
 
 class Door(pygame.sprite.Sprite):
-    def __init__(self, game, position, groups):
+    def __init__(self, game, position: tuple[int, int], groups) -> None:
         super().__init__(groups)
         self.game = game
         
@@ -487,8 +536,8 @@ class Door(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft = position)
         self.position = pygame.math.Vector2(self.rect.topleft)
 
-    def open_door(self):
+    def open_door(self) -> None:
         self.image = self.open_image
 
-    def update(self):
+    def update(self) -> None:
         pass
