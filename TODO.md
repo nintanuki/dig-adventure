@@ -1,56 +1,155 @@
-# Development Roadmap: From Text to Graphics
+# PROJECT TODO — DIG ADVENTURE
 
-## Issues to Fix:
-- [ ] Player can "pass through" the monster
-- [ ] Monster can spawn on top of player
-- [ ] Figure out why text is so blurry
-- [ ] Fix "you found a emerald -> an emerald"
-- [ ] Entire map should be revealed upon escape or gameover
-- [ ] Refactor code, game manager has way too many functions!
-- [ ] Properly comment everything
-- [ ] Monster is green and grass is green... hard to see?
-- [ ] Monster appears to get stuck between two walls until it sees the player and then gives chase
-- [ ] Map drawing feature is not working properly, fix that when you have time
+---
 
-Gameplay:
-- [ ] Add premade maps will walls and obstacles using 2D lists like the Zelda Pygame tutorial (with a randomize option?)
-- [ ] Add a second monster
-- [ ] Pacing is slow, move player faster? But somehow it's waiting until the text is down which I like
-- [ ] Add door, digged locations, and last known monster locations to minimap
+# PRIORITY ORDER (STRICT)
+1. Refactor / Clean Code  
+2. Documentation  
+3. Bug Fixes  
+4. Game Balance  
+5. New Features  
 
-## Ideas
-- [ ] Animate movement (just move the image for now, no frames) and when the "animation" is complete, THEN trigger the type writer effect for the message. THEN allow the player to take their next turn, not just using at timer?
-- [ ] Randomly load in different monster sprites
-- [ ] Add random obstacles
-- [ ] Add text highlighting (e.g. Emerald is green)
-- [ ] Instead of the monster chasing you when it gets close, make the monster attracted to the light! Stronger light sources are more dangerous
-- [ ] Dynamic "Jaws" like music indicating monster distance?
+Do NOT add new features until steps 1–4 are complete.
 
-What to do next:
-- [ ] add metal detector so player isn't wandering aimlessly
-- [ ] no backtracking rule.............?
+---
 
-## Phase 1: The Foundation (Baby Steps)
-- [X] **Window Initialization:** Set up a basic window using a library like Pygame or Arcade.
-- [X] **The Grid:** Render a static 8x8 grid of squares based on the `settings.py` dimensions.
-- [X] **Player Sprite:** Place a simple sprite (or colored square) on the grid that moves with arrow keys.
-- [X] **Controller Support:** Figure out controller early. D-Pad movement and a dig button at least to start.
-- [X] **Boundary Checks:** Ensure the player cannot move outside the grid (porting logic from `main.py`).
+# CORE REFACTORING
 
-## Phase 2: Visibility & "Fog of War"
-- [X] **Darkness Layer:** Cover the grid in black.
-- [X] **Light Radius:** Implement a basic "mask" around the player sprite.
-- [X] **Torch Logic:** Add a button to "Light Torch" that expands the mask radius for $X$ turns.
+## Architecture
+- [ ] Break up `GameManager` (too many responsibilities)
+- [ ] Separate concerns:
+  - Game state
+  - Rendering
+  - Input handling
+  - Turn system
+- [ ] Create clearer systems for:
+  - Turn resolution
+  - Map memory / fog
+  - UI updates
 
-## Phase 3: The Monster & Turn Sync
-- [X] **Monster Sprite:** Add the monster to the grid (hidden by darkness).
-- [?] **Turn Trigger:** Create a function that signals the Monster to move only *after* the player's movement animation ends.
-- [ ] **Visual Cues:** Display "Howl" text or screen shakes when the monster is within 2 steps.
+## Code Quality
+- [ ] Properly comment all systems
+- [ ] Standardize naming conventions
+- [ ] Remove dead / experimental code
+- [ ] Centralize repeated logic (movement, messaging, etc.)
 
-## Phase 4: Digging & Items
-- [X] **Dig Interaction:** Add a keybind to dig. Change tile color/sprite once searched.
-- [X] **UI Sidebar:** Create a basic text overlay to show counts for Torches, Repellent, and Keys.
-- [X] **Victory/Loss Screens:** Replace the `typewriter` "Game Over" with a graphical splash screen.
+---
 
-## Phase 5: Effects?
-- [ ] **Sprite Animation:** Find free placeholder assets for both the player and the monster that have at least 8 frames, 4 for each cardinal direction and 2 per direction for walking. Digging and other animations can be figured out later.
+# BUGS / ISSUES
+
+## Gameplay Bugs
+- [ ] Player can pass through monster
+- [ ] Monster can spawn on player
+- [ ] Monster gets stuck between walls
+- [ ] Monster-player collision delay (should trigger instant game over)
+- [ ] Map drawing is incorrect / broken
+- [ ] Entire map not revealed on win/loss
+
+## Visual / UX Bugs
+- [ ] Text is blurry (font/rendering issue)
+- [ ] Grammar fix: “a emerald” → “an emerald”
+- [ ] Monster visibility issue (color blends with environment)
+
+---
+
+# GAMEPLAY BALANCE
+
+## Difficulty
+- [ ] Game is too hard early on
+- [ ] Some maps are overly punishing
+- [ ] Reduce frustration from “useless” loot
+
+## Progression
+- [ ] Add scoring system for treasure
+- [ ] Make treasure meaningful (shop, upgrades, etc.)
+- [ ] Consider:
+  - Rest stop between levels
+  - Multi-level progression loop
+
+---
+
+# CORE GAMEPLAY IMPROVEMENTS
+
+## Player Experience
+- [ ] Improve pacing (movement vs text timing)
+- [ ] Sync:
+  - Movement animation → THEN text → THEN next turn
+
+## Monster Interaction
+- [ ] Add stealth or avoidance mechanic
+- [ ] Add temporary banish or defensive option
+
+## Map / UI
+- [ ] Show on minimap:
+  - Door
+  - Dug tiles
+  - Last known monster position
+
+---
+
+# EXISTING SYSTEMS TO COMPLETE
+
+## Turn System
+- [ ] Ensure monster moves ONLY after player action completes (animation-aware)
+
+## Feedback Systems
+- [ ] Add visual/audio cues for nearby monster:
+  - Howl text
+  - Screen shake
+  - Audio intensity
+
+---
+
+# CONTENT & STRUCTURE
+
+## Maps
+- [ ] Improve map variety (less repetitive starts)
+- [ ] Adjust unfair layouts
+- [ ] Add more handcrafted maps
+- [ ] (Optional) Controlled randomization
+
+## Rules
+- [ ] Decide on “no backtracking” rule
+
+---
+
+# IDEAS (POST-CORE ONLY)
+
+## Mechanics
+- [ ] Monster attracted to light (stronger light = more danger)
+- [ ] Dynamic monster variety (random sprites)
+- [ ] Random obstacles
+
+## Systems
+- [ ] Dynamic music (Jaws-style proximity system)
+
+## Visual / UX
+- [ ] Text highlighting (e.g. colored item names)
+
+---
+
+# FEATURES TO ADD (AFTER STABILIZATION)
+
+## Gameplay
+- [ ] Add second monster
+- [ ] Add more obstacles
+
+## Player Tools
+- [ ] Metal detector (if not fully implemented yet, move to TODO)
+
+---
+
+# NEXT ACTIONABLE TASKS
+
+- [ ] Metal detector (ensure fully implemented and useful)
+- [ ] Fix map system (visibility + minimap accuracy)
+- [ ] Fix monster collision + spawning bugs
+- [ ] Begin GameManager refactor
+
+---
+
+# NOTES
+
+- Current foundation is solid (grid, movement, fog, digging all working)
+- Biggest risk now is code complexity, not features
+- Focus = stability → clarity → polish → expansion
