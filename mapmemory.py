@@ -13,6 +13,10 @@ class MapMemory:
     
     def player_can_see_grid_pos(self, target_grid_pos):
         """Check if a grid coordinate should be revealed on the minimap."""
+        # If the player has the map, the whole minimap is revealed.
+        if self.game.player.inventory.get("MAP", 0) > 0:
+            return True
+        
         p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
         t_col, t_row = target_grid_pos
 
@@ -79,13 +83,13 @@ class MapMemory:
 
         # Remember door location only if currently visible
         door_grid_pos = self.game.screen_to_grid(self.game.door.position.x, self.game.door.position.y)
-        if self.game.player_can_see_grid_pos(door_grid_pos):
+        if self.player_can_see_grid_pos(door_grid_pos):
             self.last_seen_door_pos = door_grid_pos
 
         # Remember monster location only if currently visible
         for monster in self.game.monsters:
             monster_grid_pos = self.game.screen_to_grid(monster.position.x, monster.position.y)
-            if self.game.player_can_see_grid_pos(monster_grid_pos):
+            if self.player_can_see_grid_pos(monster_grid_pos):
                 self.last_seen_monster_pos.add(monster_grid_pos)
 
         # Build the frozen text snapshot for the UI
