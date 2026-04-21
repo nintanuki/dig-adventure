@@ -140,35 +140,35 @@ class GameManager:
     # instead of going through the GameManager.
     # -------------------------
 
-    @property
-    def tile_data(self):
-        return self.dungeon.tile_data
+    # @property
+    # def tile_data(self):
+    #     return self.dungeon.tile_data
 
-    @property
-    def key_grid_pos(self):
-        return self.dungeon.key_grid_pos
+    # @property
+    # def key_grid_pos(self):
+    #     return self.dungeon.key_grid_pos
 
-    @property
-    def map_grid_pos(self):
-        return self.dungeon.map_grid_pos
+    # @property
+    # def map_grid_pos(self):
+    #     return self.dungeon.map_grid_pos
 
-    def get_map_cell(self, col, row):
-        return self.dungeon.get_map_cell(col, row)
+    # def get_map_cell(self, col, row):
+    #     return self.dungeon.get_map_cell(col, row)
 
-    def is_walkable(self, col, row):
-        return self.dungeon.is_walkable(col, row)
+    # def is_walkable(self, col, row):
+    #     return self.dungeon.is_walkable(col, row)
 
-    def is_diggable(self, col, row):
-        return self.dungeon.is_diggable(col, row)
+    # def is_diggable(self, col, row):
+    #     return self.dungeon.is_diggable(col, row)
 
-    def find_single_marker(self, marker):
-        return self.dungeon.find_single_marker(marker)
+    # def find_single_marker(self, marker):
+    #     return self.dungeon.find_single_marker(marker)
 
-    def find_multiple_markers(self, marker):
-        return self.dungeon.find_multiple_markers(marker)
+    # def find_multiple_markers(self, marker):
+    #     return self.dungeon.find_multiple_markers(marker)
 
-    def get_item_at_tile(self, grid_pos):
-        return self.dungeon.get_item_at_tile(grid_pos)
+    # def get_item_at_tile(self, grid_pos):
+    #     return self.dungeon.get_item_at_tile(grid_pos)
 
     # -------------------------
     # VISIBILITY / MAP MEMORY + SNAPSHOT LOGIC

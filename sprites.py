@@ -41,8 +41,8 @@ class Player(pygame.sprite.Sprite):
         self.anim_speed = PlayerSettings.ANIMATION_SPEED
 
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
-
-    def get_input(self):
+        
+    def get_input(self) -> tuple[int, int, str | None]:
         """
         Handle player input for movement,
         including both keyboard and controller input.
@@ -55,7 +55,7 @@ class Player(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
         horizontal_step = 0 # 0 means no movement, but we are also initializing here
         vertical_step = 0
-        action_type = None
+        action_type: str | None = None
 
         # Movement is based on grid snapping, so the player moves in increments of the tile size.
         # Keyboard check
@@ -95,12 +95,12 @@ class Player(pygame.sprite.Sprite):
 
         return horizontal_step, vertical_step, action_type
 
-    def apply_grid_snap_movement(self, horizontal_step=0, vertical_step=0):
+    def apply_grid_snap_movement(self, horizontal_step: int = 0, vertical_step: int = 0) -> None:
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
         target_col = current_col + horizontal_step
         target_row = current_row + vertical_step
 
-        if self.game.is_walkable(target_col, target_row):
+        if self.game.dungeon.is_walkable(target_col, target_row):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
@@ -130,7 +130,7 @@ class Player(pygame.sprite.Sprite):
             horizontal_step, vertical_step, action = self.get_input()
             # If there is input, execute the movement and reset the timer
             if action == 'move':
-                self.apply_grid_snap_movement(horizontal_step, vertical_step)
+                self.apply_grid_snap_movement(int(horizontal_step), int(vertical_step))
                 self.time_of_last_move = current_time
 
             elif action == 'dig':
@@ -201,7 +201,7 @@ class Player(pygame.sprite.Sprite):
             return
 
         grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
-        tile = self.game.tile_data.get(grid_pos)
+        tile = self.game.dungeon.tile_data.get(grid_pos)
 
         # This should never happen since the player can only be on valid tiles,
         # but we are adding this just in case to prevent crashes.
@@ -215,7 +215,7 @@ class Player(pygame.sprite.Sprite):
 
         tile["is_dug"] = True
         self.game.remember_visible_map_info()
-        found_item, amount = self.game.get_item_at_tile(grid_pos)
+        found_item, amount = self.game.dungeon.get_item_at_tile(grid_pos)
 
         if found_item:
             display_name = found_item
@@ -264,7 +264,7 @@ class Player(pygame.sprite.Sprite):
         p_y = int((self.position.y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE)
         
         # Key grid position (from main.py)
-        k_x, k_y = self.game.key_grid_pos
+        k_x, k_y = self.game.dungeon.key_grid_pos
         
         # Manhattan Distance: |x1 - x2| + |y1 - y2|
         distance = abs(p_x - k_x) + abs(p_y - k_y)
@@ -289,12 +289,12 @@ class Player(pygame.sprite.Sprite):
             if distance < self.anim_speed:
                 # If we're close enough to the target, snap to it and stop moving
                 self.position = self.target_pos
-                self.rect.topleft = self.position # Update the rect's position to match the new position
+                self.rect.topleft = (int(self.position.x), int(self.position.y)) # Update the rect's position to match the new position
                 self.is_moving = False
             else:
                 direction.scale_to_length(self.anim_speed)
                 self.position += direction
-                self.rect.topleft = self.position
+                self.rect.topleft = (int(self.position.x), int(self.position.y))
 
     def update(self):
         """Update the player's state. This method is called every frame."""
@@ -424,7 +424,7 @@ class Monster(pygame.sprite.Sprite):
         target_col = current_col + (horizontal_amount // GridSettings.TILE_SIZE)
         target_row = current_row + (vertical_amount // GridSettings.TILE_SIZE)
 
-        if self.game.is_walkable(target_col, target_row):
+        if self.game.dungeon.is_walkable(target_col, target_row):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
@@ -438,7 +438,7 @@ class Monster(pygame.sprite.Sprite):
         if m_col == p_col:
             start, end = min(m_row, p_row), max(m_row, p_row)
             for row in range(start + 1, end):
-                if not self.game.is_walkable(m_col, row):
+                if not self.game.dungeon.is_walkable(m_col, row):
                     return False
             return True
 
@@ -446,7 +446,7 @@ class Monster(pygame.sprite.Sprite):
         if m_row == p_row:
             start, end = min(m_col, p_col), max(m_col, p_col)
             for col in range(start + 1, end):
-                if not self.game.is_walkable(col, m_row):
+                if not self.game.dungeon.is_walkable(col, m_row):
                     return False
             return True
         return False
@@ -457,12 +457,12 @@ class Monster(pygame.sprite.Sprite):
             direction = self.target_pos - self.position
             if direction.length() < self.anim_speed:
                 self.position = self.target_pos
-                self.rect.topleft = self.position
+                self.rect.topleft = (int(self.position.x), int(self.position.y))
                 self.is_moving = False
             else:
                 direction.scale_to_length(self.anim_speed)
                 self.position += direction
-                self.rect.topleft = self.position
+                self.rect.topleft = (int(self.position.x), int(self.position.y))
 
     def update(self):
         """
