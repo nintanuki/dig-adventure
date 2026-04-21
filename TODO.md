@@ -44,6 +44,7 @@ Do NOT add new features until steps 1–4 are complete.
 - [ ] Monster-player collision delay (should trigger instant game over)
 - [ ] Map drawing is incorrect / broken
 - [ ] Entire map not revealed on win/loss
+- [ ] Play found gold or treasure sound AFTER dig sound, right now they overlap
 
 ## Visual / UX Bugs
 - [ ] Text is blurry (font/rendering issue)
@@ -121,7 +122,8 @@ Do NOT add new features until steps 1–4 are complete.
 # IDEAS (POST-CORE ONLY)
 
 ## Mechanics
-- [ ] Monster attracted to light (stronger light = more danger)
+- [ ] Monster attracted to light (stronger light = more danger) instead of just manhattan distance
+this way the player is completely safe in the dark (unless they literally run into the monster, or are right next to it) each increase in the light radius will increase make monsters start chasing further away
 - [ ] Dynamic monster variety (random sprites)
 - [ ] Random obstacles
 

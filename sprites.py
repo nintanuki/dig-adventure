@@ -235,6 +235,16 @@ class Player(pygame.sprite.Sprite):
             if found_item == "KEY":
                 self.game.audio.play_key_sound()
 
+            if found_item in ["TORCH", "LANTERN", "MATCH"]:
+                pass # add a sound for lighting something
+
+            if found_item == "GOLD COINS":
+                self.game.audio.play_coin_sound()
+
+            if found_item in ["RUBY", "SAPPHIRE", "EMERALD", "DIAMOND"]:
+                self.game.audio.play_coin_sound() # using coin sound for treasures for now
+                # change this to something different later
+
             if found_item:
                 # Add it to the inventory (create it if it doesn't exist)
                 self.inventory[found_item] = self.inventory.get(found_item, 0) + amount
@@ -350,8 +360,15 @@ class Monster(pygame.sprite.Sprite):
             return
 
         # If the monster is not repelled, it will check if the player is within its chase radius.
-        if manhattan_distance <= MonsterSettings.CHASE_RADIUS:
-            self.is_chasing = True
+        # The monster also needs line of sight to the player to start chasing (can't see through walls).
+        if manhattan_distance <= MonsterSettings.CHASE_RADIUS and self.has_line_of_sight():
+            # Only play the sound if we weren't already chasing
+            if not self.is_chasing:
+                self.is_chasing = True
+                self.game.audio.play_monster_chase_sound()
+        else:
+            # Optional: Reset chasing status if they lose the player
+            self.is_chasing = False
 
         # If the monster is chasing, it will try to move towards the player. Otherwise, it will move randomly or idle.
         if self.is_chasing:
@@ -409,6 +426,28 @@ class Monster(pygame.sprite.Sprite):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
+
+    def has_line_of_sight(self):
+        """Checks if there are any walls between the monster and the player."""
+        m_col, m_row = self.game.screen_to_grid(self.position.x, self.position.y)
+        p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
+
+        # Check if they are in the same column
+        if m_col == p_col:
+            start, end = min(m_row, p_row), max(m_row, p_row)
+            for row in range(start + 1, end):
+                if not self.game.is_walkable(m_col, row):
+                    return False
+            return True
+
+        # Check if they are in the same row
+        if m_row == p_row:
+            start, end = min(m_col, p_col), max(m_col, p_col)
+            for col in range(start + 1, end):
+                if not self.game.is_walkable(col, m_row):
+                    return False
+            return True
+        return False
 
     def animate(self):
         """The visual sliding logic."""

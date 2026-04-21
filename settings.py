@@ -184,6 +184,8 @@ class AssetPaths:
     BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')
     KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
     SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
+    MONSTER_CHASE_SOUND = os.path.join(SOUND_DIR, 'sfx_sound_nagger1.wav')
+    COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.wav')
 
 class DebugSettings:
     """Settings related to debugging features."""
