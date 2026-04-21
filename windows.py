@@ -1,4 +1,5 @@
 import pygame
+from mapmemory import MapMemory
 from settings import UISettings, FontSettings, WindowSettings
 
 class MessageLog:
@@ -131,7 +132,7 @@ class MapWindow:
             for c in range(UISettings.COLS):
                 grid_pos = (c, r)
 
-                if grid_pos in self.game.seen_tiles:
+                if grid_pos in self.game.map_memory.seen_tiles:
                     rect = (
                         start_x + (c * mini_tile_size),
                         start_y + (r * mini_tile_size),
@@ -139,7 +140,7 @@ class MapWindow:
                         mini_tile_size - 1
                     )
 
-                    remembered = self.game.seen_tiles[grid_pos]
+                    remembered = self.game.map_memory.seen_tiles[grid_pos]
 
                     if remembered == "#":
                         color = (120, 120, 120)   # wall
@@ -151,8 +152,8 @@ class MapWindow:
                     pygame.draw.rect(surface, color, rect)
 
         # draw remembered door
-        if self.game.last_seen_door_pos:
-            d_col, d_row = self.game.last_seen_door_pos
+        if self.game.map_memory.last_seen_door_pos:
+            d_col, d_row = self.game.map_memory.last_seen_door_pos
             pygame.draw.rect(surface, 'yellow',
                 (start_x + (d_col * mini_tile_size),
                 start_y + (d_row * mini_tile_size),
@@ -160,7 +161,7 @@ class MapWindow:
             )
 
         # draw remembered monster positions
-        for m_col, m_row in self.game.last_seen_monster_pos:
+        for m_col, m_row in self.game.map_memory.last_seen_monster_pos:
             pygame.draw.rect(surface, 'red',
                 (start_x + (m_col * mini_tile_size),
                 start_y + (m_row * mini_tile_size),

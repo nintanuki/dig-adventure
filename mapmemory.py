@@ -3,13 +3,13 @@ from settings import UISettings
 class MapMemory:
     def __init__(self, game) -> None:
         self.game = game
+        self.dungeon = self.game.dungeon
 
         self.seen_tiles = {}
         self.last_map_player_pos = None
         self.last_seen_monster_pos = set()
         self.last_seen_door_pos = None
         self.map_snapshot_lines = []
-
     
     def player_can_see_grid_pos(self, target_grid_pos):
         """Check if a grid coordinate should be revealed on the minimap."""
@@ -30,7 +30,7 @@ class MapMemory:
             for col in range(UISettings.COLS):
                 grid_pos = (col, row)
 
-                if self.game.player_can_see_grid_pos(grid_pos):
+                if self.player_can_see_grid_pos(grid_pos):
                     cell_type = self.game.dungeon.get_map_cell(col, row)
 
                     if cell_type == "x":
@@ -44,13 +44,13 @@ class MapMemory:
                             
         # remember door once seen
         door_grid_pos = self.game.screen_to_grid(self.game.door.position.x, self.game.door.position.y)
-        if self.game.player_can_see_grid_pos(door_grid_pos):
+        if self.player_can_see_grid_pos(door_grid_pos):
             self.last_seen_door_pos = door_grid_pos
 
         # remember monster positions when seen
         for monster in self.game.monsters:
             monster_grid_pos = self.game.screen_to_grid(monster.position.x, monster.position.y)
-            if self.game.player_can_see_grid_pos(monster_grid_pos):
+            if self.player_can_see_grid_pos(monster_grid_pos):
                 self.last_seen_monster_pos.add(monster_grid_pos)
 
     def refresh_map_snapshot(self):
@@ -63,7 +63,7 @@ class MapMemory:
             for col in range(UISettings.COLS):
                 grid_pos = (col, row)
 
-                if self.game.player_can_see_grid_pos(grid_pos):
+                if self.player_can_see_grid_pos(grid_pos):
                     cell_type = self.game.dungeon.get_map_cell(col, row)
 
                     # Store remembered terrain

@@ -161,6 +161,7 @@ this way the player is completely safe in the dark (unless they literally run in
 - Current foundation is solid (grid, movement, fog, digging all working)
 - Biggest risk now is code complexity, not features
 - Focus = stability → clarity → polish → expansion
+- light source shouldn't just be a radius, it should be blocked by walls (player can't see through walls)
 - In dungeon.py the DungeonMaster class has the functions:
 
 def find_marker(...)
