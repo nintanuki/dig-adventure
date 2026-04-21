@@ -16,13 +16,13 @@ Do NOT add new features until steps 1–4 are complete.
 # CORE REFACTORING
 
 ## Architecture
-- [ ] Break up `GameManager` (too many responsibilities)
-- [ ] Separate concerns:
+- [X] Break up `GameManager` (too many responsibilities)
+- [X] Separate concerns:
   - Game state
   - Rendering
   - Input handling
   - Turn system
-- [ ] Create clearer systems for:
+- [X] Create clearer systems for:
   - Turn resolution
   - Map memory / fog
   - UI updates
@@ -172,3 +172,5 @@ def find_marker_positions(...)
 - smake metal detector more sensitive, more levels + a real sound
 - add shop or something you can do with gems + gold
 - show gold at end of game
+- made spawns random again but now I have to make sure things don't spawn on top
+of each other or too close
