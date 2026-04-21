@@ -161,3 +161,9 @@ this way the player is completely safe in the dark (unless they literally run in
 - Current foundation is solid (grid, movement, fog, digging all working)
 - Biggest risk now is code complexity, not features
 - Focus = stability → clarity → polish → expansion
+- In dungeon.py the DungeonMaster class has the functions:
+
+def find_marker(...)
+def find_marker_positions(...)
+
+^ This feels awkward. Is there a better solution?
