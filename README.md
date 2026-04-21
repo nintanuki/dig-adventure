@@ -19,15 +19,17 @@ Survival depends on careful movement, resource management, and reading the situa
   * Dig
   * Use item
 
-There is no idle time — every decision has consequences.
+Every decision has consequences.
 
 ---
 
 ## Objective
 
+* Dig for **Treasure**
 * Find the **hidden key**
 * Locate the **exit door**
 * Escape the dungeon
+* Get the high score
 
 Failing to avoid the monster results in immediate game over.
 
@@ -88,8 +90,6 @@ Each tile can only be dug once.
 * Uses **distance-based logic** to track you
 * Can wander, idle, or chase depending on proximity
 * If it reaches your tile, you lose
-
-The monster becomes more dangerous the closer it is — sometimes without you even seeing it.
 
 ---
 
