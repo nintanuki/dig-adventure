@@ -91,6 +91,8 @@ Do NOT add new features until steps 1–4 are complete.
 
 ## Turn System
 - [ ] Ensure monster moves ONLY after player action completes (animation-aware)
+- [ ] Press start to play again
+- [ ] Score system and leaderboard
 
 ## Feedback Systems
 - [ ] Add visual/audio cues for nearby monster:
@@ -109,7 +111,7 @@ Do NOT add new features until steps 1–4 are complete.
 - [ ] (Optional) Controlled randomization
 
 ## Rules
-- [ ] Decide on “no backtracking” rule
+- [ ] 
 
 ---
 
@@ -131,18 +133,17 @@ Do NOT add new features until steps 1–4 are complete.
 # FEATURES TO ADD (AFTER STABILIZATION)
 
 ## Gameplay
-- [ ] Add second monster
-- [ ] Add more obstacles
+- [ ] Add monster variety
+- [ ] Add more obstacles (traps?)
 
 ## Player Tools
-- [ ] Metal detector (if not fully implemented yet, move to TODO)
+- [ ] 
 
 ---
 
 # NEXT ACTIONABLE TASKS
 
-- [ ] Metal detector (ensure fully implemented and useful)
-- [ ] Fix map system (visibility + minimap accuracy)
+- [ ] Improve map system (visibility + minimap accuracy)
 - [ ] Fix monster collision + spawning bugs
 - [ ] Begin GameManager refactor
 
