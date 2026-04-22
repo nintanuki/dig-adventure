@@ -216,7 +216,7 @@ class Player(pygame.sprite.Sprite):
                 self.inventory['MONSTER REPELLENT'] -= 1
                 self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
                 self.game.log_message("YOU SPRAY THE REPELLENT.")
-                self.game.audio.play_repellent_sound()
+                self.game.audio.play_repellent_sound(self.inventory['MONSTER REPELLENT'])
                 self.game.advance_turn()
             else:
                 self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")

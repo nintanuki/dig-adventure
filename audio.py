@@ -110,13 +110,11 @@ class AudioManager:
         """Play a funnier sound effect for when the player uses the monster repellent spray."""
         self._play_on_channel('spray', self.long_spray_sound)
 
-    def play_repellent_sound(self):
-        """Play a random spray sound effect for when the player uses the monster repellent spray."""
-        if random.random() < 0.1:
-            # 10% chance for the long spray
+    def play_repellent_sound(self, cans_left: int):
+        """Play long spray when the last can is used up, otherwise short spray."""
+        if cans_left == 0:
             self.play_long_spray_sound()
         else:
-            # 90% chance for the short spray
             self.play_short_spray_sound()
 
     def play_found_detector_sound(self):
