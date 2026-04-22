@@ -121,18 +121,20 @@ class ItemSettings:
     # Digging probabilities (must be between 0.0 and 1.0)
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
-        'MONSTER REPELLENT': 0.10,
         'MATCH': 0.25,
         'TORCH': 0.15,
         'LANTERN': 0.05,
-        'KEY DETECTOR': 0.05,
-        'INVISIBILITY CLOAK': 0.05,
-        'MAGIC MAP': 0.01,
+
         'GOLD COINS': 0.20,
         'RUBY': 0.15,
         'SAPPHIRE': 0.10,
         'EMERALD': 0.05,
         'DIAMOND': 0.01
+
+        'MONSTER REPELLENT': 0.10,
+        'INVISIBILITY CLOAK': 0.05,
+        'KEY DETECTOR': 0.05,
+        'MAGIC MAP': 0.01,
     }
 
     SPAWN_QUANTITIES = {
