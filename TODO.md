@@ -171,3 +171,4 @@ Do NOT add new features until steps 1–4 are complete.
 - show gold at end of game
 - Made spawns random again, but now must ensure entities do not spawn on top
   of each other or too close.
+- Create a special area in the UI for unique key items (symbols?) instead of tracking quantity in inventory sidebar

@@ -57,11 +57,11 @@ class WindowSettings:
     LINE_HEIGHT = 22
     TEXT_PADDING = 16
     WELCOME_MESSAGE = [
-        "YOU FIND YOURSELF IN PITCH BLACK DARKNESS...",
         "B - LIGHT A TORCH OR LANTERN",
         "A - DIG AND UNLOCK DOORS",
         "X - USE KEY DETECTOR",
-        "Y - USE MONSTER REPELLENT"]
+        "Y - USE MONSTER REPELLENT",
+        "LB / C - USE INVISIBILITY CLOAK"]
     TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
@@ -89,6 +89,8 @@ class LightSettings:
     LANTERN_DURATION = BASE_DURATION * 3
 
 class ItemSettings:
+    INVISIBILITY_CLOAK_DURATION = 5
+
     # Point values for treasures, we will use this later when we make our score system
     TREASURE_SCORE_VALUES = {
         'GOLD COINS': 1,
@@ -105,7 +107,8 @@ class ItemSettings:
         'MATCH': 0.20,
         'TORCH': 0.10,
         'LANTERN': 0.05,
-        'MAP': 0.05,
+        'KEY DETECTOR': 0.05,
+        'INVISIBILITY CLOAK': 0.01,
         'MAGIC MAP': 0.01,
         'GOLD COINS': 0.20,
         'RUBY': 0.10,
@@ -126,8 +129,8 @@ class ItemSettings:
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        # 'TORCH': 3,
-        # 'LANTERN': 0,
+        # 'TORCH': 0,
+        'LANTERN': 10,
         # 'MONSTER REPELLENT': 0,
         # 'GOLD COINS': 0,
         # 'RUBY': 0,
@@ -135,8 +138,9 @@ class ItemSettings:
         # 'EMERALD': 0,
         # 'DIAMOND': 0,
         # 'KEY DETECTOR': 0,
-        # 'MAP': 1,
-        # 'MAGIC MAP': 1,
+        'INVISIBILITY CLOAK': 100,
+        # 'MAP': 0,
+        'MAGIC MAP': 1,
         # 'KEY': 0
         }
 
@@ -196,6 +200,9 @@ class AssetPaths:
     COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.wav')
     SHORT_SPRAY_SOUND = os.path.join(SOUND_DIR, 'short_spray.mp3')
     LONG_SPRAY_SOUND = os.path.join(SOUND_DIR, 'long_spray.mp3')
+    FOUND_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop3.wav')
+    HOT_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop7.wav')
+    WARM_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop6.wav')
 
     # Music
     MUSIC_DIR = 'music/'

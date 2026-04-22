@@ -24,6 +24,7 @@ class GameManager:
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
         self.game_active = True
+        self.game_result = None
         self.score = 0
 
         self.dungeon.load_random_dungeon()
@@ -167,6 +168,12 @@ class GameManager:
             if self.player.repellent_turns == 0:
                 self.log_message("THE SCENT OF THE REPELLENT FADES AWAY...")
 
+        # Handle Invisibility Cloak Duration
+        if self.player.invisibility_turns > 0:
+            self.player.invisibility_turns -= 1
+            if self.player.invisibility_turns == 0:
+                self.log_message("THE INVISIBILITY CLOAK FADES.")
+
         for monster in self.monsters:
             monster.resolve_turn()
 
@@ -177,12 +184,16 @@ class GameManager:
         if not self.game_active:
             return False
 
+        if self.player.is_invisible():
+            return False
+
         for monster in self.monsters:
             if self.player.position == monster.position:
                 self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
                 pygame.mixer.music.stop() # Stop the music immediately on death
                 self.audio.play_scream_sound()
                 self.game_active = False
+                self.game_result = "loss"
                 return True
 
         return False

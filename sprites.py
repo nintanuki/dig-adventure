@@ -3,7 +3,7 @@ import random
 from typing import Literal
 from settings import *
 
-PlayerAction = Literal['move', 'dig', 'detector', 'light', 'repellent']
+PlayerAction = Literal['move', 'dig', 'detector', 'light', 'repellent', 'cloak']
 PlayerIntent = tuple[int, int, PlayerAction | None]
 
 class Player(pygame.sprite.Sprite):
@@ -21,8 +21,9 @@ class Player(pygame.sprite.Sprite):
         """
         super().__init__(groups)
         # Load the player image and armor pieces, then scale them to fit the grid.
-        self.image = pygame.image.load(AssetPaths.PLAYER).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        player_surf = pygame.image.load(AssetPaths.PLAYER).convert_alpha()
+        self.base_image = pygame.transform.scale(player_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+        self.image = self.base_image.copy()
 
         # Set the rect's top-left corner to the given position
         self.rect = self.image.get_rect(topleft = position)
@@ -32,6 +33,8 @@ class Player(pygame.sprite.Sprite):
         self.discovered_items = set(self.inventory.keys())
         
         self.repellent_turns = 0
+        self.invisibility_turns = 0
+        self.flash_frame = 0
 
         self.light_radius = LightSettings.DEFAULT_RADIUS
         self.light_turns_left = 0
@@ -87,6 +90,8 @@ class Player(pygame.sprite.Sprite):
             action = 'light'
         elif keys[pygame.K_r]:
             action = 'repellent'
+        elif keys[pygame.K_c]:
+            action = 'cloak'
 
         # Controller check
         if pygame.joystick.get_count() > 0:
@@ -111,6 +116,8 @@ class Player(pygame.sprite.Sprite):
                     action = 'detector'
                 elif joystick.get_button(3):
                     action = 'repellent'
+                elif joystick.get_button(4):
+                    action = 'cloak'
 
         return delta_x_tiles, delta_y_tiles, action
 
@@ -192,9 +199,7 @@ class Player(pygame.sprite.Sprite):
                 
                 if self.inventory.get("MAGIC MAP", 0) > 0:
                     self.game.map_memory.remember_visible_map_info()
-                    self.game.log_message(f"YOU LIGHT A {name.upper()}, YOUR MAGIC MAP GLOWS.")
-                else:
-                    self.game.log_message(f"YOU LIGHT A {name.upper()}!")
+                self.game.log_message(f"YOU LIGHT A {name.upper()}!")
                 self.game.advance_turn()
             else:
                 self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
@@ -216,6 +221,14 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
 
+        elif action == 'cloak':
+            if self.inventory.get('INVISIBILITY CLOAK', 0) > 0:
+                self.invisibility_turns = ItemSettings.INVISIBILITY_CLOAK_DURATION + 1
+                self.game.log_message("YOU WRAP YOURSELF IN THE INVISIBILITY CLOAK.")
+                self.game.advance_turn()
+            else:
+                self.game.log_message("YOU DON'T HAVE AN INVISIBILITY CLOAK!")
+
     def dig_current_tile(self) -> None:
         """
         Resolve the player's dig action at the current tile.
@@ -229,6 +242,7 @@ class Player(pygame.sprite.Sprite):
                 self.game.door.open_door()
                 self.game.log_message("YOU USE THE KEY AND ESCAPE THE DUNGEON!")
                 self.game.game_active = False
+                self.game.game_result = "win"
             else:
                 self.game.log_message("THE DOOR IS LOCKED. YOU NEED A KEY!")
                 self.game.audio.play_boundary_sound()
@@ -312,10 +326,13 @@ class Player(pygame.sprite.Sprite):
 
         if distance == 0:
             self.game.log_message("THE KEY DETECTOR IS GOING WILD!")
+            self.game.audio.play_found_detector_sound()
         elif distance == 1:
             self.game.log_message("THE KEY DETECTOR BEEPS RAPIDLY!")
+            self.game.audio.play_hot_detector_sound()
         elif distance <= 3:
             self.game.log_message("THE KEY DETECTOR GIVES A STEADY PULSE...")
+            self.game.audio.play_warm_detector_sound()
         elif distance <= 5:
             self.game.log_message("THE KEY DETECTOR BEEPS SLOWLY...")
         elif distance <= 7:
@@ -323,6 +340,23 @@ class Player(pygame.sprite.Sprite):
         else:
             # Dead silent only when very far away.
             self.game.log_message("THE KEY DETECTOR IS SILENT.")
+
+    def is_invisible(self) -> bool:
+        """Return True while invisibility cloak effect is active."""
+        return self.invisibility_turns > 0
+
+    def update_invisibility_visual(self) -> None:
+        """Flash the player sprite while invisibility is active."""
+        if self.is_invisible():
+            self.flash_frame = (self.flash_frame + 1) % 30
+            alpha = 95 if self.flash_frame < 15 else 255
+            self.image = self.base_image.copy()
+            self.image.set_alpha(alpha)
+            return
+
+        self.flash_frame = 0
+        self.image = self.base_image.copy()
+        self.image.set_alpha(255)
 
     def animate(self) -> None:
         """
@@ -344,6 +378,8 @@ class Player(pygame.sprite.Sprite):
                 direction.scale_to_length(self.anim_speed)
                 self.position += direction
                 self.rect.topleft = (int(self.position.x), int(self.position.y))
+
+        self.update_invisibility_visual()
 
     def update(self) -> None:
         """
@@ -426,6 +462,7 @@ class Monster(pygame.sprite.Sprite):
        
         # Check if the monster is currently repelled
         is_repelled = self.game.player.repellent_turns > 0
+        player_is_invisible = self.game.player.is_invisible()
 
         # Calculate the Manhattan distance to the player
         delta_pixels_x = self.game.player.position.x - self.position.x
@@ -435,6 +472,12 @@ class Monster(pygame.sprite.Sprite):
         # Helper variables for readability
         player_has_light = self.game.player.light_radius > 0
         is_adjacent = manhattan_distance <= 1
+
+        if player_is_invisible:
+            self.is_chasing = False
+            if random.random() > MonsterSettings.IDLE_CHANCE:
+                self.move_randomly_one_tile()
+            return
 
         # If the monster is repelled, it will try to move away from the player instead of towards them.
         if is_repelled:

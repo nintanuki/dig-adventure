@@ -74,7 +74,6 @@ class InventoryWindow:
         header_surf = self.font.render("INVENTORY", False, 'yellow')
         surface.blit(header_surf, (start_x, start_y))
 
-        
         visual_row = 0
         tight_line_height = WindowSettings.LINE_HEIGHT - 1
 

@@ -3,39 +3,56 @@ import random
 from settings import *
 
 class AudioManager:
+    CHANNEL_IDS = {
+        'movement': 0,
+        'boundary': 1,
+        'key': 2,
+        'scream': 3,
+        'dig': 4,
+        'monster_chase': 5,
+        'coin': 6,
+        'spray': 7,
+        'found_detector': 8,
+        'detector': 9,
+    }
+
     def __init__(self):
         """
         Initialize the audio manager and load all necessary sound effects.
         Uses fixed channels for important sounds to prevent them from being cut off by other effects.
         """
+        pygame.mixer.set_num_channels(len(self.CHANNEL_IDS))
+
         # Initialize Music
         self.play_random_bgm()
 
-        # Load the movement sound effect and set up a channel for it
-        self.move_sound = pygame.mixer.Sound(AssetPaths.MOVE_SOUND)
-        self.movement_channel = pygame.mixer.Channel(0)
+        self.move_sound = self._load_sound(AssetPaths.MOVE_SOUND)
+        self.boundary_sound = self._load_sound(AssetPaths.BOUNDARY_SOUND)
+        self.key_sound = self._load_sound(AssetPaths.KEY_SOUND)
+        self.scream_sound = self._load_sound(AssetPaths.SCREAM_SOUND)
+        self.dig_sound = self._load_sound(AssetPaths.DIG_SOUND)
+        self.monster_chase_sound = self._load_sound(AssetPaths.MONSTER_CHASE_SOUND)
+        self.coin_sound = self._load_sound(AssetPaths.COIN_SOUND)
+        self.short_spray_sound = self._load_sound(AssetPaths.SHORT_SPRAY_SOUND)
+        self.long_spray_sound = self._load_sound(AssetPaths.LONG_SPRAY_SOUND)
+        self.found_detector_sound = self._load_sound(AssetPaths.FOUND_DETECTOR_SOUND)
+        self.hot_detector_sound = self._load_sound(AssetPaths.HOT_DETECTOR_SOUND)
+        self.warm_detector_sound = self._load_sound(AssetPaths.WARM_DETECTOR_SOUND)
 
-        self.boundary_sound = pygame.mixer.Sound(AssetPaths.BOUNDARY_SOUND)
-        self.boundary_channel = pygame.mixer.Channel(1)
+        self.channels = {
+            name: pygame.mixer.Channel(channel_id)
+            for name, channel_id in self.CHANNEL_IDS.items()
+        }
 
-        self.key_sound = pygame.mixer.Sound(AssetPaths.KEY_SOUND)
-        self.key_channel = pygame.mixer.Channel(2)
+    def _load_sound(self, path: str) -> pygame.mixer.Sound:
+        """Load one sound effect from disk."""
+        return pygame.mixer.Sound(path)
 
-        self.scream_sound = pygame.mixer.Sound(AssetPaths.SCREAM_SOUND)
-        self.scream_channel = pygame.mixer.Channel(3)
-
-        self.dig_sound = pygame.mixer.Sound(AssetPaths.DIG_SOUND)
-        self.dig_channel = pygame.mixer.Channel(4)
-
-        self.monster_chase_sound = pygame.mixer.Sound(AssetPaths.MONSTER_CHASE_SOUND)
-        self.monster_chase_channel = pygame.mixer.Channel(5)
-
-        self.coin_sound = pygame.mixer.Sound(AssetPaths.COIN_SOUND)
-        self.coin_channel = pygame.mixer.Channel(6)
-
-        self.short_spray_sound = pygame.mixer.Sound(AssetPaths.SHORT_SPRAY_SOUND)
-        self.long_spray_sound = pygame.mixer.Sound(AssetPaths.LONG_SPRAY_SOUND)
-        self.spray_channel = pygame.mixer.Channel(7)
+    def _play_on_channel(self, channel_name: str, sound: pygame.mixer.Sound) -> None:
+        """Play a sound effect on its reserved channel."""
+        if AudioSettings.MUTE or DebugSettings.MUTE:
+            return
+        self.channels[channel_name].play(sound)
 
     def play_random_bgm(self):
         """Selects a random track and starts looping it."""
@@ -59,50 +76,39 @@ class AudioManager:
 
     def play_move_sound(self):
         """Play the movement sound effect."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        # Using a specific channel prevents the sound from being 
-        # cut off by other random sounds
-        self.movement_channel.play(self.move_sound)
+        self._play_on_channel('movement', self.move_sound)
 
     def play_boundary_sound(self):
         """Play the boundary collision sound effect."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.boundary_channel.play(self.boundary_sound)
+        self._play_on_channel('boundary', self.boundary_sound)
 
     def play_key_sound(self):
         """Play a sound effect for when the key is discovered."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.key_channel.play(self.key_sound)
+        self._play_on_channel('key', self.key_sound)
 
     def play_scream_sound(self):
         """Play a scream sound effect for when the player dies."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.scream_channel.play(self.scream_sound)
+        self._play_on_channel('scream', self.scream_sound)
 
     def play_dig_sound(self):
         """Play a digging sound effect for when the player digs."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.dig_channel.play(self.dig_sound)
+        self._play_on_channel('dig', self.dig_sound)
 
     def play_monster_chase_sound(self):
         """Play a sound effect for when the monster is chasing the player."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.monster_chase_channel.play(self.monster_chase_sound)
+        self._play_on_channel('monster_chase', self.monster_chase_sound)
 
     def play_coin_sound(self):
         """Play a sound effect for when the player collects a coin."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.coin_channel.play(self.coin_sound)
+        self._play_on_channel('coin', self.coin_sound)
 
     def play_short_spray_sound(self):
         """Play the normal effect for when the player uses the monster repellent spray."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.spray_channel.play(self.short_spray_sound)
+        self._play_on_channel('spray', self.short_spray_sound)
 
     def play_long_spray_sound(self):
         """Play a funnier sound effect for when the player uses the monster repellent spray."""
-        if AudioSettings.MUTE or DebugSettings.MUTE: return
-        self.spray_channel.play(self.long_spray_sound)
+        self._play_on_channel('spray', self.long_spray_sound)
 
     def play_repellent_sound(self):
         """Play a random spray sound effect for when the player uses the monster repellent spray."""
@@ -112,3 +118,15 @@ class AudioManager:
         else:
             # 90% chance for the short spray
             self.play_short_spray_sound()
+
+    def play_found_detector_sound(self):
+        """Play a sound effect for when the player finds the key detector."""
+        self._play_on_channel('found_detector', self.found_detector_sound)
+
+    def play_hot_detector_sound(self):
+        """Play the stronger detector sound for nearby key feedback."""
+        self._play_on_channel('detector', self.hot_detector_sound)
+
+    def play_warm_detector_sound(self):
+        """Play the weaker detector sound for distant key feedback."""
+        self._play_on_channel('detector', self.warm_detector_sound)

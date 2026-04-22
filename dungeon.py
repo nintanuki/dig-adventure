@@ -81,7 +81,7 @@ class DungeonMaster:
                     }
 
         available_positions = self.get_walkable_positions()
-        required_positions = 2 + MonsterSettings.COUNT + 2  # player, door, monsters, key, detector
+        required_positions = 2 + MonsterSettings.COUNT + 2  # player, door, monsters, key, map
         if len(available_positions) < required_positions:
             raise ValueError("Not enough walkable tiles to place all entities and fixed items.")
 
@@ -96,7 +96,7 @@ class DungeonMaster:
         ]
 
         self.key_grid_pos = self.place_fixed_item("KEY", available_positions)
-        detector_grid_pos = self.place_fixed_item("KEY DETECTOR", available_positions)
+        map_grid_pos = self.place_fixed_item("MAP", available_positions)
 
         if DebugSettings.SPAWN_LOG:
             def fmt_pos(pos: tuple[int, int]) -> str:
@@ -107,7 +107,7 @@ class DungeonMaster:
                 f"[SPAWN] {self.dungeon_name} "
                 f"P={fmt_pos(self.player_grid_pos)} D={fmt_pos(self.door_grid_pos)} "
                 f"M=[{monster_positions}] K={fmt_pos(self.key_grid_pos)} "
-                f"KD={fmt_pos(detector_grid_pos)}"
+                f"MAP={fmt_pos(map_grid_pos)}"
             )
 
     def get_walkable_positions(self) -> list[tuple[int, int]]:
