@@ -3,27 +3,12 @@ import random
 from settings import *
 
 class AudioManager:
-    CHANNEL_IDS = {
-        'movement': 0,
-        'boundary': 1,
-        'key': 2,
-        'scream': 3,
-        'dig': 4,
-        'monster_chase': 5,
-        'coin': 6,
-        'spray': 7,
-        'found_detector': 8,
-        'detector': 9,
-        'light': 10,
-        'vanish': 11,
-    }
-
     def __init__(self):
         """
         Initialize the audio manager and load all necessary sound effects.
         Uses fixed channels for important sounds to prevent them from being cut off by other effects.
         """
-        pygame.mixer.set_num_channels(len(self.CHANNEL_IDS))
+        pygame.mixer.set_num_channels(len(AudioSettings.CHANNEL_IDS))
 
         # Initialize Music
         self.play_random_bgm()
@@ -46,7 +31,7 @@ class AudioManager:
 
         self.channels = {
             name: pygame.mixer.Channel(channel_id)
-            for name, channel_id in self.CHANNEL_IDS.items()
+            for name, channel_id in AudioSettings.CHANNEL_IDS.items()
         }
 
     def _load_sound(self, path: str) -> pygame.mixer.Sound:

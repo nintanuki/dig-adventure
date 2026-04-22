@@ -191,6 +191,20 @@ class AudioSettings:
     MUTE = False
     MUTE_MUSIC = False  # Mute music but keep SFX
     MUSIC_VOLUME = 0.2  # Hardcoded volume (0.0 to 1.0)
+    CHANNEL_IDS = {
+        'movement': 0,
+        'boundary': 1,
+        'key': 2,
+        'scream': 3,
+        'dig': 4,
+        'monster_chase': 5,
+        'coin': 6,
+        'spray': 7,
+        'found_detector': 8,
+        'detector': 9,
+        'light': 10,
+        'vanish': 11,
+    }
 
 class AssetPaths:
     # Images
