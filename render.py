@@ -237,3 +237,61 @@ class RenderManager:
         text_surf = big_font.render(self.game.transition_label, False, 'white')
         text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH / 2, ScreenSettings.HEIGHT / 2))
         self.screen.blit(text_surf, text_rect)
+
+    def draw_treasure_conversion(self):
+        """Draw the treasure to gold conversion display in the action window."""
+        if not self.game.is_in_treasure_conversion_phase:
+            return
+
+        # Draw semi-transparent overlay over the action window
+        overlay = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 200))
+        self.screen.blit(overlay, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
+
+        # Setup fonts
+        font_small = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
+        font_large = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
+
+        # Start position for text display
+        start_x = UISettings.ACTION_WINDOW_X + 20
+        start_y = UISettings.ACTION_WINDOW_Y + 20
+        line_height = 18
+
+        # Current line position
+        y_pos = start_y
+
+        # Display title
+        title_surf = font_large.render("TREASURE EXCHANGED FOR COINS", False, 'yellow')
+        self.screen.blit(title_surf, (start_x, y_pos))
+        y_pos += line_height + 10
+
+        # Display each treasure item with its conversion value
+        total_gold = 0
+        for item, data in self.game.treasure_conversion_data.items():
+            count = data['count']
+            value_each = data['value_each']
+            total_value = count * value_each
+            total_gold += total_value
+
+            # Format: ITEM: count, value = total
+            if count > 1:
+                item_display = f"+ {count} {item}"
+            else:
+                item_display = f"+ 1 {item}"
+
+            item_text = f"{item_display} ({total_value})"
+            item_surf = font_small.render(item_text, False, 'white')
+            self.screen.blit(item_surf, (start_x, y_pos))
+            y_pos += line_height
+
+        # Display total
+        y_pos += 5
+        total_surf = font_large.render(f"= {total_gold} GOLD COINS!", False, 'yellow')
+        self.screen.blit(total_surf, (start_x, y_pos))
+
+        # Check if we should show the "PRESS START" prompt
+        elapsed = pygame.time.get_ticks() - self.game.conversion_display_start_time
+        if elapsed >= self.game.conversion_display_delay_ms:
+            y_pos += line_height + 10
+            prompt_surf = font_small.render("PRESS START TO CONTINUE", False, 'cyan')
+            self.screen.blit(prompt_surf, (start_x, y_pos))

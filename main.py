@@ -37,6 +37,13 @@ class GameManager:
         self.message_success_border_until = 0
         self.l2_trigger_is_pressed = False
         
+        # Treasure Conversion Phase
+        self.in_treasure_conversion = False
+        self.treasure_conversion_data = {}  # Stores treasures found in current level for conversion
+        self.conversion_display_start_time = 0
+        self.conversion_display_delay_ms = 1000  # Delay before showing "PRESS START TO CONTINUE"
+        self.pending_level_load_after_conversion = False
+        
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
         # Initialize Windows
@@ -78,6 +85,10 @@ class GameManager:
     @property
     def is_transitioning(self) -> bool:
         return pygame.time.get_ticks() < self.transition_end_time
+
+    @property
+    def is_in_treasure_conversion_phase(self) -> bool:
+        return self.in_treasure_conversion
 
     def get_high_score_path(self) -> str:
         return os.path.join(os.path.dirname(__file__), GameSettings.HIGH_SCORE_FILE)
@@ -182,6 +193,70 @@ class GameManager:
         next_level_number = self.current_level_number + 1
         self.log_message(f"YOU UNLOCK THE DOOR. DESCENDING TO LEVEL {next_level_number}...")
         self.current_level_index += 1
+        self.start_treasure_conversion()
+
+    def start_treasure_conversion(self) -> None:
+        """Collect treasures from inventory and prepare for conversion display."""
+        # Collect treasure items from inventory (exclude gold coins which should not be converted)
+        treasure_items = {}
+        for item, value in ItemSettings.TREASURE_SCORE_VALUES.items():
+            if item == 'GOLD COINS':  # Skip gold coins - they're the conversion target, not source
+                continue
+            if item in self.player.inventory and self.player.inventory[item] > 0:
+                treasure_items[item] = {
+                    'count': self.player.inventory[item],
+                    'value_each': value
+                }
+        
+        self.treasure_conversion_data = treasure_items
+        self.in_treasure_conversion = True
+        self.conversion_display_start_time = pygame.time.get_ticks()
+        self.audio.stop_music()
+
+    def update_treasure_conversion(self) -> None:
+        """Handle input and state updates during treasure conversion phase."""
+        if not self.in_treasure_conversion:
+            return
+        
+        # Check if enough time has passed to show the "PRESS START" prompt
+        elapsed = pygame.time.get_ticks() - self.conversion_display_start_time
+        display_ready = elapsed >= self.conversion_display_delay_ms
+
+        # Check for player input (A button / Enter key)
+        keys = pygame.key.get_pressed()
+        button_pressed = keys[pygame.K_RETURN] or keys[pygame.K_z]
+        
+        # Also check gamepad
+        for joystick in self.connected_joysticks:
+            if joystick.get_button(0):  # A button
+                button_pressed = True
+                break
+
+        if display_ready and button_pressed:
+            self.complete_treasure_conversion()
+
+    def complete_treasure_conversion(self) -> None:
+        """Convert collected treasures to gold coins and proceed to level load."""
+        # Convert treasures to gold coins
+        total_gold = 0
+        for item, data in self.treasure_conversion_data.items():
+            gold_value = data['value_each'] * data['count']
+            total_gold += gold_value
+        
+        # Add the gold coins to inventory
+        if total_gold > 0:
+            self.player.inventory['GOLD COINS'] = self.player.inventory.get('GOLD COINS', 0) + total_gold
+            self.player.discovered_items.add('GOLD COINS')
+        
+        # Remove converted treasures from inventory
+        for item in self.treasure_conversion_data.keys():
+            self.player.inventory.pop(item, None)
+        
+        # Reset treasure conversion state
+        self.in_treasure_conversion = False
+        self.treasure_conversion_data = {}
+        
+        # Proceed to level transition
         self.start_level_transition()
 
     # -------------------------
@@ -349,6 +424,7 @@ class GameManager:
         # Main game loop
         while True:
             self.update_level_transition()
+            self.update_treasure_conversion()
 
             # Event Handling
             for event in pygame.event.get():
@@ -384,10 +460,10 @@ class GameManager:
 
             self.message_log.update() # Update message log to handle typing effect and message timing
             if self.game_active:
-                if not self.is_transitioning and not self.is_busy: # Only allow player input if we're not in the middle of an animation or message
+                if not self.is_transitioning and not self.is_busy and not self.is_in_treasure_conversion_phase: # Only allow player input if we're not in the middle of an animation or message
                     self.all_sprites.update()
 
-                if not self.is_transitioning:
+                if not self.is_transitioning and not self.is_in_treasure_conversion_phase:
                     # Always run the animation math (so sprites can finish their slide)
                     for sprite in self.all_sprites:
                         if hasattr(sprite, 'animate'):
@@ -409,7 +485,8 @@ class GameManager:
             self.map_window.draw(self.screen)
             self.render.draw_level_transition()
             self.render.draw_end_game_screens()
-            if not self.is_transitioning:
+            self.render.draw_treasure_conversion()
+            if not self.is_transitioning and not self.is_in_treasure_conversion_phase:
                 self.crt.draw() # CRT Effect on top of everything else
 
             pygame.display.flip()
