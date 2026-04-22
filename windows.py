@@ -7,12 +7,99 @@ class MessageLog:
         self.messages = list(WindowSettings.WELCOME_MESSAGE) 
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
+        self.highlight_terms = self._build_highlight_terms()
+
         # Typewriter state
         self.full_text = ""
         self.active_message = ""
         self.char_index = 0
         self.type_speed = WindowSettings.TYPING_SPEED
         self.is_typing = False
+
+    def _build_highlight_terms(self) -> list[tuple[str, str]]:
+        """Build ordered highlight terms for message-window text coloring."""
+        self.control_label_colors = {
+            "X": "dodgerblue",
+            "Y": "yellow",
+            "B": "red",
+            "A": "green",
+        }
+
+        term_colors = {
+            "YOU WERE CAUGHT BY THE MONSTER": "red",
+            "KEY": "yellow",
+            "REPELLENT": "purple",
+            "RUBY": "red",
+            "EMERALD": "green",
+            "SAPPHIRE": "blue",
+            "GOLD COINS": "gold",
+            "GOLD": "gold",
+            "DOORS": "tan",
+            "DOOR": "tan",
+        }
+
+        for term, color in FontSettings.WORD_COLORS.items():
+            if term in {"MONSTER", "MONSTER REPELLENT", "X", "Y", "B", "A"}:
+                continue
+            term_colors.setdefault(term, color)
+
+        return sorted(term_colors.items(), key=lambda item: len(item[0]), reverse=True)
+
+    def _is_word_char(self, char: str) -> bool:
+        return char.isalnum() or char == "_"
+
+    def _has_word_boundaries(self, text: str, index: int, length: int) -> bool:
+        """Require non-word boundaries around highlights to avoid partial matches."""
+        before_ok = index == 0 or not self._is_word_char(text[index - 1])
+        after_index = index + length
+        after_ok = after_index >= len(text) or not self._is_word_char(text[after_index])
+        return before_ok and after_ok
+
+    def _find_match_at(self, text: str, upper_text: str, index: int) -> tuple[str, str] | None:
+        # Highlight controller labels only when they appear as line-leading prompts
+        # like "A - DIG..." so regular words are unaffected.
+        if index == 0 and len(text) >= 4 and text[1:4] == " - " and text[0].upper() in self.control_label_colors:
+            label = text[0]
+            return label, self.control_label_colors[label.upper()]
+
+        for term, color in self.highlight_terms:
+            if upper_text.startswith(term, index) and self._has_word_boundaries(text, index, len(term)):
+                return term, color
+        return None
+
+    def _split_colored_segments(self, text: str, default_color: str) -> list[tuple[str, str]]:
+        """Split text into render segments with per-term colors."""
+        if not text:
+            return []
+
+        segments: list[tuple[str, str]] = []
+        upper_text = text.upper()
+        index = 0
+
+        while index < len(text):
+            match = self._find_match_at(text, upper_text, index)
+            if match:
+                term, color = match
+                segments.append((text[index:index + len(term)], color))
+                index += len(term)
+                continue
+
+            start = index
+            index += 1
+            while index < len(text):
+                if self._find_match_at(text, upper_text, index):
+                    break
+                index += 1
+            segments.append((text[start:index], default_color))
+
+        return segments
+
+    def _draw_colored_line(self, surface, text: str, x: int, y: int, default_color: str) -> None:
+        draw_x = x
+        for segment_text, segment_color in self._split_colored_segments(text, default_color):
+            text_surface = self.font.render(segment_text, False, segment_color)
+            surface.blit(text_surface, (draw_x, y))
+            draw_x += text_surface.get_width()
 
     def add_message(self, text):
         """
@@ -39,15 +126,14 @@ class MessageLog:
 
         # Draw History (Static white text)
         for index, message in enumerate(self.messages):
-            text_surface = self.font.render(message, False, FontSettings.DEFAULT_COLOR)
-            surface.blit(text_surface, (start_x, start_y + (index * WindowSettings.LINE_HEIGHT)))
+            y_pos = start_y + (index * WindowSettings.LINE_HEIGHT)
+            self._draw_colored_line(surface, message, start_x, y_pos, FontSettings.DEFAULT_COLOR)
 
         # Draw Active Message (Typewriter effect in Yellow)
         if self.full_text:
             # Position it right after the last historical message
             y_pos = start_y + (len(self.messages) * WindowSettings.LINE_HEIGHT)
-            text_surface = self.font.render(self.active_message, False, FontSettings.LAST_MESSAGE_COLOR)
-            surface.blit(text_surface, (start_x, y_pos))
+            self._draw_colored_line(surface, self.active_message, start_x, y_pos, FontSettings.LAST_MESSAGE_COLOR)
 
     def update(self):
         """Increments the character count."""
