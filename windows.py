@@ -109,13 +109,20 @@ class MapWindow:
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
     def draw(self, surface):
-        # 1. Calculation for centering
+        # Fit the minimap into the map window and center it.
         padding = UISettings.MINIMAP_PADDING
-        available_w = UISettings.SIDEBAR_WIDTH - (padding * 2)
-        mini_tile_size = available_w // UISettings.COLS
-        
-        start_x = UISettings.SIDEBAR_X + padding
-        start_y = UISettings.MAP_Y + padding
+        available_w = UISettings.MAP_WIDTH - (padding * 2)
+        available_h = UISettings.MAP_HEIGHT - (padding * 2)
+        mini_tile_size = min(
+            available_w // UISettings.COLS,
+            available_h // UISettings.ROWS,
+        )
+
+        map_pixel_w = mini_tile_size * UISettings.COLS
+        map_pixel_h = mini_tile_size * UISettings.ROWS
+
+        start_x = UISettings.MAP_X + (UISettings.MAP_WIDTH - map_pixel_w) // 2
+        start_y = UISettings.MAP_Y + (UISettings.MAP_HEIGHT - map_pixel_h) // 2
 
         # 2. Iterate through the grid ONCE
         for r in range(UISettings.ROWS):

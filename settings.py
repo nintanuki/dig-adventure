@@ -51,6 +51,15 @@ class UISettings:
 
     SCORE_X = 72
     SCORE_Y = 20
+    CURRENT_SCORE_X = SIDEBAR_X + 16
+    CURRENT_SCORE_Y = SCORE_Y
+    LEVEL_X = LEFT_MARGIN
+    LEVEL_Y = ScreenSettings.HEIGHT - 34
+    DUNGEON_NAME_Y = LEVEL_Y + 15
+
+class GameSettings:
+    LEVEL_TRANSITION_MS = 2000
+    HIGH_SCORE_FILE = 'high_score.txt'
 
 class WindowSettings:
     MAX_MESSAGES = 5
@@ -129,25 +138,26 @@ class ItemSettings:
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        # 'TORCH': 0,
-        'LANTERN': 10,
-        # 'MONSTER REPELLENT': 0,
-        # 'GOLD COINS': 0,
-        # 'RUBY': 0,
-        # 'SAPPHIRE': 0,
-        # 'EMERALD': 0,
-        # 'DIAMOND': 0,
-        # 'KEY DETECTOR': 0,
+        'TORCH': 0,
+        'LANTERN': 1000,
+        'MONSTER REPELLENT': 0,
+        'GOLD COINS': 0,
+        'RUBY': 0,
+        'SAPPHIRE': 0,
+        'EMERALD': 0,
+        'DIAMOND': 0,
+        'KEY DETECTOR': 1,
         'INVISIBILITY CLOAK': 100,
         # 'MAP': 0,
         'MAGIC MAP': 1,
-        # 'KEY': 0
+        'KEY': 1
         }
 
 class FontSettings:
     FONT = 'font/Pixeled.ttf'
     MESSAGE_SIZE = 8
     SCORE_SIZE = 12
+    HUD_SIZE = 10
     ENDGAME_SIZE = 32
     DEFAULT_COLOR = 'white'
     LAST_MESSAGE_COLOR = 'yellow'

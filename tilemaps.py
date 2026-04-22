@@ -123,3 +123,16 @@ DUNGEONS = {'The Clover': {'desc': 'Four interconnected rooms with a central pil
                           ['x', ' ', 'x', ' ', 'x', ' ', 'x', ' ', 'x', ' ', 'x', ' ', ' ', 'x'],
                           ['x', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'x'],
                           ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']]}}
+
+DUNGEON_ORDER = [
+    'The Clover',
+    'The Pillars',
+    'The H',
+    'The Gallery',
+    'The Cross',
+    'The Ring',
+    'The Divided',
+    'The Pocket',
+    'The Zig-Zag',
+    'The Serpent',
+]

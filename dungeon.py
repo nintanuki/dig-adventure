@@ -30,20 +30,13 @@ class DungeonMaster:
     # DUNGEON / MAP BUILDING
     # -------------------------
 
-    def load_random_dungeon(self) -> None:
-        """
-        Select a dungeon blueprint and normalize it into a usable grid.
+    def load_dungeon(self, dungeon_name: str) -> None:
+        """Load one specific dungeon blueprint by name."""
+        if dungeon_name not in DUNGEONS:
+            raise KeyError(f"Unknown dungeon: {dungeon_name}")
 
-        This converts the raw dungeon definition into a consistent internal
-        format so the rest of the game can treat diggable terrain uniformly.
-        It also validates the dungeon dimensions early so malformed maps fail
-        fast during setup.
-
-        Raises:
-            ValueError: If the selected dungeon does not match the expected
-                row or column count.
-        """
-        self.dungeon_name, dungeon_data = random.choice(list(DUNGEONS.items()))
+        self.dungeon_name = dungeon_name
+        dungeon_data = DUNGEONS[dungeon_name]
 
         # Normalize map symbols so '.' also counts as walkable dirt
         self.current_grid = []
@@ -59,6 +52,22 @@ class DungeonMaster:
         for row in self.current_grid:
             if len(row) != UISettings.COLS:
                 raise ValueError(f"{self.dungeon_name} has wrong column count.")
+
+    def load_random_dungeon(self) -> None:
+        """
+        Select a dungeon blueprint and normalize it into a usable grid.
+
+        This converts the raw dungeon definition into a consistent internal
+        format so the rest of the game can treat diggable terrain uniformly.
+        It also validates the dungeon dimensions early so malformed maps fail
+        fast during setup.
+
+        Raises:
+            ValueError: If the selected dungeon does not match the expected
+                row or column count.
+        """
+        dungeon_name = random.choice(list(DUNGEONS.keys()))
+        self.load_dungeon(dungeon_name)
 
     def setup_tile_map(self) -> None:
         """

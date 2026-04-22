@@ -240,9 +240,7 @@ class Player(pygame.sprite.Sprite):
         if self.position == self.game.door.position:
             if self.inventory.get('KEY', 0) > 0:
                 self.game.door.open_door()
-                self.game.log_message("YOU USE THE KEY AND ESCAPE THE DUNGEON!")
-                self.game.game_active = False
-                self.game.game_result = "win"
+                self.game.handle_door_unlock()
             else:
                 self.game.log_message("THE DOOR IS LOCKED. YOU NEED A KEY!")
                 self.game.audio.play_boundary_sound()

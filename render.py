@@ -70,12 +70,19 @@ class RenderManager:
             )
 
         score_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
+        hud_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
+
         score_surf = score_font.render(f"SCORE: {self.game.score}", False, 'white')
+        high_score_surf = hud_font.render(f"HIGH SCORE: {self.game.high_score}", False, 'white')
+        level_surf = hud_font.render(f"LEVEL {self.game.current_level_number}", False, 'white')
+        dungeon_name_surf = hud_font.render(self.game.dungeon.dungeon_name.upper(), False, 'white')
 
-        score_x = UISettings.SCORE_X
-        score_y = UISettings.SCORE_Y
+        dungeon_name_rect = dungeon_name_surf.get_rect(center=(UISettings.MAP_X + (UISettings.MAP_WIDTH / 2), UISettings.DUNGEON_NAME_Y))
 
-        self.screen.blit(score_surf, (score_x, score_y))
+        self.screen.blit(high_score_surf, (UISettings.SCORE_X, UISettings.SCORE_Y))
+        self.screen.blit(score_surf, (UISettings.CURRENT_SCORE_X, UISettings.CURRENT_SCORE_Y))
+        self.screen.blit(level_surf, (UISettings.LEVEL_X, UISettings.LEVEL_Y))
+        self.screen.blit(dungeon_name_surf, dungeon_name_rect)
 
     def draw_fog_of_war(self):
         """
@@ -135,7 +142,7 @@ class RenderManager:
             
             # Use explicit game outcome so door-tile deaths do not render as a win.
             if self.game.game_result == "win":
-                end_text = "ESCAPE"
+                end_text = "CONGRATULATIONS"
                 end_color = 'green'
             else:
                 end_text = "GAME OVER"
@@ -145,3 +152,17 @@ class RenderManager:
             text_surf = big_font.render(end_text, False, end_color)
             text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH/2, ScreenSettings.HEIGHT/2))
             self.screen.blit(text_surf, text_rect)
+
+    def draw_level_transition(self):
+        """Draw a full-screen transition card between dungeon levels."""
+        if not self.game.is_transitioning:
+            return
+
+        overlay = pygame.Surface((ScreenSettings.WIDTH, ScreenSettings.HEIGHT))
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        big_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
+        text_surf = big_font.render(self.game.transition_label, False, 'white')
+        text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH / 2, ScreenSettings.HEIGHT / 2))
+        self.screen.blit(text_surf, text_rect)

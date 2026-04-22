@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 
 from settings import *
 from audio import AudioManager
@@ -9,6 +10,7 @@ from dungeon import DungeonMaster
 from mapmemory import MapMemory
 from render import RenderManager
 from crt import CRT
+from tilemaps import DUNGEON_ORDER
 
 class GameManager:
     def __init__(self):
@@ -26,12 +28,12 @@ class GameManager:
         self.game_active = True
         self.game_result = None
         self.score = 0
-
-        self.dungeon.load_random_dungeon()
-        self.dungeon.setup_tile_map()
-        self.spawn_door()
-        self.spawn_monster()
-        self.spawn_player() # Spawn the player at a safe location
+        self.high_score = self.load_high_score()
+        self.level_order = list(DUNGEON_ORDER)
+        self.current_level_index = 0
+        self.transition_label = ""
+        self.transition_end_time = 0
+        self.pending_level_load = False
         
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
@@ -39,13 +41,15 @@ class GameManager:
         self.message_log = MessageLog(self)
         self.inventory_window = InventoryWindow(self)
         self.map_window = MapWindow(self)
-        self.map_memory = MapMemory(self)
+        self.map_memory = None
 
         # CRT Effect
         self.crt = CRT(self.screen)
 
         # Render Manager
-        self.render = RenderManager(self)
+        self.render = None
+
+        self.load_level()
 
     def reset_game(self):
         """
@@ -64,6 +68,114 @@ class GameManager:
         sys.exit()
 
         # note, it does not stay in fullscreen.
+
+    @property
+    def current_level_number(self) -> int:
+        return self.current_level_index + 1
+
+    @property
+    def is_transitioning(self) -> bool:
+        return pygame.time.get_ticks() < self.transition_end_time
+
+    def get_high_score_path(self) -> str:
+        return os.path.join(os.path.dirname(__file__), GameSettings.HIGH_SCORE_FILE)
+
+    def load_high_score(self) -> int:
+        """Load the saved high score from disk if it exists."""
+        high_score_path = self.get_high_score_path()
+        if not os.path.exists(high_score_path):
+            return 0
+
+        try:
+            with open(high_score_path, 'r', encoding='utf-8') as score_file:
+                return int(score_file.read().strip() or 0)
+        except (OSError, ValueError):
+            return 0
+
+    def save_high_score(self) -> None:
+        """Persist the best score reached so far to disk."""
+        self.high_score = max(self.high_score, self.score)
+
+        try:
+            with open(self.get_high_score_path(), 'w', encoding='utf-8') as score_file:
+                score_file.write(str(self.high_score))
+        except OSError:
+            pass
+
+    def capture_player_progress(self) -> dict[str, object] | None:
+        """Snapshot persistent player state before rebuilding the level."""
+        if not hasattr(self, 'player'):
+            return None
+
+        return {
+            'inventory': self.player.inventory.copy(),
+            'discovered_items': set(self.player.discovered_items),
+        }
+
+    def restore_player_progress(self, progress: dict[str, object] | None) -> None:
+        """Restore inventory and discovery state after spawning a fresh player."""
+        if not progress:
+            return
+
+        self.player.inventory = progress['inventory'].copy()
+        self.player.inventory.pop('KEY', None)
+        self.player.discovered_items = set(progress['discovered_items'])
+
+    def load_level(self, player_progress: dict[str, object] | None = None) -> None:
+        """Build the currently selected dungeon level and spawn fresh entities."""
+        self.all_sprites.empty()
+
+        dungeon_name = self.level_order[self.current_level_index]
+        self.dungeon.load_dungeon(dungeon_name)
+        self.dungeon.setup_tile_map()
+        self.spawn_door()
+        self.spawn_monster()
+        self.spawn_player()
+        self.restore_player_progress(player_progress)
+
+        self.map_memory = MapMemory(self)
+        self.render = RenderManager(self)
+
+    def start_level_transition(self) -> None:
+        """Pause on a title card before loading the next dungeon."""
+        self.transition_label = f"LEVEL {self.current_level_number}"
+        self.transition_end_time = pygame.time.get_ticks() + GameSettings.LEVEL_TRANSITION_MS
+        self.pending_level_load = True
+        self.audio.stop_music()
+
+    def update_level_transition(self) -> None:
+        """Load the pending dungeon once the transition card has finished."""
+        if not self.pending_level_load:
+            return
+
+        if pygame.time.get_ticks() < self.transition_end_time:
+            return
+
+        player_progress = self.capture_player_progress()
+        self.load_level(player_progress)
+        self.audio.play_random_bgm()
+        self.pending_level_load = False
+        self.transition_label = ""
+        self.transition_end_time = 0
+
+    def finish_game(self, result: str) -> None:
+        """End the current run and persist the high score."""
+        self.game_active = False
+        self.game_result = result
+        self.audio.stop_music()
+        self.save_high_score()
+
+    def handle_door_unlock(self) -> None:
+        """Advance to the next dungeon, or finish the run on the last door."""
+        if self.current_level_index >= len(self.level_order) - 1:
+            self.log_message("CONGRATULATIONS! YOU CLEARED THE FINAL DUNGEON!")
+            self.finish_game("win")
+            return
+
+        next_level_number = self.current_level_number + 1
+        self.log_message(f"YOU UNLOCK THE DOOR. DESCENDING TO LEVEL {next_level_number}...")
+        self.current_level_index += 1
+        self.start_level_transition()
 
     # -------------------------
     # BOOT / SETUP
@@ -190,10 +302,8 @@ class GameManager:
         for monster in self.monsters:
             if self.player.position == monster.position:
                 self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
-                pygame.mixer.music.stop() # Stop the music immediately on death
                 self.audio.play_scream_sound()
-                self.game_active = False
-                self.game_result = "loss"
+                self.finish_game("loss")
                 return True
 
         return False
@@ -231,6 +341,8 @@ class GameManager:
         """
         # Main game loop
         while True:
+            self.update_level_transition()
+
             # Event Handling
             for event in pygame.event.get():
                 # Handle quitting the game
@@ -255,15 +367,17 @@ class GameManager:
 
             self.message_log.update() # Update message log to handle typing effect and message timing
             if self.game_active:
-                if not self.is_busy: # Only allow player input if we're not in the middle of an animation or message
+                if not self.is_transitioning and not self.is_busy: # Only allow player input if we're not in the middle of an animation or message
                     self.all_sprites.update()
-                # Always run the animation math (so sprites can finish their slide)
-                for sprite in self.all_sprites:
-                    if hasattr(sprite, 'animate'):
-                        sprite.animate()
 
-                # Catch collisions immediately when a monster finishes moving onto the player.
-                self.check_player_caught_by_monster()
+                if not self.is_transitioning:
+                    # Always run the animation math (so sprites can finish their slide)
+                    for sprite in self.all_sprites:
+                        if hasattr(sprite, 'animate'):
+                            sprite.animate()
+
+                    # Catch collisions immediately when a monster finishes moving onto the player.
+                    self.check_player_caught_by_monster()
 
             # Drawing
             self.screen.fill('black')
@@ -276,8 +390,10 @@ class GameManager:
             self.message_log.draw(self.screen)
             self.inventory_window.draw(self.screen)
             self.map_window.draw(self.screen)
+            self.render.draw_level_transition()
             self.render.draw_end_game_screens()
-            self.crt.draw() # CRT Effect on top of everything else
+            if not self.is_transitioning:
+                self.crt.draw() # CRT Effect on top of everything else
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)

@@ -74,6 +74,10 @@ class AudioManager:
         except pygame.error as e:
             print(f"Could not load music track {track}: {e}") # Handle missing file or unsupported format gracefully
 
+    def stop_music(self) -> None:
+        """Stop the currently playing background track."""
+        pygame.mixer.music.stop()
+
     def play_move_sound(self):
         """Play the movement sound effect."""
         self._play_on_channel('movement', self.move_sound)
