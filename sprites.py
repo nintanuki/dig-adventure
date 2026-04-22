@@ -34,6 +34,7 @@ class Player(pygame.sprite.Sprite):
         
         self.repellent_turns = 0
         self.invisibility_turns = 0
+        self.cloak_cooldown_turns = 0
         self.flash_frame = 0
 
         self.light_radius = LightSettings.DEFAULT_RADIUS
@@ -236,13 +237,19 @@ class Player(pygame.sprite.Sprite):
                 self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
 
         elif action == 'cloak':
-            if self.inventory.get('INVISIBILITY CLOAK', 0) > 0:
+            if self.inventory.get('INVISIBILITY CLOAK', 0) <= 0:
+                self.game.log_message("YOU DON'T HAVE AN INVISIBILITY CLOAK!")
+            elif self.cloak_cooldown_turns > 0:
+                turns_label = "TURN" if self.cloak_cooldown_turns == 1 else "TURNS"
+                self.game.log_message(
+                    f"THE INVISIBILITY CLOAK RECHARGES IN {self.cloak_cooldown_turns} {turns_label}."
+                )
+            else:
                 self.invisibility_turns = ItemSettings.INVISIBILITY_CLOAK_DURATION + 1
+                self.cloak_cooldown_turns = ItemSettings.INVISIBILITY_CLOAK_COOLDOWN + 1
                 self.game.log_message("YOU WRAP YOURSELF IN THE INVISIBILITY CLOAK.")
                 self.game.audio.play_vanish_sound()
                 self.game.advance_turn()
-            else:
-                self.game.log_message("YOU DON'T HAVE AN INVISIBILITY CLOAK!")
 
     def dig_current_tile(self) -> None:
         """
@@ -283,6 +290,11 @@ class Player(pygame.sprite.Sprite):
         # WE may want to use a helper function later.
         if found_item:
             display_name = found_item
+            duplicate_key_detector = (
+                found_item == "KEY DETECTOR" and
+                self.inventory.get("KEY DETECTOR", 0) > 0
+            )
+
             if amount > 1:
                 if found_item == "TORCH":
                     display_name = "TORCHES"
@@ -296,8 +308,12 @@ class Player(pygame.sprite.Sprite):
             if found_item in ItemSettings.TREASURE_SCORE_VALUES:
                 self.game.add_score(found_item, amount)
 
-            if amount > 1:
+            if duplicate_key_detector:
+                self.game.log_message("YOU FOUND A KEY DETECTOR, BUT YOU ALREADY HAVE ONE.")
+            elif amount > 1:
                 self.game.log_message(f"YOU FOUND {amount} {display_name}!")
+            elif found_item == "MONSTER REPELLENT":
+                self.game.log_message("YOU FOUND A CAN OF MONSTER REPELLENT!")
             else:
                 article = 'AN' if found_item[0] in 'AEIOU' else 'A'
                 self.game.log_message(f"YOU FOUND {article} {found_item}!")
@@ -310,18 +326,19 @@ class Player(pygame.sprite.Sprite):
                 # change this to something different later
 
             if found_item:
-                if found_item == "MAGIC MAP" and self.inventory.get("MAP", 0) > 0:
-                    self.inventory["MAP"] -= 1
-                    if self.inventory["MAP"] <= 0:
-                        self.inventory.pop("MAP", None)
+                if not duplicate_key_detector:
+                    if found_item == "MAGIC MAP" and self.inventory.get("MAP", 0) > 0:
+                        self.inventory["MAP"] -= 1
+                        if self.inventory["MAP"] <= 0:
+                            self.inventory.pop("MAP", None)
 
-                # Add it to the inventory (create it if it doesn't exist)
-                self.inventory[found_item] = self.inventory.get(found_item, 0) + amount
-                # Add it to discovered_items so the window draws it
-                self.discovered_items.add(found_item)
+                    # Add it to the inventory (create it if it doesn't exist)
+                    self.inventory[found_item] = self.inventory.get(found_item, 0) + amount
+                    # Add it to discovered_items so the window draws it
+                    self.discovered_items.add(found_item)
 
-                if found_item in ["MAP", "MAGIC MAP"]:
-                    self.game.map_memory.reveal_full_terrain_memory()
+                    if found_item in ["MAP", "MAGIC MAP"]:
+                        self.game.map_memory.reveal_full_terrain_memory()
         else:
             self.game.log_message("NOTHING BUT DIRT HERE.")
         self.game.advance_turn()

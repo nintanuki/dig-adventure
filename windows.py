@@ -173,6 +173,8 @@ class InventoryWindow:
             if has_it or discovered:
                 # 1. Render the Label (Always White)
                 label_text = f"{item}: "
+                if item == "INVISIBILITY CLOAK" and self.game.player.cloak_cooldown_turns > 0:
+                    label_text = f"{item} (CD {self.game.player.cloak_cooldown_turns}): "
                 label_surf = self.font.render(label_text, False, FontSettings.DEFAULT_COLOR)
                 
                 # 2. Render the Number (Red if 0, otherwise White)

@@ -106,6 +106,16 @@ Do NOT add new features until steps 1–4 are complete.
   - Howl text
   - Screen shake
   - Audio intensity
+- [ ] Create dedicated sound effect for lighting a lantern
+- [ ] Add item-found sound effects for tools:
+  - Match
+  - Torch
+  - Lantern
+  - Key detector
+  - Map
+- [ ] Add special rare-find sound effects for:
+  - Invisibility cloak
+  - Magic map
 
 ---
 
