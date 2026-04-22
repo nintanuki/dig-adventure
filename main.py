@@ -168,7 +168,7 @@ class GameManager:
                 self.log_message("THE SCENT OF THE REPELLENT FADES AWAY...")
 
         for monster in self.monsters:
-            monster.take_turn()
+            monster.resolve_turn()
 
         self.check_player_caught_by_monster()
 

@@ -1,6 +1,10 @@
 import pygame
 import random
+from typing import Literal
 from settings import *
+
+PlayerAction = Literal['move', 'dig', 'detector', 'light', 'repellent']
+PlayerIntent = tuple[int, int, PlayerAction | None]
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, position: tuple[int, int], groups) -> None:
@@ -42,7 +46,7 @@ class Player(pygame.sprite.Sprite):
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
         self.dungeon = self.game.dungeon # Reference to the dungeon for checking tile states during movement and actions
 
-    def get_input(self) -> tuple[int, int, str | None]:
+    def read_input_intent(self) -> PlayerIntent:
         """
         Read player input and translate it into movement or action intent.
 
@@ -50,32 +54,39 @@ class Player(pygame.sprite.Sprite):
         for the current frame.
 
         Returns:
-            tuple[int, int, str | None]: A tuple of
-                (horizontal_step, vertical_step, action_type).
-                Movement steps are -1, 0, or 1.
-                action_type is one of 'move', 'dig', 'detector', 'light',
-                'repellent', or None.
+            PlayerIntent: A tuple of (delta_x_tiles, delta_y_tiles, action).
+            Movement deltas are -1, 0, or 1.
+            action is one of 'move', 'dig', 'detector', 'light',
+            'repellent', or None.
         """
         keys = pygame.key.get_pressed()
-        horizontal_step = 0 # 0 means no movement, but we are also initializing here
-        vertical_step = 0
-        action_type: str | None = None
+        delta_x_tiles = 0
+        delta_y_tiles = 0
+        action: PlayerAction | None = None
 
         # Movement is based on grid snapping, so the player moves in increments of the tile size.
         # Keyboard check
-        if keys[pygame.K_UP] or keys[pygame.K_w]:    vertical_step = -1
-        elif keys[pygame.K_DOWN] or keys[pygame.K_s]: vertical_step = 1
-        elif keys[pygame.K_LEFT] or keys[pygame.K_a]: horizontal_step = -1
-        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]: horizontal_step = 1
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            delta_y_tiles = -1
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            delta_y_tiles = 1
+        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            delta_x_tiles = -1
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            delta_x_tiles = 1
 
-        if horizontal_step != 0 or vertical_step != 0:
-            action_type = 'move'
+        if delta_x_tiles != 0 or delta_y_tiles != 0:
+            action = 'move'
 
         # Action Keys (Mnemonic)
-        elif keys[pygame.K_SPACE]: action_type = 'dig'
-        elif keys[pygame.K_e]: action_type = 'detector'
-        elif keys[pygame.K_t]: action_type = 'light'
-        elif keys[pygame.K_r]: action_type = 'repellent'
+        elif keys[pygame.K_SPACE]:
+            action = 'dig'
+        elif keys[pygame.K_e]:
+            action = 'detector'
+        elif keys[pygame.K_t]:
+            action = 'light'
+        elif keys[pygame.K_r]:
+            action = 'repellent'
 
         # Controller check
         if pygame.joystick.get_count() > 0:
@@ -85,21 +96,25 @@ class Player(pygame.sprite.Sprite):
             dpad_direction = joystick.get_hat(0)
             # Only override if the d-pad is actually being touched
             if dpad_direction[0] != 0 or dpad_direction[1] != 0:
-                horizontal_step = dpad_direction[0]
-                vertical_step = -dpad_direction[1]
-                action_type = 'move'
+                delta_x_tiles = dpad_direction[0]
+                delta_y_tiles = -dpad_direction[1]
+                action = 'move'
 
             # Buttons (Actions)
             # 0:A (Dig), 1:B (Light), 2:X (Detector), 3:Y (Repellent)
-            if action_type is None:
-                if joystick.get_button(0): action_type = 'dig'
-                elif joystick.get_button(1): action_type = 'light'
-                elif joystick.get_button(2): action_type = 'detector'
-                elif joystick.get_button(3): action_type = 'repellent'
+            if action is None:
+                if joystick.get_button(0):
+                    action = 'dig'
+                elif joystick.get_button(1):
+                    action = 'light'
+                elif joystick.get_button(2):
+                    action = 'detector'
+                elif joystick.get_button(3):
+                    action = 'repellent'
 
-        return horizontal_step, vertical_step, action_type
+        return delta_x_tiles, delta_y_tiles, action
 
-    def apply_grid_snap_movement(self, horizontal_step: int = 0, vertical_step: int = 0) -> None:
+    def try_move_by_grid_step(self, delta_x_tiles: int = 0, delta_y_tiles: int = 0) -> None:
         """
         Attempt to move the player by one tile.
 
@@ -108,25 +123,25 @@ class Player(pygame.sprite.Sprite):
         If the target tile is blocked, it logs a boundary message instead.
 
         Args:
-            horizontal_step (int): Horizontal tile step, usually -1, 0, or 1.
-            vertical_step (int): Vertical tile step, usually -1, 0, or 1.
+            delta_x_tiles (int): Horizontal tile step, usually -1, 0, or 1.
+            delta_y_tiles (int): Vertical tile step, usually -1, 0, or 1.
         """
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
-        target_col = current_col + horizontal_step
-        target_row = current_row + vertical_step
+        target_col = current_col + delta_x_tiles
+        target_row = current_row + delta_y_tiles
 
         if self.dungeon.is_walkable(target_col, target_row):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
 
-            if vertical_step == -1:
+            if delta_y_tiles == -1:
                 self.game.log_message("YOU MOVED NORTH.")
-            elif vertical_step == 1:
+            elif delta_y_tiles == 1:
                 self.game.log_message("YOU MOVED SOUTH.")
-            elif horizontal_step == -1:
+            elif delta_x_tiles == -1:
                 self.game.log_message("YOU MOVED WEST.")
-            elif horizontal_step == 1:
+            elif delta_x_tiles == 1:
                 self.game.log_message("YOU MOVED EAST.")
 
             self.game.audio.play_move_sound()
@@ -135,7 +150,7 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("YOU CAN'T GO THAT WAY!")
             self.game.audio.play_boundary_sound()
 
-    def process_movement_and_actions(self) -> None:
+    def process_turn_action(self) -> None:
         """
         Process one player input action when the player is allowed to act.
 
@@ -144,18 +159,18 @@ class Player(pygame.sprite.Sprite):
         """
 
         # Get the direction the player wants to go
-        horizontal_step, vertical_step, action_type = self.get_input()
+        delta_x_tiles, delta_y_tiles, action = self.read_input_intent()
         # If there is input, execute the movement and reset the timer
-        if action_type == 'move':
-            self.apply_grid_snap_movement(int(horizontal_step), int(vertical_step))
+        if action == 'move':
+            self.try_move_by_grid_step(int(delta_x_tiles), int(delta_y_tiles))
 
-        elif action_type == 'dig':
-            self.dig()
+        elif action == 'dig':
+            self.dig_current_tile()
             # advance turn is handled in the dig function because
             # we need to check if the player already dug there
             # self.game.advance_turn()
 
-        elif action_type == 'light':
+        elif action == 'light':
             # Setup helper variables to avoid repeating code
             light_source = None
             if self.inventory.get('LANTERN', 0) > 0:
@@ -184,14 +199,14 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
 
-        elif action_type == 'detector':
+        elif action == 'detector':
             if self.inventory.get('KEY DETECTOR', 0) > 0:
-                self.use_key_detector()
+                self.activate_key_detector()
                 self.game.advance_turn()
             else:
                 self.game.log_message("YOU DON'T HAVE A KEY DETECTOR!")
 
-        elif action_type == 'repellent':
+        elif action == 'repellent':
             if self.inventory.get('MONSTER REPELLENT', 0) > 0:
                 self.inventory['MONSTER REPELLENT'] -= 1
                 self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
@@ -201,7 +216,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.game.log_message("YOU HAVE NO MONSTER REPELLENT LEFT!")
 
-    def dig(self) -> None:
+    def dig_current_tile(self) -> None:
         """
         Resolve the player's dig action at the current tile.
 
@@ -219,23 +234,23 @@ class Player(pygame.sprite.Sprite):
                 self.game.audio.play_boundary_sound()
             return
 
-        grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
-        tile = self.dungeon.tile_data.get(grid_pos)
+        tile_grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
+        tile_state = self.dungeon.tile_data.get(tile_grid_pos)
 
         # This should never happen since the player can only be on valid tiles,
         # but we are adding this just in case to prevent crashes.
-        if not tile:
+        if not tile_state:
             self.game.log_message("YOU CAN'T DIG HERE.")
             return
 
-        if tile["is_dug"]:
+        if tile_state["is_dug"]:
             self.game.log_message("YOU'VE ALREADY DUG HERE.")
             return
 
-        tile["is_dug"] = True
+        tile_state["is_dug"] = True
         self.game.audio.play_dig_sound()
         self.game.map_memory.remember_visible_map_info()
-        found_item, amount = self.dungeon.get_item_at_tile(grid_pos)
+        found_item, amount = self.dungeon.get_item_at_tile(tile_grid_pos)
 
         # Pluralization logic, which is a bit hacky but it works for now.
         # WE may want to use a helper function later.
@@ -257,7 +272,8 @@ class Player(pygame.sprite.Sprite):
             if amount > 1:
                 self.game.log_message(f"YOU FOUND {amount} {display_name}!")
             else:
-                self.game.log_message(f"YOU FOUND A {found_item}!")
+                article = 'AN' if found_item[0] in 'AEIOU' else 'A'
+                self.game.log_message(f"YOU FOUND {article} {found_item}!")
 
             if found_item == "KEY":
                 self.game.audio.play_key_sound()
@@ -275,7 +291,7 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("NOTHING BUT DIRT HERE.")
         self.game.advance_turn()
 
-    def use_key_detector(self) -> None:
+    def activate_key_detector(self) -> None:
         """
         Check the player's distance from the hidden key and log a hint.
 
@@ -328,7 +344,7 @@ class Player(pygame.sprite.Sprite):
         The player only processes new input when not already moving.
         """
         if not self.is_moving:
-            self.process_movement_and_actions()
+            self.process_turn_action()
 
 class Monster(pygame.sprite.Sprite):
     def __init__(self, game, position: tuple[int, int], groups) -> None:
@@ -359,7 +375,33 @@ class Monster(pygame.sprite.Sprite):
         self.anim_speed = PlayerSettings.ANIMATION_SPEED
         self.is_chasing = False
 
-    def take_turn(self) -> None:
+    def _choose_primary_chase_step(self, delta_pixels_x: float, delta_pixels_y: float) -> tuple[int, int]:
+        """Return a one-tile move in the dominant axis toward the player."""
+        step_x = 0
+        step_y = 0
+
+        if abs(delta_pixels_x) >= abs(delta_pixels_y):
+            if delta_pixels_x > 0:
+                step_x = GridSettings.TILE_SIZE
+            elif delta_pixels_x < 0:
+                step_x = -GridSettings.TILE_SIZE
+            elif delta_pixels_y > 0:
+                step_y = GridSettings.TILE_SIZE
+            elif delta_pixels_y < 0:
+                step_y = -GridSettings.TILE_SIZE
+        else:
+            if delta_pixels_y > 0:
+                step_y = GridSettings.TILE_SIZE
+            elif delta_pixels_y < 0:
+                step_y = -GridSettings.TILE_SIZE
+            elif delta_pixels_x > 0:
+                step_x = GridSettings.TILE_SIZE
+            elif delta_pixels_x < 0:
+                step_x = -GridSettings.TILE_SIZE
+
+        return step_x, step_y
+
+    def resolve_turn(self) -> None:
         """
         Determine the monster's behavior for a single turn.
 
@@ -378,9 +420,9 @@ class Monster(pygame.sprite.Sprite):
         is_repelled = self.game.player.repellent_turns > 0
 
         # Calculate the Manhattan distance to the player
-        delta_x = self.game.player.position.x - self.position.x
-        delta_y = self.game.player.position.y - self.position.y
-        manhattan_distance = (abs(delta_x) // GridSettings.TILE_SIZE) + (abs(delta_y) // GridSettings.TILE_SIZE)
+        delta_pixels_x = self.game.player.position.x - self.position.x
+        delta_pixels_y = self.game.player.position.y - self.position.y
+        manhattan_distance = (abs(delta_pixels_x) // GridSettings.TILE_SIZE) + (abs(delta_pixels_y) // GridSettings.TILE_SIZE)
 
         # Helper variables for readability
         player_has_light = self.game.player.light_radius > 0
@@ -389,33 +431,13 @@ class Monster(pygame.sprite.Sprite):
         # If the monster is repelled, it will try to move away from the player instead of towards them.
         if is_repelled:
             self.is_chasing = False
-            step_x = 0
-            step_y = 0
-
-            # The logic is basically the same as chasing, but reversed. =
-            # The monster will try to move in the direction that increases the distance between itself and the player.
-            if abs(delta_x) >= abs(delta_y):
-                if delta_x > 0:
-                    step_x = -GridSettings.TILE_SIZE
-                elif delta_x < 0:
-                    step_x = GridSettings.TILE_SIZE
-                elif delta_y > 0:
-                    step_y = -GridSettings.TILE_SIZE
-                elif delta_y < 0:
-                    step_y = GridSettings.TILE_SIZE
-            else: # If the player is more vertical than horizontal, prioritize moving vertically to get away
-                if delta_y > 0:
-                    step_y = -GridSettings.TILE_SIZE
-                elif delta_y < 0:
-                    step_y = GridSettings.TILE_SIZE
-                elif delta_x > 0:
-                    step_x = -GridSettings.TILE_SIZE
-                elif delta_x < 0:
-                    step_x = GridSettings.TILE_SIZE
+            chase_step_x, chase_step_y = self._choose_primary_chase_step(delta_pixels_x, delta_pixels_y)
+            step_x = -chase_step_x
+            step_y = -chase_step_y
 
             # After calculating the movement, we apply it.
             # The apply_movement function will handle boundary checks to make sure the monster doesn't move out of bounds.
-            self.apply_movement(step_x, step_y)
+            self.try_start_move(step_x, step_y)
             return
 
         # Chasing rules:
@@ -429,7 +451,7 @@ class Monster(pygame.sprite.Sprite):
         elif not player_has_light:
             self.is_chasing = False
 
-        elif manhattan_distance <= int(self.game.player.light_radius) and self.has_line_of_sight():
+        elif manhattan_distance <= int(self.game.player.light_radius) and self.has_clear_line_of_sight_to_player():
             if not self.is_chasing:
                 self.is_chasing = True
                 self.game.audio.play_monster_chase_sound()
@@ -441,41 +463,17 @@ class Monster(pygame.sprite.Sprite):
             if random.random() < MonsterSettings.IDLE_CHANCE:
                 return
 
-            step_x = 0
-            step_y = 0
-
-            # The monster will prioritize moving in the direction where the player is farther away,
-            # to close the distance more efficiently.
-            # This is the same logic as the repellent, but instead of moving away from the player, it moves towards them.
-            # Can this be moved into a function since it's so similar? But the signs are different...
-            if abs(delta_x) >= abs(delta_y):
-                if delta_x > 0:
-                    step_x = GridSettings.TILE_SIZE
-                elif delta_x < 0:
-                    step_x = -GridSettings.TILE_SIZE
-                elif delta_y > 0:
-                    step_y = GridSettings.TILE_SIZE
-                elif delta_y < 0:
-                    step_y = -GridSettings.TILE_SIZE
-            else:
-                if delta_y > 0:
-                    step_y = GridSettings.TILE_SIZE
-                elif delta_y < 0:
-                    step_y = -GridSettings.TILE_SIZE
-                elif delta_x > 0:
-                    step_x = GridSettings.TILE_SIZE
-                elif delta_x < 0:
-                    step_x = -GridSettings.TILE_SIZE
+            step_x, step_y = self._choose_primary_chase_step(delta_pixels_x, delta_pixels_y)
 
             # After calculating the movement, we apply it.
-            self.apply_movement(step_x, step_y)
+            self.try_start_move(step_x, step_y)
             return
 
         # If the monster is not chasing, it has a chance to move randomly or do nothing (idle).
         if random.random() > MonsterSettings.IDLE_CHANCE:
-            self.move_randomly()
+            self.move_randomly_one_tile()
 
-    def move_randomly(self) -> None:
+    def move_randomly_one_tile(self) -> None:
         """
         Move the monster in a random cardinal direction.
 
@@ -488,9 +486,9 @@ class Monster(pygame.sprite.Sprite):
         elif direction == 'left': step_x = -GridSettings.TILE_SIZE
         elif direction == 'right': step_x = GridSettings.TILE_SIZE
         
-        self.apply_movement(step_x, step_y)
+        self.try_start_move(step_x, step_y)
 
-    def apply_movement(self, horizontal_amount: int, vertical_amount: int) -> None:
+    def try_start_move(self, delta_pixels_x: int, delta_pixels_y: int) -> None:
         """
         Attempt to move the monster by a pixel offset.
 
@@ -498,19 +496,19 @@ class Monster(pygame.sprite.Sprite):
         is walkable, and starts movement animation if valid.
 
         Args:
-            horizontal_amount (int): Pixel movement in the x direction.
-            vertical_amount (int): Pixel movement in the y direction.
+            delta_pixels_x (int): Pixel movement in the x direction.
+            delta_pixels_y (int): Pixel movement in the y direction.
         """
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
-        target_col = current_col + (horizontal_amount // GridSettings.TILE_SIZE)
-        target_row = current_row + (vertical_amount // GridSettings.TILE_SIZE)
+        target_col = current_col + (delta_pixels_x // GridSettings.TILE_SIZE)
+        target_row = current_row + (delta_pixels_y // GridSettings.TILE_SIZE)
 
         if self.dungeon.is_walkable(target_col, target_row):
             target_x, target_y = self.game.grid_to_screen(target_col, target_row)
             self.target_pos = pygame.math.Vector2(target_x, target_y)
             self.is_moving = True
 
-    def has_line_of_sight(self) -> bool:
+    def has_clear_line_of_sight_to_player(self) -> bool:
         """
         Check if the monster has a clear path to the player.
 
@@ -555,7 +553,7 @@ class Monster(pygame.sprite.Sprite):
                 self.position += direction
                 self.rect.topleft = (int(self.position.x), int(self.position.y))
 
-    def update(self):
+    def update(self) -> None:
         """
         Placeholder for per-frame behavior.
 
@@ -565,6 +563,7 @@ class Monster(pygame.sprite.Sprite):
 
 class Door(pygame.sprite.Sprite):
     def __init__(self, game, position: tuple[int, int], groups) -> None:
+        """Initialize the door sprite with open and closed states."""
         super().__init__(groups)
         self.game = game
         
@@ -580,6 +579,7 @@ class Door(pygame.sprite.Sprite):
         self.position = pygame.math.Vector2(self.rect.topleft)
 
     def open_door(self) -> None:
+        """Switch the visible sprite to the open-door texture."""
         self.image = self.open_image
 
     def update(self) -> None:
