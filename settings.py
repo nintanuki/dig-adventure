@@ -110,7 +110,7 @@ class ItemSettings:
         'DIAMOND': 500
     }
 
-    SHOP PRICES = {
+    SHOP_PRICES = {
         'MATCH': 50,
         'TORCH': 250,
         'LANTERN': 1000,
@@ -133,7 +133,7 @@ class ItemSettings:
         'RUBY': 0.15,
         'SAPPHIRE': 0.10,
         'EMERALD': 0.05,
-        'DIAMOND': 0.01
+        'DIAMOND': 0.01,
 
         # Unique
         'KEY DETECTOR': 0.05,
