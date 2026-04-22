@@ -100,9 +100,8 @@ class LightSettings:
 
 class ItemSettings:
     INVISIBILITY_CLOAK_DURATION = 5
-    INVISIBILITY_CLOAK_COOLDOWN = 8
+    LEVEL_SCOPED_ITEMS = {"KEY", "MAP", "MAGIC MAP", "KEY DETECTOR"}
 
-    # Point values for treasures, we will use this later when we make our score system
     TREASURE_SCORE_VALUES = {
         'GOLD COINS': 1,
         'RUBY': 50,

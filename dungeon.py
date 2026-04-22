@@ -25,6 +25,7 @@ class DungeonMaster:
         self.door_grid_pos = None
         self.monster_grid_positions = []
         self.key_grid_pos = None
+        self.level_unique_items_found = set()
 
     # -------------------------
     # DUNGEON / MAP BUILDING
@@ -36,6 +37,7 @@ class DungeonMaster:
             raise KeyError(f"Unknown dungeon: {dungeon_name}")
 
         self.dungeon_name = dungeon_name
+        self.level_unique_items_found = set()
         dungeon_data = DUNGEONS[dungeon_name]
 
         # Normalize map symbols so '.' also counts as walkable dirt
@@ -161,20 +163,36 @@ class DungeonMaster:
                 (None, 0) when no item is found.
         """
         # Check if a specific item (like the Key) was pre-placed
-        if self.tile_data[grid_pos]["item"]:
-            return self.tile_data[grid_pos]["item"], 1
+        fixed_item = self.tile_data[grid_pos]["item"]
+        if fixed_item:
+            if fixed_item in ItemSettings.LEVEL_SCOPED_ITEMS:
+                self.level_unique_items_found.add(fixed_item)
+            return fixed_item, 1
         
-        # Otherwise, roll for a random item using your SPAWN_RATES
+        # Otherwise, roll for a random item using the configured spawn chances,
+        # excluding per-level unique items that were already found.
+        eligible_items: list[tuple[str, float]] = []
+        for item, chance in ItemSettings.SPAWN_CHANCE.items():
+            if item in ItemSettings.LEVEL_SCOPED_ITEMS and item in self.level_unique_items_found:
+                continue
+            eligible_items.append((item, chance))
+
+        total_chance = sum(chance for _, chance in eligible_items)
+        if total_chance <= 0:
+            return None, 0
+
         roll = random.random()
         cumulative_chance = 0
 
         # Iterate through items and their spawn chances to determine what item, if any, spawns
-        for item, chance in ItemSettings.SPAWN_CHANCE.items():
+        for item, chance in eligible_items:
             cumulative_chance += chance
             if roll < cumulative_chance:
                 # If this item is selected to spawn, we then check how many should spawn
                 min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1)) # Default to 1 if not specified
                 amount = random.randint(min_qty, max_qty) # Random quantity within the defined range for this item
+                if item in ItemSettings.LEVEL_SCOPED_ITEMS:
+                    self.level_unique_items_found.add(item)
                 return item, amount
                 
         return None, 0

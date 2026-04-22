@@ -112,7 +112,6 @@ class GameManager:
         return {
             'inventory': self.player.inventory.copy(),
             'discovered_items': set(self.player.discovered_items),
-            'cloak_cooldown_turns': self.player.cloak_cooldown_turns,
         }
 
     def restore_player_progress(self, progress: dict[str, object] | None) -> None:
@@ -121,9 +120,11 @@ class GameManager:
             return
 
         self.player.inventory = progress['inventory'].copy()
-        self.player.inventory.pop('KEY', None)
         self.player.discovered_items = set(progress['discovered_items'])
-        self.player.cloak_cooldown_turns = int(progress.get('cloak_cooldown_turns', 0))
+
+        for item_name in ItemSettings.LEVEL_SCOPED_ITEMS:
+            self.player.inventory.pop(item_name, None)
+            self.player.discovered_items.discard(item_name)
 
     def load_level(self, player_progress: dict[str, object] | None = None) -> None:
         """Build the currently selected dungeon level and spawn fresh entities."""
@@ -291,12 +292,6 @@ class GameManager:
             self.player.invisibility_turns -= 1
             if self.player.invisibility_turns == 0:
                 self.log_message("THE INVISIBILITY CLOAK FADES.")
-
-        # Handle Invisibility Cloak Cooldown
-        if self.player.cloak_cooldown_turns > 0:
-            self.player.cloak_cooldown_turns -= 1
-            if self.player.cloak_cooldown_turns == 0:
-                self.log_message("THE INVISIBILITY CLOAK IS READY AGAIN.")
 
         for monster in self.monsters:
             monster.resolve_turn()
