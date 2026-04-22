@@ -8,12 +8,27 @@ class MapMemory:
         self.seen_tiles = {}
         self.last_seen_monster_pos = set()
         self.last_seen_door_pos = None
+
+    def player_has_magic_map(self):
+        """Return True when the player owns the magic map item."""
+        return self.game.player.inventory.get("MAGIC MAP", 0) > 0
+
+    def player_has_active_light_source(self):
+        """Return True when the player currently has an active light."""
+        return self.game.player.light_radius > 0
+
+    def should_update_map_memory(self):
+        """Map memory updates only happen with light, unless magic map is owned."""
+        return self.player_has_active_light_source() or self.player_has_magic_map()
     
     def player_can_see_grid_pos(self, target_grid_pos):
         """Check if a grid coordinate should be revealed on the minimap."""
-        # If the player has the map, the whole minimap is revealed.
-        if self.game.player.inventory.get("MAP", 0) > 0:
+        # The magic map reveals the full minimap in real time.
+        if self.player_has_magic_map():
             return True
+
+        if not self.player_has_active_light_source():
+            return False
 
         player_grid_pos = self.game.screen_to_grid(
             self.game.player.position.x,
@@ -33,6 +48,9 @@ class MapMemory:
 
     def remember_visible_map_info(self):
         """Persist anything currently visible to the minimap memory."""
+        if not self.should_update_map_memory():
+            return
+
         self._remember_visible_tiles()
         self._remember_visible_entities()
 
@@ -63,7 +81,10 @@ class MapMemory:
 
         visible_monster_positions = self.get_visible_monster_positions()
 
-        if visible_monster_positions:
+        # The magic map tracks monsters in real time, including when none are visible.
+        if self.player_has_magic_map():
+            self.last_seen_monster_pos = visible_monster_positions
+        elif visible_monster_positions:
             self.last_seen_monster_pos = visible_monster_positions
 
     def get_visible_monster_positions(self):

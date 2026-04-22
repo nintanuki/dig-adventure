@@ -159,9 +159,10 @@ class MapWindow:
                 mini_tile_size - 1, mini_tile_size - 1)
             )
 
-        # Draw Player (Ask main.py for the grid conversion)
-        p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
-        pygame.draw.rect(surface, 'blue', 
-                         (start_x + (p_col * mini_tile_size), 
-                          start_y + (p_row * mini_tile_size), 
-                          mini_tile_size - 1, mini_tile_size - 1))
+        # Draw player when lit, or always if the magic map is owned.
+        if self.game.map_memory.should_update_map_memory():
+            p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
+            pygame.draw.rect(surface, 'blue', 
+                             (start_x + (p_col * mini_tile_size), 
+                              start_y + (p_row * mini_tile_size), 
+                              mini_tile_size - 1, mini_tile_size - 1))

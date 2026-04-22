@@ -190,9 +190,9 @@ class Player(pygame.sprite.Sprite):
                 self.light_radius = radius
                 self.light_turns_left = duration + 1 # fix off by one error
                 
-                if self.inventory.get("MAP", 0) > 0:
+                if self.inventory.get("MAGIC MAP", 0) > 0:
                     self.game.map_memory.remember_visible_map_info()
-                    self.game.log_message(f"YOU LIGHT A {name.upper()}, YOU CHECK YOUR MAP.")
+                    self.game.log_message(f"YOU LIGHT A {name.upper()}, YOUR MAGIC MAP GLOWS.")
                 else:
                     self.game.log_message(f"YOU LIGHT A {name.upper()}!")
                 self.game.advance_turn()

@@ -105,6 +105,7 @@ class ItemSettings:
         'MATCH': 0.20,
         'TORCH': 0.10,
         'LANTERN': 0.05,
+        'MAGIC MAP': 0.01,
         'GOLD COINS': 0.20,
         'RUBY': 0.10,
         'SAPPHIRE': 0.05,
@@ -133,7 +134,7 @@ class ItemSettings:
         # 'EMERALD': 0,
         # 'DIAMOND': 0,
         # 'KEY DETECTOR': 0,
-        # 'MAP': 1,
+        # 'MAGIC MAP': 1,
         # 'KEY': 0
         }
 
@@ -155,7 +156,7 @@ class FontSettings:
     }
 
 class AudioSettings:
-    MUTE = False
+    MUTE = True
     MUTE_MUSIC = True  # Mute music but keep SFX
     MUSIC_VOLUME = 0.2  # Hardcoded volume (0.0 to 1.0)
 
@@ -204,6 +205,6 @@ class AssetPaths:
 class DebugSettings:
     """Settings related to debugging features."""
     GRID = True # Toggle grey outlines for debugging
-    MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
+    MUTE = True # Set to True to mute all sounds during testing, False to enable sounds
     NO_FOG = False # Set to True to disable fog of war
     SPAWN_LOG = True # Print spawn/item placement summary at dungeon setup
