@@ -139,20 +139,20 @@ class ItemSettings:
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        'KEY': 1,
-        'INVISIBILITY CLOAK': 100,
+        #  Uncomment below for testing
+        # 'KEY': 1,
+        # 'INVISIBILITY CLOAK': 100,
         # 'MAP': 1,
-        'MAGIC MAP': 1,
-        # Uncomment below to test more items
-        # 'TORCH': 5,
-        'LANTERN': 500,
-        # 'MONSTER REPELLENT': 5,
+        # 'MAGIC MAP': 1,
+        # 'TORCH': 999,
+        # 'LANTERN': 999,
+        # 'MONSTER REPELLENT': 999,
         # 'KEY DETECTOR': 1,
-        # 'GOLD COINS': 500,
-        # 'RUBY': 2,
-        # 'SAPPHIRE': 2,
-        # 'EMERALD': 1,
-        # 'DIAMOND': 1,
+        # 'GOLD COINS': 0,
+        # 'RUBY': 0,
+        # 'SAPPHIRE': 0,
+        # 'EMERALD': 0,
+        # 'DIAMOND': 0,
         }
 
 class FontSettings:
