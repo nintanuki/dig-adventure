@@ -128,10 +128,10 @@ class ItemSettings:
         'KEY DETECTOR': 0.05,
         'INVISIBILITY CLOAK': 0.05,
         'MAGIC MAP': 0.01,
-        'GOLD COINS': 0.25,
-        'RUBY': 0.10,
-        'SAPPHIRE': 0.05,
-        'EMERALD': 0.025,
+        'GOLD COINS': 0.20,
+        'RUBY': 0.15,
+        'SAPPHIRE': 0.10,
+        'EMERALD': 0.05,
         'DIAMOND': 0.01
     }
 
