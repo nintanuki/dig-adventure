@@ -142,7 +142,7 @@ class ItemSettings:
 
     SPAWN_QUANTITIES = {
         'GOLD COINS': (1, 200),
-        'RUBY': (1, 10),
+        'RUBY': (1, 7),
         'SAPPHIRE': (1, 5),
         'EMERALD': (1, 3),
         'MATCH': (1, 10),
