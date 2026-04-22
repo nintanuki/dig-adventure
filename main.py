@@ -486,8 +486,7 @@ class GameManager:
             self.render.draw_level_transition()
             self.render.draw_end_game_screens()
             self.render.draw_treasure_conversion()
-            if not self.is_transitioning and not self.is_in_treasure_conversion_phase:
-                self.crt.draw() # CRT Effect on top of everything else
+            self.crt.draw() # CRT Effect on top of everything else
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)
