@@ -70,7 +70,7 @@ class PlayerSettings:
 class MonsterSettings:
     COUNT = 2
     CHASE_RADIUS = 3  # Manhattan distance
-    IDLE_CHANCE = 0.2 # 1 in 5 chance to stand still
+    IDLE_CHANCE = 0.3 
     REPELLENT_DURATION = 5 # Number of turns the repellent effect lasts
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
@@ -123,7 +123,7 @@ class ItemSettings:
     }
 
     INITIAL_INVENTORY = {
-        'MATCH': 1,
+        'MATCH': 2,
         # 'TORCH': 3,
         # 'LANTERN': 0,
         # 'MONSTER REPELLENT': 0,

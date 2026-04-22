@@ -20,7 +20,7 @@ class MapMemory:
             self.game.player.position.y
         )
 
-        reveal_radius = int(self.game.player.light_radius - 1)
+        reveal_radius = int(self.game.player.light_radius)
 
         if reveal_radius < 0:
             return False
