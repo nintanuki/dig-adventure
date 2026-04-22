@@ -14,6 +14,8 @@ class AudioManager:
         'spray': 7,
         'found_detector': 8,
         'detector': 9,
+        'light': 10,
+        'vanish': 11,
     }
 
     def __init__(self):
@@ -33,6 +35,9 @@ class AudioManager:
         self.dig_sound = self._load_sound(AssetPaths.DIG_SOUND)
         self.monster_chase_sound = self._load_sound(AssetPaths.MONSTER_CHASE_SOUND)
         self.coin_sound = self._load_sound(AssetPaths.COIN_SOUND)
+        self.light_sound = self._load_sound(AssetPaths.LIGHT_SOUND)
+        self.match_light_sound = self._load_sound(AssetPaths.MATCH_LIGHT_SOUND)
+        self.vanish_sound = self._load_sound(AssetPaths.VANISH_SOUND)
         self.short_spray_sound = self._load_sound(AssetPaths.SHORT_SPRAY_SOUND)
         self.long_spray_sound = self._load_sound(AssetPaths.LONG_SPRAY_SOUND)
         self.found_detector_sound = self._load_sound(AssetPaths.FOUND_DETECTOR_SOUND)
@@ -78,6 +83,21 @@ class AudioManager:
         """Stop the currently playing background track."""
         pygame.mixer.music.stop()
 
+    def toggle_mute(self, resume_music: bool = True) -> bool:
+        """Toggle global mute and return the new mute state."""
+        AudioSettings.MUTE = not AudioSettings.MUTE
+
+        if AudioSettings.MUTE:
+            # Stop all currently playing SFX/music immediately.
+            pygame.mixer.stop()
+            pygame.mixer.music.stop()
+            return True
+
+        if resume_music and not AudioSettings.MUTE_MUSIC:
+            self.play_random_bgm()
+
+        return False
+
     def play_move_sound(self):
         """Play the movement sound effect."""
         self._play_on_channel('movement', self.move_sound)
@@ -105,6 +125,18 @@ class AudioManager:
     def play_coin_sound(self):
         """Play a sound effect for when the player collects a coin."""
         self._play_on_channel('coin', self.coin_sound)
+
+    def play_light_sound(self):
+        """Play a sound effect for when the player lights a light source."""
+        self._play_on_channel('light', self.light_sound)
+
+    def play_match_light_sound(self):
+        """Play a sound effect for when the player lights a match."""
+        self._play_on_channel('light', self.match_light_sound)
+
+    def play_vanish_sound(self):
+        """Play a sound effect for when the player activates invisibility."""
+        self._play_on_channel('vanish', self.vanish_sound)
 
     def play_short_spray_sound(self):
         """Play the normal effect for when the player uses the monster repellent spray."""

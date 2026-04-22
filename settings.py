@@ -138,19 +138,19 @@ class ItemSettings:
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        'TORCH': 0,
-        'LANTERN': 1000,
-        'MONSTER REPELLENT': 0,
-        'GOLD COINS': 0,
-        'RUBY': 0,
-        'SAPPHIRE': 0,
-        'EMERALD': 0,
-        'DIAMOND': 0,
-        'KEY DETECTOR': 1,
-        'INVISIBILITY CLOAK': 100,
-        # 'MAP': 0,
-        'MAGIC MAP': 1,
-        'KEY': 1
+        # 'TORCH': 0,
+        # 'LANTERN': 0,
+        # 'MONSTER REPELLENT': 0,
+        # 'GOLD COINS': 0,
+        # 'RUBY': 0,
+        # 'SAPPHIRE': 0,
+        # 'EMERALD': 0,
+        # 'DIAMOND': 0,
+        # 'KEY DETECTOR': 0,
+        # 'INVISIBILITY CLOAK': 0,
+        # # 'MAP': 0,
+        # 'MAGIC MAP': 0,
+        # # 'KEY': 1
         }
 
 class FontSettings:
@@ -208,6 +208,9 @@ class AssetPaths:
     SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
     MONSTER_CHASE_SOUND = os.path.join(SOUND_DIR, 'sfx_sound_nagger1.wav')
     COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.wav')
+    LIGHT_SOUND = os.path.join(SOUND_DIR, 'Torch Whoosh Sound Effect.mp3')
+    MATCH_LIGHT_SOUND = os.path.join(SOUND_DIR, 'Lighting A Match Sound Effect.mp3')
+    VANISH_SOUND = os.path.join(SOUND_DIR, 'Vanish Sound Effect.mp3')
     SHORT_SPRAY_SOUND = os.path.join(SOUND_DIR, 'short_spray.mp3')
     LONG_SPRAY_SOUND = os.path.join(SOUND_DIR, 'long_spray.mp3')
     FOUND_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop3.wav')

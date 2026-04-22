@@ -34,6 +34,7 @@ class GameManager:
         self.transition_label = ""
         self.transition_end_time = 0
         self.pending_level_load = False
+        self.l2_trigger_is_pressed = False
         
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
@@ -357,13 +358,23 @@ class GameManager:
                     # Restart only after game over / escape
                     if not self.game_active and event.key == pygame.K_RETURN:
                         self.reset_game()
-                # Gamepad Inputs for fullscreen toggle and game restart
+                # Gamepad button inputs for fullscreen toggle and game restart
                 if event.type == pygame.JOYBUTTONDOWN:
                     if event.button == 6:
                         pygame.display.toggle_fullscreen()
                     # Restart only after game over / escape
                     if not self.game_active and event.button == 7:
                         self.reset_game()
+
+                # Gamepad input for L2 trigger mute toggle (edge-triggered)
+                if event.type == pygame.JOYAXISMOTION and event.axis in (2, 4):
+                    trigger_pressed = event.value > 0.5
+                    if trigger_pressed and not self.l2_trigger_is_pressed:
+                        is_muted = self.audio.toggle_mute(
+                            resume_music=self.game_active and not self.is_transitioning
+                        )
+                        self.log_message("AUDIO MUTED." if is_muted else "AUDIO UNMUTED.")
+                    self.l2_trigger_is_pressed = trigger_pressed
 
             self.message_log.update() # Update message log to handle typing effect and message timing
             if self.game_active:

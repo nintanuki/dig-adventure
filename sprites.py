@@ -49,6 +49,13 @@ class Player(pygame.sprite.Sprite):
         self.game = game # Reference to the game manager for accessing shared resources like the audio manager
         self.dungeon = self.game.dungeon # Reference to the dungeon for checking tile states during movement and actions
 
+    def _normalize_cardinal_step(self, delta_x_tiles: int, delta_y_tiles: int) -> tuple[int, int]:
+        """Allow movement on only one axis so diagonal steps are impossible."""
+        if delta_x_tiles != 0 and delta_y_tiles != 0:
+            # Keep vertical priority to match keyboard input ordering.
+            delta_x_tiles = 0
+        return delta_x_tiles, delta_y_tiles
+
     def read_input_intent(self) -> PlayerIntent:
         """
         Read player input and translate it into movement or action intent.
@@ -103,6 +110,7 @@ class Player(pygame.sprite.Sprite):
             if dpad_direction[0] != 0 or dpad_direction[1] != 0:
                 delta_x_tiles = dpad_direction[0]
                 delta_y_tiles = -dpad_direction[1]
+                delta_x_tiles, delta_y_tiles = self._normalize_cardinal_step(delta_x_tiles, delta_y_tiles)
                 action = 'move'
 
             # Buttons (Actions)
@@ -119,6 +127,7 @@ class Player(pygame.sprite.Sprite):
                 elif joystick.get_button(4):
                     action = 'cloak'
 
+        delta_x_tiles, delta_y_tiles = self._normalize_cardinal_step(delta_x_tiles, delta_y_tiles)
         return delta_x_tiles, delta_y_tiles, action
 
     def try_move_by_grid_step(self, delta_x_tiles: int = 0, delta_y_tiles: int = 0) -> None:
@@ -133,6 +142,7 @@ class Player(pygame.sprite.Sprite):
             delta_x_tiles (int): Horizontal tile step, usually -1, 0, or 1.
             delta_y_tiles (int): Vertical tile step, usually -1, 0, or 1.
         """
+        delta_x_tiles, delta_y_tiles = self._normalize_cardinal_step(delta_x_tiles, delta_y_tiles)
         current_col, current_row = self.game.screen_to_grid(self.position.x, self.position.y)
         target_col = current_col + delta_x_tiles
         target_row = current_row + delta_y_tiles
@@ -200,6 +210,10 @@ class Player(pygame.sprite.Sprite):
                 if self.inventory.get("MAGIC MAP", 0) > 0:
                     self.game.map_memory.remember_visible_map_info()
                 self.game.log_message(f"YOU LIGHT A {name.upper()}!")
+                if name == 'MATCH':
+                    self.game.audio.play_match_light_sound()
+                else:
+                    self.game.audio.play_light_sound()
                 self.game.advance_turn()
             else:
                 self.game.log_message("YOU HAVE NO LIGHT SOURCES!")
@@ -225,6 +239,7 @@ class Player(pygame.sprite.Sprite):
             if self.inventory.get('INVISIBILITY CLOAK', 0) > 0:
                 self.invisibility_turns = ItemSettings.INVISIBILITY_CLOAK_DURATION + 1
                 self.game.log_message("YOU WRAP YOURSELF IN THE INVISIBILITY CLOAK.")
+                self.game.audio.play_vanish_sound()
                 self.game.advance_turn()
             else:
                 self.game.log_message("YOU DON'T HAVE AN INVISIBILITY CLOAK!")
