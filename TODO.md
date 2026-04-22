@@ -39,16 +39,16 @@ Do NOT add new features until steps 1–4 are complete.
 
 ## Gameplay Bugs
 - [ ] Player can pass through monster
-- [ ] Monster can spawn on player
+- [X] Monster can spawn on player
 - [ ] Monster gets stuck between walls
-- [ ] Monster-player collision delay (should trigger instant game over)
+- [X] Monster-player collision delay (should trigger instant game over)
 - [ ] Map drawing is incorrect / broken
 - [ ] Entire map not revealed on win/loss
-- [ ] Play found gold or treasure sound AFTER dig sound, right now they overlap
+- [ ] Play found gold/treasure sound AFTER dig sound (they currently overlap)
 
 ## Visual / UX Bugs
 - [ ] Text is blurry (font/rendering issue)
-- [ ] Grammar fix: “a emerald” → “an emerald”
+- [X] Grammar fix: “a emerald” → “an emerald”
 - [ ] Monster visibility issue (color blends with environment)
 
 ---
@@ -61,9 +61,9 @@ Do NOT add new features until steps 1–4 are complete.
 - [ ] Reduce frustration from “useless” loot
 - [ ] Make key detector more sensitive
 - [ ] Provide clues when monsters are near?
-- [ ] Randomize key, player, door and monster locations. The maps should just be based on walls.
-- [ ] When the monster starts chasing the player, without repellent it's basically impossible to get away,
-add 1 in 5 chanse of doing nothing? Just like random, player should be "faster"
+- [X] Randomize key, player, door and monster locations. The maps should just be based on walls.
+- [X] When the monster starts chasing the player, without repellent it is basically impossible to escape.
+  Added monster idle chance during chase (currently controlled by `MonsterSettings.IDLE_CHANCE`).
 
 ## Progression
 - [ ] Add scoring system for treasure
@@ -86,7 +86,7 @@ add 1 in 5 chanse of doing nothing? Just like random, player should be "faster"
 - [ ] Add temporary banish or defensive option
 
 ## Map / UI
-- [ ] Show on minimap:
+- [X] Show on minimap:
   - Door
   - Dug tiles
   - Last known monster position
@@ -97,8 +97,9 @@ add 1 in 5 chanse of doing nothing? Just like random, player should be "faster"
 
 ## Turn System
 - [ ] Ensure monster moves ONLY after player action completes (animation-aware)
-- [ ] Press start to play again
-- [ ] Score system and leaderboard
+- [X] Press start to play again
+- [X] Score system
+- [ ] Leaderboard
 
 ## Feedback Systems
 - [ ] Add visual/audio cues for nearby monster:
@@ -117,7 +118,7 @@ add 1 in 5 chanse of doing nothing? Just like random, player should be "faster"
 - [ ] (Optional) Controlled randomization
 
 ## Rules
-- [ ] 
+- [ ] Define win/loss reveal behavior and post-game summary rules
 
 ---
 
@@ -125,7 +126,8 @@ add 1 in 5 chanse of doing nothing? Just like random, player should be "faster"
 
 ## Mechanics
 - [ ] Monster attracted to light (stronger light = more danger) instead of just manhattan distance
-this way the player is completely safe in the dark (unless they literally run into the monster, or are right next to it) each increase in the light radius will increase make monsters start chasing further away
+  This keeps the player safe in darkness unless very close / colliding.
+  Increasing light radius should increase monster aggro distance.
 - [ ] Dynamic monster variety (random sprites)
 - [ ] Random obstacles
 
@@ -144,15 +146,15 @@ this way the player is completely safe in the dark (unless they literally run in
 - [ ] Add more obstacles (traps?)
 
 ## Player Tools
-- [ ] 
+- [ ] Define utility tools that are not combat focused (e.g., scouting aid)
 
 ---
 
 # NEXT ACTIONABLE TASKS
 
-- [ ] Improve map system (visibility + minimap accuracy)
-- [ ] Fix monster collision + spawning bugs
-- [ ] Begin GameManager refactor
+- [ ] Prevent player movement into occupied monster tiles
+- [ ] Sequence dig -> treasure audio so sounds do not overlap
+- [ ] Reveal full map memory on win/loss end state
 
 ---
 
@@ -161,16 +163,11 @@ this way the player is completely safe in the dark (unless they literally run in
 - Current foundation is solid (grid, movement, fog, digging all working)
 - Biggest risk now is code complexity, not features
 - Focus = stability → clarity → polish → expansion
-- light source shouldn't just be a radius, it should be blocked by walls (player can't see through walls)
-- In dungeon.py the DungeonMaster class has the functions:
+- Light source should not just be a radius; it should be blocked by walls (no seeing through walls)
+- Marker lookup cleanup note resolved: duplicate marker lookup helpers are no longer present.
 
-def find_marker(...)
-def find_marker_positions(...)
-
-^ This feels awkward. Is there a better solution?
-
-- smake metal detector more sensitive, more levels + a real sound
+- Make metal detector more sensitive, add more levels + a real sound
 - add shop or something you can do with gems + gold
 - show gold at end of game
-- made spawns random again but now I have to make sure things don't spawn on top
-of each other or too close
+- Made spawns random again, but now must ensure entities do not spawn on top
+  of each other or too close.
