@@ -105,6 +105,7 @@ class ItemSettings:
         'MATCH': 0.20,
         'TORCH': 0.10,
         'LANTERN': 0.05,
+        'MAP': 0.05,
         'MAGIC MAP': 0.01,
         'GOLD COINS': 0.20,
         'RUBY': 0.10,
@@ -134,6 +135,7 @@ class ItemSettings:
         # 'EMERALD': 0,
         # 'DIAMOND': 0,
         # 'KEY DETECTOR': 0,
+        'MAP': 1,
         # 'MAGIC MAP': 1,
         # 'KEY': 0
         }

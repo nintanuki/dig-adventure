@@ -283,10 +283,18 @@ class Player(pygame.sprite.Sprite):
                 # change this to something different later
 
             if found_item:
+                if found_item == "MAGIC MAP" and self.inventory.get("MAP", 0) > 0:
+                    self.inventory["MAP"] -= 1
+                    if self.inventory["MAP"] <= 0:
+                        self.inventory.pop("MAP", None)
+
                 # Add it to the inventory (create it if it doesn't exist)
                 self.inventory[found_item] = self.inventory.get(found_item, 0) + amount
                 # Add it to discovered_items so the window draws it
                 self.discovered_items.add(found_item)
+
+                if found_item in ["MAP", "MAGIC MAP"]:
+                    self.game.map_memory.reveal_full_terrain_memory()
         else:
             self.game.log_message("NOTHING BUT DIRT HERE.")
         self.game.advance_turn()
