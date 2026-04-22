@@ -106,7 +106,7 @@ class ItemSettings:
         'GOLD COINS': 1,
         'RUBY': 50,
         'SAPPHIRE': 100,
-        'EMERALD': 150,
+        'EMERALD': 200,
         'DIAMOND': 500
     }
 
@@ -114,26 +114,27 @@ class ItemSettings:
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
         'MONSTER REPELLENT': 0.10,
-        'MATCH': 0.20,
-        'TORCH': 0.10,
+        'MATCH': 0.25,
+        'TORCH': 0.15,
         'LANTERN': 0.05,
         'KEY DETECTOR': 0.05,
-        'INVISIBILITY CLOAK': 0.01,
+        'INVISIBILITY CLOAK': 0.05,
         'MAGIC MAP': 0.01,
-        'GOLD COINS': 0.20,
+        'GOLD COINS': 0.25,
         'RUBY': 0.10,
         'SAPPHIRE': 0.05,
-        'EMERALD': 0.02,
+        'EMERALD': 0.025,
         'DIAMOND': 0.01
     }
 
     SPAWN_QUANTITIES = {
-        'GOLD COINS': (1, 100),
-        'RUBY': (1, 3),
-        'SAPPHIRE': (1, 2),
-        'MATCH': (1, 5),
-        'TORCH': (1, 3),
-        'MONSTER REPELLENT': (1, 1)
+        'GOLD COINS': (1, 200),
+        'RUBY': (1, 10),
+        'SAPPHIRE': (1, 5),
+        'EMERALD': (1, 3),
+        'MATCH': (1, 10),
+        'TORCH': (1, 5),
+        'MONSTER REPELLENT': (1, 5)
         # Anything not here will default to 1
     }
 
