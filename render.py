@@ -1,5 +1,6 @@
 import pygame
 import random
+import colorsys
 from settings import *
 
 class RenderManager:
@@ -12,6 +13,33 @@ class RenderManager:
         self.scaled_wall_tile = game.scaled_wall_tile
         self.scaled_dug_tile = game.scaled_dug_tile
         self.scaled_dirt_tiles = game.scaled_dirt_tiles
+
+    def _rainbow_color(self) -> tuple[int, int, int]:
+        """Return a slow-cycling rainbow RGB color."""
+        hue = (pygame.time.get_ticks() * 0.00008) % 1.0
+        red, green, blue = colorsys.hsv_to_rgb(hue, 0.85, 1.0)
+        return int(red * 255), int(green * 255), int(blue * 255)
+
+    def _get_map_border_color(self) -> tuple[int, int, int]:
+        if self.game.map_memory.player_has_magic_map():
+            return self._rainbow_color()
+        if self.game.map_memory.player_has_regular_map():
+            return (240, 215, 80)
+        return (255, 255, 255)
+
+    def _get_inventory_border_color(self) -> tuple[int, int, int]:
+        if self.game.player.inventory.get("KEY", 0) > 0:
+            return (255, 215, 0)
+        return (255, 255, 255)
+
+    def _get_message_border_color(self) -> tuple[int, int, int]:
+        if not self.game.game_active and self.game.game_result == "loss":
+            return (220, 65, 65)
+
+        if pygame.time.get_ticks() < self.game.message_success_border_until:
+            return (90, 210, 110)
+
+        return (255, 255, 255)
 
     def draw_grid_background(self):
         """
@@ -42,32 +70,75 @@ class RenderManager:
 
     def draw_ui_frames(self):
         """Draw borders around all UI sections."""
-        
-        # We define the frames as a list of tuples so we can easily loop through them and draw them with the same style.
-        frames = [
-            (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y,
-            UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT),
+        action_window_rect = pygame.Rect(
+            UISettings.ACTION_WINDOW_X,
+            UISettings.ACTION_WINDOW_Y,
+            UISettings.ACTION_WINDOW_WIDTH,
+            UISettings.ACTION_WINDOW_HEIGHT
+        )
+        sidebar_rect = pygame.Rect(
+            UISettings.SIDEBAR_X,
+            UISettings.SIDEBAR_Y,
+            UISettings.SIDEBAR_WIDTH,
+            UISettings.SIDEBAR_HEIGHT,
+        )
+        log_rect = pygame.Rect(
+            UISettings.LOG_X,
+            UISettings.LOG_Y,
+            UISettings.LOG_WIDTH,
+            UISettings.LOG_HEIGHT,
+        )
+        map_rect = pygame.Rect(
+            UISettings.MAP_X,
+            UISettings.MAP_Y,
+            UISettings.MAP_WIDTH,
+            UISettings.MAP_HEIGHT,
+        )
 
-            (UISettings.SIDEBAR_X, UISettings.SIDEBAR_Y,
-            UISettings.SIDEBAR_WIDTH, UISettings.SIDEBAR_HEIGHT),
+        pygame.draw.rect(
+            self.screen,
+            self._get_inventory_border_color(),
+            sidebar_rect,
+            2,
+            UISettings.BORDER_RADIUS,
+        )
+        pygame.draw.rect(
+            self.screen,
+            self._get_message_border_color(),
+            log_rect,
+            2,
+            UISettings.BORDER_RADIUS,
+        )
+        pygame.draw.rect(
+            self.screen,
+            self._get_map_border_color(),
+            map_rect,
+            2,
+            UISettings.BORDER_RADIUS,
+        )
 
-            (UISettings.LOG_X, UISettings.LOG_Y,
-            UISettings.LOG_WIDTH, UISettings.LOG_HEIGHT),
-
-            (UISettings.MAP_X, UISettings.MAP_Y,
-            UISettings.MAP_WIDTH, UISettings.MAP_HEIGHT),
-        ]
-
-        # We loop through each frame definition and draw a rounded rectangle with the specified border color, thickness, and radius.
-        for x, y, width, height in frames:
-            rect = pygame.Rect(x, y, width, height)
+        border_color, border_alpha = self.game.player.get_action_window_border_style()
+        if border_alpha >= 255:
             pygame.draw.rect(
                 self.screen,
-                UISettings.BORDER_COLOR,
-                rect,
+                border_color,
+                action_window_rect,
                 2,
                 UISettings.BORDER_RADIUS
             )
+        else:
+            border_surface = pygame.Surface(
+                (action_window_rect.width, action_window_rect.height),
+                pygame.SRCALPHA
+            )
+            pygame.draw.rect(
+                border_surface,
+                (*border_color, border_alpha),
+                border_surface.get_rect(),
+                2,
+                UISettings.BORDER_RADIUS
+            )
+            self.screen.blit(border_surface, action_window_rect.topleft)
 
         score_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
         hud_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)

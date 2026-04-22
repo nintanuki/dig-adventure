@@ -34,6 +34,7 @@ class GameManager:
         self.transition_label = ""
         self.transition_end_time = 0
         self.pending_level_load = False
+        self.message_success_border_until = 0
         self.l2_trigger_is_pressed = False
         
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -168,6 +169,8 @@ class GameManager:
 
     def handle_door_unlock(self) -> None:
         """Advance to the next dungeon, or finish the run on the last door."""
+        self.message_success_border_until = pygame.time.get_ticks() + UISettings.DOOR_UNLOCK_BORDER_FLASH_MS
+
         if self.current_level_index >= len(self.level_order) - 1:
             self.log_message("CONGRATULATIONS! YOU CLEARED THE FINAL DUNGEON!")
             self.finish_game("win")

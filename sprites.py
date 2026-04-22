@@ -358,18 +358,53 @@ class Player(pygame.sprite.Sprite):
         """Return True while invisibility cloak effect is active."""
         return self.invisibility_turns > 0
 
-    def update_invisibility_visual(self) -> None:
-        """Flash the player sprite while invisibility is active."""
-        if self.is_invisible():
-            self.flash_frame = (self.flash_frame + 1) % 30
-            alpha = 95 if self.flash_frame < 15 else 255
-            self.image = self.base_image.copy()
-            self.image.set_alpha(alpha)
-            return
+    def is_repelled(self) -> bool:
+        """Return True while monster repellent effect is active."""
+        return self.repellent_turns > 0
 
-        self.flash_frame = 0
+    def _get_pulse_ratio(self) -> float:
+        """Return a 0..1 triangle wave used by status-effect pulses."""
+        distance_from_center = abs(self.flash_frame - 15)
+        return 1.0 - (distance_from_center / 15)
+
+    def get_action_window_border_style(self) -> tuple[tuple[int, int, int], int]:
+        """Return (RGB color, alpha) for the animated action-window border."""
+        if self.is_invisible():
+            border_alpha = 95 if self.flash_frame < 15 else 255
+            border_color = (180, 110, 220) if self.is_repelled() else (255, 255, 255)
+            return border_color, border_alpha
+
+        if self.is_repelled():
+            pulse_ratio = self._get_pulse_ratio()
+            border_alpha = 80 + int(80 * pulse_ratio)
+            return (180, 110, 220), border_alpha
+
+        return (255, 255, 255), 255
+
+    def update_invisibility_visual(self) -> None:
+        """Apply visual effects for invisibility and repellent states."""
+        is_invisible = self.is_invisible()
+        is_repelled = self.is_repelled()
+
+        if is_invisible or is_repelled:
+            self.flash_frame = (self.flash_frame + 1) % 30
+        else:
+            self.flash_frame = 0
+
         self.image = self.base_image.copy()
-        self.image.set_alpha(255)
+
+        if is_repelled:
+            pulse_ratio = self._get_pulse_ratio()
+            tint_alpha = 70 + int(40 * pulse_ratio)
+            tint_surface = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
+            tint_surface.fill((130, 45, 170, tint_alpha))
+            self.image.blit(tint_surface, (0, 0))
+
+        if is_invisible:
+            alpha = 95 if self.flash_frame < 15 else 255
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
 
     def animate(self) -> None:
         """

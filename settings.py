@@ -22,6 +22,7 @@ class UISettings:
 
     BORDER_COLOR = 'white'
     BORDER_RADIUS = 5
+    DOOR_UNLOCK_BORDER_FLASH_MS = 2500
 
     SIDEBAR_WIDTH = 200
     BOTTOM_LOG_HEIGHT = 150
@@ -138,19 +139,19 @@ class ItemSettings:
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        # 'TORCH': 0,
-        # 'LANTERN': 0,
-        # 'MONSTER REPELLENT': 0,
-        # 'GOLD COINS': 0,
-        # 'RUBY': 0,
-        # 'SAPPHIRE': 0,
-        # 'EMERALD': 0,
-        # 'DIAMOND': 0,
-        # 'KEY DETECTOR': 0,
-        # 'INVISIBILITY CLOAK': 0,
-        # # 'MAP': 0,
-        # 'MAGIC MAP': 0,
-        # # 'KEY': 1
+        # # 'TORCH': 0,
+        # 'LANTERN': 100,
+        # 'MONSTER REPELLENT': 1,
+        # # 'GOLD COINS': 0,
+        # # 'RUBY': 0,
+        # # 'SAPPHIRE': 0,
+        # # 'EMERALD': 0,
+        # # 'DIAMOND': 0,
+        # # 'KEY DETECTOR': 0,
+        # 'INVISIBILITY CLOAK': 1,
+        # 'MAP': 1,
+        # 'MAGIC MAP': 1,
+        # # # 'KEY': 1
         }
 
 class FontSettings:
