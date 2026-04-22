@@ -156,8 +156,8 @@ class FontSettings:
     }
 
 class AudioSettings:
-    MUTE = True
-    MUTE_MUSIC = True  # Mute music but keep SFX
+    MUTE = False
+    MUTE_MUSIC = False  # Mute music but keep SFX
     MUSIC_VOLUME = 0.2  # Hardcoded volume (0.0 to 1.0)
 
 class AssetPaths:
@@ -205,6 +205,6 @@ class AssetPaths:
 class DebugSettings:
     """Settings related to debugging features."""
     GRID = True # Toggle grey outlines for debugging
-    MUTE = True # Set to True to mute all sounds during testing, False to enable sounds
+    MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
     NO_FOG = False # Set to True to disable fog of war
     SPAWN_LOG = True # Print spawn/item placement summary at dungeon setup
