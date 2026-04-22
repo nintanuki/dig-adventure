@@ -113,8 +113,8 @@ class ItemSettings:
     SHOP PRICES = {
         'MATCH': 50,
         'TORCH': 250,
-        'MONSTER REPELLENT': 500,
         'LANTERN': 1000,
+        'MONSTER REPELLENT': 500,
         'INVISIBILITY CLOAK': 5000,
     }
 
