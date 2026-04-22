@@ -170,14 +170,22 @@ class GameManager:
         for monster in self.monsters:
             monster.take_turn()
 
-        # Check for Monster Collision (Loss)
+        self.check_player_caught_by_monster()
+
+    def check_player_caught_by_monster(self) -> bool:
+        """Return True and end the game if any monster occupies the player's tile."""
+        if not self.game_active:
+            return False
+
         for monster in self.monsters:
             if self.player.position == monster.position:
                 self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
                 pygame.mixer.music.stop() # Stop the music immediately on death
                 self.audio.play_scream_sound()
                 self.game_active = False
-                break
+                return True
+
+        return False
 
     @property
     def is_busy(self):
@@ -242,6 +250,9 @@ class GameManager:
                 for sprite in self.all_sprites:
                     if hasattr(sprite, 'animate'):
                         sprite.animate()
+
+                # Catch collisions immediately when a monster finishes moving onto the player.
+                self.check_player_caught_by_monster()
 
             # Drawing
             self.screen.fill('black')

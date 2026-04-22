@@ -1,5 +1,5 @@
 import random
-from settings import UISettings, ItemSettings, MonsterSettings
+from settings import UISettings, ItemSettings, MonsterSettings, DebugSettings
 from tilemaps import DUNGEONS
 
 class DungeonMaster:
@@ -80,19 +80,36 @@ class DungeonMaster:
                         "dirt_surface": random.choice(self.scaled_dirt_tiles),
                     }
 
+        available_positions = self.get_walkable_positions()
+        required_positions = 2 + MonsterSettings.COUNT + 3  # player, door, monsters, key, detector, map
+        if len(available_positions) < required_positions:
+            raise ValueError("Not enough walkable tiles to place all entities and fixed items.")
+
         # Randomize all important positions
-        self.player_grid_pos = self.get_random_walkable_position()
-        self.door_grid_pos = self.get_random_walkable_position()
+        self.player_grid_pos = self.draw_random_position(available_positions)
+        self.door_grid_pos = self.draw_random_position(available_positions)
 
         monster_count = MonsterSettings.COUNT
         self.monster_grid_positions = [
-            self.get_random_walkable_position()
+            self.draw_random_position(available_positions)
             for _ in range(monster_count)
         ]
 
-        self.key_grid_pos = self.place_fixed_item("KEY")
-        self.place_fixed_item("KEY DETECTOR")
-        self.place_fixed_item("MAP")
+        self.key_grid_pos = self.place_fixed_item("KEY", available_positions)
+        detector_grid_pos = self.place_fixed_item("KEY DETECTOR", available_positions)
+        map_grid_pos = self.place_fixed_item("MAP", available_positions)
+
+        if DebugSettings.SPAWN_LOG:
+            def fmt_pos(pos: tuple[int, int]) -> str:
+                return f"(col={pos[0]},row={pos[1]})"
+
+            monster_positions = ", ".join(fmt_pos(pos) for pos in self.monster_grid_positions)
+            print(
+                f"[SPAWN] {self.dungeon_name} "
+                f"P={fmt_pos(self.player_grid_pos)} D={fmt_pos(self.door_grid_pos)} "
+                f"M=[{monster_positions}] K={fmt_pos(self.key_grid_pos)} "
+                f"KD={fmt_pos(detector_grid_pos)} MAP={fmt_pos(map_grid_pos)}"
+            )
 
     def get_walkable_positions(self) -> list[tuple[int, int]]:
         positions = []
@@ -108,9 +125,15 @@ class DungeonMaster:
     def get_random_walkable_position(self) -> tuple[int, int]:
         return random.choice(self.get_walkable_positions())
 
-    def place_fixed_item(self, item_name: str) -> tuple[int, int]:
+    def draw_random_position(self, available_positions: list[tuple[int, int]]) -> tuple[int, int]:
+        """Draw and remove one random position from the available pool."""
+        selected = random.choice(available_positions)
+        available_positions.remove(selected)
+        return selected
+
+    def place_fixed_item(self, item_name: str, available_positions: list[tuple[int, int]]) -> tuple[int, int]:
         """Place a fixed item on a random walkable tile and return its position."""
-        grid_pos = self.get_random_walkable_position()
+        grid_pos = self.draw_random_position(available_positions)
         self.tile_data[grid_pos]["item"] = item_name
         return grid_pos
 

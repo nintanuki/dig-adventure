@@ -206,3 +206,4 @@ class DebugSettings:
     GRID = True # Toggle grey outlines for debugging
     MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
     NO_FOG = False # Set to True to disable fog of war
+    SPAWN_LOG = True # Print spawn/item placement summary at dungeon setup

@@ -233,6 +233,7 @@ class Player(pygame.sprite.Sprite):
             return
 
         tile["is_dug"] = True
+        self.game.audio.play_dig_sound()
         self.game.map_memory.remember_visible_map_info()
         found_item, amount = self.dungeon.get_item_at_tile(grid_pos)
 
@@ -272,7 +273,6 @@ class Player(pygame.sprite.Sprite):
                 self.discovered_items.add(found_item)
         else:
             self.game.log_message("NOTHING BUT DIRT HERE.")
-        self.game.audio.play_dig_sound()
         self.game.advance_turn()
 
     def use_key_detector(self) -> None:
