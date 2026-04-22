@@ -110,6 +110,14 @@ class ItemSettings:
         'DIAMOND': 500
     }
 
+    SHOP PRICES = {
+        'MATCH': 50,
+        'TORCH': 250,
+        'MONSTER REPELLENT': 500,
+        'LANTERN': 1000,
+        'INVISIBILITY CLOAK': 5000,
+    }
+
     # Digging probabilities (must be between 0.0 and 1.0)
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
