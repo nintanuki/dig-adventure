@@ -125,7 +125,7 @@ class ItemSettings:
     }
 
     INITIAL_INVENTORY = {
-        'MATCH': 2,
+        'MATCH': 1,
         # 'TORCH': 3,
         # 'LANTERN': 0,
         # 'MONSTER REPELLENT': 0,
@@ -135,7 +135,7 @@ class ItemSettings:
         # 'EMERALD': 0,
         # 'DIAMOND': 0,
         # 'KEY DETECTOR': 0,
-        'MAP': 1,
+        # 'MAP': 1,
         # 'MAGIC MAP': 1,
         # 'KEY': 0
         }
