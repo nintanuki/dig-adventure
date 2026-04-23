@@ -138,6 +138,10 @@ class UISettings:
 class GameSettings:
     LEVEL_TRANSITION_MS = 2000
     HIGH_SCORE_FILE = 'high_score.txt'
+    LEADERBOARD_FILE = 'leaderboard.txt'
+    LEADERBOARD_LIMIT = 10
+    GAME_OVER_CONTINUE_DELAY_MS = 650
+    GAME_OVER_PROMPT_FADE_MS = 750
 
 class WindowSettings:
     MAX_MESSAGES = 5

@@ -25,10 +25,11 @@ class GameManager:
         self.dungeon = DungeonMaster(self.scaled_dirt_tiles) # Initialize the DungeonMaster with the pre-scaled dirt tiles from load_assets()
         self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
         self.audio = AudioManager() # Initialize the audio manager
-        self.game_active = True
+        self.game_active = False
         self.game_result = None
         self.score = 0
         self.high_score = self.load_high_score()
+        self.leaderboard = self.load_leaderboard()
         self.level_order = list(DUNGEON_ORDER)
         self.current_level_index = 0
         self.pending_level_index = 0
@@ -37,6 +38,12 @@ class GameManager:
         self.pending_level_load = False
         self.message_success_border_until = 0
         self.l2_trigger_is_pressed = False
+        self.ui_state = 'title'
+
+        self.game_over_message_complete_time = 0
+        self.game_over_prompt_start_time = 0
+        self.pending_leaderboard_score = 0
+        self.initials_entry = ""
         
         # Treasure Conversion Phase
         self.in_treasure_conversion = False
@@ -80,6 +87,7 @@ class GameManager:
         self.render = None
 
         self.load_level()
+        self.audio.stop_music()
 
     def reset_game(self):
         """
@@ -118,6 +126,9 @@ class GameManager:
     def get_high_score_path(self) -> str:
         return os.path.join(os.path.dirname(__file__), GameSettings.HIGH_SCORE_FILE)
 
+    def get_leaderboard_path(self) -> str:
+        return os.path.join(os.path.dirname(__file__), GameSettings.LEADERBOARD_FILE)
+
     def load_high_score(self) -> int:
         """Load the saved high score from disk if it exists."""
         high_score_path = self.get_high_score_path()
@@ -139,6 +150,147 @@ class GameManager:
                 score_file.write(str(self.high_score))
         except OSError:
             pass
+
+    def _sanitize_initials(self, initials: str) -> str:
+        letters = ''.join(char for char in initials.upper() if char.isalpha())
+        return (letters[:3]).ljust(3, 'A')
+
+    def load_leaderboard(self) -> list[tuple[str, int]]:
+        """Load top scores from disk in descending order."""
+        leaderboard_path = self.get_leaderboard_path()
+        if not os.path.exists(leaderboard_path):
+            return []
+
+        entries: list[tuple[str, int]] = []
+        try:
+            with open(leaderboard_path, 'r', encoding='utf-8') as board_file:
+                for raw_line in board_file:
+                    line = raw_line.strip()
+                    if not line:
+                        continue
+
+                    if ',' not in line:
+                        continue
+
+                    initials, score_text = line.split(',', 1)
+                    try:
+                        score = int(score_text.strip())
+                    except ValueError:
+                        continue
+
+                    if score < 0:
+                        continue
+
+                    entries.append((self._sanitize_initials(initials), score))
+        except OSError:
+            return []
+
+        entries.sort(key=lambda entry: entry[1], reverse=True)
+        return entries[:GameSettings.LEADERBOARD_LIMIT]
+
+    def save_leaderboard(self) -> None:
+        """Persist leaderboard entries to disk."""
+        try:
+            with open(self.get_leaderboard_path(), 'w', encoding='utf-8') as board_file:
+                for initials, score in self.leaderboard:
+                    board_file.write(f"{initials},{score}\n")
+        except OSError:
+            pass
+
+    def is_top_ten_score(self, score: int) -> bool:
+        """Return True when score qualifies for leaderboard entry."""
+        if score <= 0:
+            return False
+
+        if len(self.leaderboard) < GameSettings.LEADERBOARD_LIMIT:
+            return True
+
+        return score >= self.leaderboard[-1][1]
+
+    def add_leaderboard_entry(self, initials: str, score: int) -> None:
+        """Insert and persist one top-score entry."""
+        self.leaderboard.append((self._sanitize_initials(initials), score))
+        self.leaderboard.sort(key=lambda entry: entry[1], reverse=True)
+        self.leaderboard = self.leaderboard[:GameSettings.LEADERBOARD_LIMIT]
+        self.high_score = max(self.high_score, self.leaderboard[0][1] if self.leaderboard else 0)
+        self.save_leaderboard()
+
+    def start_gameplay_from_title(self) -> None:
+        """Leave title screen and begin active gameplay."""
+        self.ui_state = 'playing'
+        self.game_active = True
+        self.audio.play_random_bgm()
+
+    def can_continue_from_game_over(self) -> bool:
+        """Return True when the post-loss continue prompt is currently visible."""
+        if self.ui_state != 'game_over':
+            return False
+
+        if self.game_result != 'loss':
+            return True
+
+        return self.game_over_prompt_start_time > 0 and pygame.time.get_ticks() >= self.game_over_prompt_start_time
+
+    def update_game_over_flow(self) -> None:
+        """Wait until death text is done, then reveal the continue prompt."""
+        if self.ui_state != 'game_over' or self.game_result != 'loss':
+            return
+
+        if self.message_log.is_typing:
+            return
+
+        now = pygame.time.get_ticks()
+        if self.game_over_message_complete_time == 0:
+            self.game_over_message_complete_time = now
+            self.game_over_prompt_start_time = now + GameSettings.GAME_OVER_CONTINUE_DELAY_MS
+
+    def continue_from_game_over(self) -> None:
+        """Advance to initials entry or directly to the leaderboard."""
+        if self.is_top_ten_score(self.pending_leaderboard_score):
+            self.ui_state = 'enter_initials'
+            self.initials_entry = ""
+            return
+
+        self.ui_state = 'leaderboard'
+
+    def submit_initials_entry(self) -> None:
+        """Commit initials for this run, then show leaderboard."""
+        self.add_leaderboard_entry(self.initials_entry, self.pending_leaderboard_score)
+        self.ui_state = 'leaderboard'
+
+    def handle_initials_event(self, event: pygame.event.Event) -> None:
+        """Handle keyboard/controller input while entering leaderboard initials."""
+        if self.ui_state != 'enter_initials':
+            return
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                self.initials_entry = self.initials_entry[:-1]
+                return
+
+            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER) and len(self.initials_entry) == 3:
+                self.submit_initials_entry()
+                return
+
+            if event.unicode and event.unicode.isalpha() and len(self.initials_entry) < 3:
+                self.initials_entry += event.unicode.upper()
+                return
+
+        if event.type == pygame.JOYBUTTONDOWN and event.button == 7 and len(self.initials_entry) == 3:
+            self.submit_initials_entry()
+
+    def handle_start_press(self) -> None:
+        """Handle Start/Enter based on top-level UI state."""
+        if self.ui_state == 'title':
+            self.start_gameplay_from_title()
+            return
+
+        if self.ui_state == 'game_over' and self.can_continue_from_game_over():
+            self.continue_from_game_over()
+            return
+
+        if self.ui_state == 'leaderboard':
+            self.reset_game()
 
     def capture_player_progress(self) -> dict[str, object] | None:
         """Snapshot persistent player state before rebuilding the level."""
@@ -199,6 +351,10 @@ class GameManager:
         """End the current run and persist the high score."""
         self.game_active = False
         self.game_result = result
+        self.ui_state = 'game_over'
+        self.pending_leaderboard_score = self.score
+        self.game_over_message_complete_time = 0
+        self.game_over_prompt_start_time = 0
         self.audio.stop_music()
         self.save_high_score()
 
@@ -643,9 +799,12 @@ class GameManager:
         """
         # Main game loop
         while True:
-            self.update_level_transition()
-            self.update_door_unlock_sequence()
-            self.update_treasure_conversion()
+            if self.ui_state == 'playing':
+                self.update_level_transition()
+                self.update_door_unlock_sequence()
+                self.update_treasure_conversion()
+
+            self.update_game_over_flow()
 
             # Event Handling
             for event in pygame.event.get():
@@ -658,20 +817,27 @@ class GameManager:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_F11:
                         pygame.display.toggle_fullscreen()
+
                     if self.is_in_shop_phase:
                         self.handle_shop_event(event)
-                    # Restart only after game over / escape
-                    if not self.game_active and event.key == pygame.K_RETURN:
-                        self.reset_game()
+
+                    if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        self.handle_start_press()
+
+                    self.handle_initials_event(event)
+
                 # Gamepad button inputs for fullscreen toggle and game restart
                 if event.type == pygame.JOYBUTTONDOWN:
                     if event.button == 6:
                         pygame.display.toggle_fullscreen()
+
                     if self.is_in_shop_phase:
                         self.handle_shop_event(event)
-                    # Restart only after game over / escape
-                    if not self.game_active and event.button == 7:
-                        self.reset_game()
+
+                    if event.button == 7:
+                        self.handle_start_press()
+
+                    self.handle_initials_event(event)
 
                 if event.type == pygame.JOYHATMOTION and self.is_in_shop_phase:
                     self.handle_shop_event(event)
@@ -687,7 +853,7 @@ class GameManager:
                     self.l2_trigger_is_pressed = trigger_pressed
 
             self.message_log.update() # Update message log to handle typing effect and message timing
-            if self.game_active:
+            if self.ui_state == 'playing' and self.game_active:
                 if not self.is_transitioning and not self.is_busy and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase: # Only allow player input if we're not in the middle of an animation or message
                     self.all_sprites.update()
 
@@ -702,19 +868,30 @@ class GameManager:
 
             # Drawing
             self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
-            self.render.draw_grid_background() # Draw the grid background
-            self.all_sprites.draw(self.screen) # Draw the sprites to the screen
-            
-            if not DebugSettings.NO_FOG: # Toggle Fog of War for testing
-                self.render.draw_fog_of_war()
-            self.render.draw_ui_frames() # Draw the UI frames and outlines
-            self.message_log.draw(self.screen)
-            self.inventory_window.draw(self.screen)
-            self.map_window.draw(self.screen)
-            self.render.draw_level_transition()
-            self.render.draw_end_game_screens()
-            self.render.draw_treasure_conversion()
-            self.render.draw_shop_menu()
+
+            if self.ui_state in {'playing', 'game_over'}:
+                self.render.draw_grid_background() # Draw the grid background
+                self.all_sprites.draw(self.screen) # Draw the sprites to the screen
+
+                if not DebugSettings.NO_FOG: # Toggle Fog of War for testing
+                    self.render.draw_fog_of_war()
+                self.render.draw_ui_frames() # Draw the UI frames and outlines
+                self.message_log.draw(self.screen)
+                self.inventory_window.draw(self.screen)
+                self.map_window.draw(self.screen)
+                self.render.draw_level_transition()
+                self.render.draw_treasure_conversion()
+                self.render.draw_shop_menu()
+
+            if self.ui_state == 'title':
+                self.render.draw_title_screen()
+            elif self.ui_state == 'game_over':
+                self.render.draw_end_game_screens()
+            elif self.ui_state == 'enter_initials':
+                self.render.draw_initials_entry_screen()
+            elif self.ui_state == 'leaderboard':
+                self.render.draw_leaderboard_screen()
+
             self.crt.draw() # CRT Effect on top of everything else
 
             pygame.display.flip()

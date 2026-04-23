@@ -197,7 +197,7 @@ class RenderManager:
 
     def draw_end_game_screens(self):
         # Draw Game Over Overlay
-        if not self.game.game_active:
+        if self.game.ui_state == 'game_over':
             # Dim the screen
             overlay = pygame.Surface((ScreenSettings.WIDTH, ScreenSettings.HEIGHT))
             overlay.set_alpha(180)
@@ -219,6 +219,99 @@ class RenderManager:
             text_surf = big_font.render(end_text, False, end_color)
             text_rect = text_surf.get_rect(center=(ScreenSettings.WIDTH/2, ScreenSettings.HEIGHT/2))
             self.screen.blit(text_surf, text_rect)
+
+            if self.game.game_result == 'loss' and self.game.game_over_prompt_start_time > 0:
+                elapsed_since_prompt = pygame.time.get_ticks() - self.game.game_over_prompt_start_time
+                prompt_alpha = max(0, min(255, int((elapsed_since_prompt / GameSettings.GAME_OVER_PROMPT_FADE_MS) * 255)))
+                if prompt_alpha > 0:
+                    prompt_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
+                    prompt_color = color_with_alpha(ColorSettings.TEXT_PROMPT, prompt_alpha)
+                    prompt_surf = prompt_font.render("PRESS START TO CONTINUE", False, prompt_color)
+                    prompt_rect = prompt_surf.get_rect(center=(ScreenSettings.WIDTH / 2, (ScreenSettings.HEIGHT / 2) + 42))
+                    self.screen.blit(prompt_surf, prompt_rect)
+            elif self.game.game_result != 'loss':
+                prompt_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
+                prompt_surf = prompt_font.render("PRESS START TO CONTINUE", False, ColorSettings.TEXT_PROMPT)
+                prompt_rect = prompt_surf.get_rect(center=(ScreenSettings.WIDTH / 2, (ScreenSettings.HEIGHT / 2) + 42))
+                self.screen.blit(prompt_surf, prompt_rect)
+
+    def draw_title_screen(self):
+        """Draw a minimal title card while waiting for Start."""
+        self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
+
+        title_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
+        prompt_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
+
+        title_surf = title_font.render("DUNGEON DIGGER", False, ColorSettings.TEXT_DEFAULT)
+        title_rect = title_surf.get_rect(center=(ScreenSettings.WIDTH / 2, (ScreenSettings.HEIGHT / 2) - 20))
+        self.screen.blit(title_surf, title_rect)
+
+        prompt_surf = prompt_font.render("PRESS START TO PLAY", False, ColorSettings.TEXT_PROMPT)
+        prompt_rect = prompt_surf.get_rect(center=(ScreenSettings.WIDTH / 2, (ScreenSettings.HEIGHT / 2) + 28))
+        self.screen.blit(prompt_surf, prompt_rect)
+
+    def draw_initials_entry_screen(self):
+        """Draw initials input for top-ten leaderboard placement."""
+        self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
+
+        title_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
+        body_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
+        prompt_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
+
+        title_surf = title_font.render("GAME OVER", False, ColorSettings.TEXT_LOSS)
+        title_rect = title_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 160))
+        self.screen.blit(title_surf, title_rect)
+
+        invite_surf = body_font.render("TOP TEN! ENTER YOUR INITIALS", False, ColorSettings.TEXT_DEFAULT)
+        invite_rect = invite_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 240))
+        self.screen.blit(invite_surf, invite_rect)
+
+        padded_initials = self.game.initials_entry.ljust(3, '_')
+        initials_surf = title_font.render(padded_initials, False, ColorSettings.TEXT_PROMPT)
+        initials_rect = initials_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 310))
+        self.screen.blit(initials_surf, initials_rect)
+
+        score_surf = body_font.render(f"SCORE: {self.game.pending_leaderboard_score}", False, ColorSettings.TEXT_GOLD)
+        score_rect = score_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 360))
+        self.screen.blit(score_surf, score_rect)
+
+        help_surf = prompt_font.render("TYPE 3 LETTERS. PRESS START TO CONFIRM.", False, ColorSettings.TEXT_DEFAULT)
+        help_rect = help_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 430))
+        self.screen.blit(help_surf, help_rect)
+
+    def draw_leaderboard_screen(self):
+        """Draw the persisted top-ten scoreboard."""
+        self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
+
+        title_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
+        row_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
+        prompt_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
+
+        title_surf = title_font.render("LEADERBOARD", False, ColorSettings.TEXT_DEFAULT)
+        title_rect = title_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 80))
+        self.screen.blit(title_surf, title_rect)
+
+        if self.game.leaderboard:
+            start_y = 140
+            row_height = 34
+            for rank, (initials, score) in enumerate(self.game.leaderboard, start=1):
+                rank_text = f"{rank:>2}. {initials}"
+                score_text = f"{score}"
+
+                rank_surf = row_font.render(rank_text, False, ColorSettings.TEXT_DEFAULT)
+                score_surf = row_font.render(score_text, False, ColorSettings.TEXT_GOLD)
+
+                y = start_y + ((rank - 1) * row_height)
+                self.screen.blit(rank_surf, (ScreenSettings.WIDTH // 2 - 145, y))
+                self.screen.blit(score_surf, (ScreenSettings.WIDTH // 2 + 60, y))
+        else:
+            empty_surf = row_font.render("NO SCORES YET", False, ColorSettings.TEXT_DEFAULT)
+            empty_rect = empty_surf.get_rect(center=(ScreenSettings.WIDTH / 2, 260))
+            self.screen.blit(empty_surf, empty_rect)
+
+        prompt_surf = prompt_font.render("PRESS START TO PLAY AGAIN", False, ColorSettings.TEXT_PROMPT)
+        prompt_rect = prompt_surf.get_rect(center=(ScreenSettings.WIDTH / 2, ScreenSettings.HEIGHT - 60))
+        self.screen.blit(prompt_surf, prompt_rect)
 
     def draw_level_transition(self):
         """Draw a full-screen transition card between dungeon levels."""
