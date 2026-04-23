@@ -22,14 +22,14 @@ class Player(pygame.sprite.Sprite):
             groups: Sprite groups this player should be added to.
         """
         super().__init__(groups)
-        # Load the player image and armor pieces, then scale them to fit the grid.
+        # -------- Sprite visuals --------
         player_surf = pygame.image.load(AssetPaths.PLAYER).convert_alpha()
         self.base_image = pygame.transform.scale(player_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
         self.image = self.base_image.copy()
 
-        # Set the rect's top-left corner to the given position
+        # -------- Position and movement state --------
         self.rect = self.image.get_rect(topleft = position)
-        self.position = pygame.math.Vector2(self.rect.topleft) # Using Vector2 for easier movement calculations
+        self.position = pygame.math.Vector2(self.rect.topleft)
 
         self.inventory = ItemSettings.INITIAL_INVENTORY.copy()
         self.discovered_items = set(self.inventory.keys())
@@ -43,13 +43,14 @@ class Player(pygame.sprite.Sprite):
         self.active_light_max_radius = 0
         self.active_light_max_duration = 0
 
-        # Animation states for smooth movement
+        # -------- Animation state --------
         self.target_pos = pygame.math.Vector2(position)
         self.is_moving = False
         self.anim_speed = PlayerSettings.ANIMATION_SPEED
 
-        self.game = game # Reference to the game manager for accessing shared resources like the audio manager
-        self.dungeon = self.game.dungeon # Reference to the dungeon for checking tile states during movement and actions
+        # -------- Shared system references --------
+        self.game = game
+        self.dungeon = self.game.dungeon
 
     def _normalize_cardinal_step(self, delta_x_tiles: int, delta_y_tiles: int) -> tuple[int, int]:
         """Allow movement on only one axis so diagonal steps are impossible."""
@@ -76,8 +77,7 @@ class Player(pygame.sprite.Sprite):
         delta_y_tiles = 0
         action: PlayerAction | None = None
 
-        # Movement is based on grid snapping, so the player moves in increments of the tile size.
-        # Keyboard check
+        # -------- Keyboard movement input --------
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             delta_y_tiles = -1
         elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
@@ -90,7 +90,7 @@ class Player(pygame.sprite.Sprite):
         if delta_x_tiles != 0 or delta_y_tiles != 0:
             action = 'move'
 
-        # Action Keys (Mnemonic)
+        # -------- Keyboard action input --------
         elif keys[pygame.K_SPACE]:
             action = 'dig'
         elif keys[pygame.K_e]:
@@ -102,21 +102,20 @@ class Player(pygame.sprite.Sprite):
         elif keys[pygame.K_c]:
             action = 'cloak'
 
-        # Controller check
+        # -------- Controller movement/action input --------
         if pygame.joystick.get_count() > 0:
             joystick = pygame.joystick.Joystick(0)
             
-            # D-Pad (Movement)
+            # D-pad movement
             dpad_direction = joystick.get_hat(0)
-            # Only override if the d-pad is actually being touched
+            # Override keyboard movement only when the D-pad is active.
             if dpad_direction[0] != 0 or dpad_direction[1] != 0:
                 delta_x_tiles = dpad_direction[0]
                 delta_y_tiles = -dpad_direction[1]
                 delta_x_tiles, delta_y_tiles = self._normalize_cardinal_step(delta_x_tiles, delta_y_tiles)
                 action = 'move'
 
-            # Buttons (Actions)
-            # 0:A (Dig), 1:B (Light), 2:X (Detector), 3:Y (Repellent)
+            # Controller actions
             if action is None:
                 if joystick.get_button(0):
                     action = 'dig'
@@ -185,12 +184,10 @@ class Player(pygame.sprite.Sprite):
 
         elif action == 'dig':
             self.dig_current_tile()
-            # advance turn is handled in the dig function because
-            # we need to check if the player already dug there
-            # self.game.advance_turn()
+            # Turn advancement is handled inside dig_current_tile().
 
         elif action == 'light':
-            # Setup helper variables to avoid repeating code
+            # Select the best available light source by priority.
             light_source = None
             if self.inventory.get('LANTERN', 0) > 0:
                 light_source = ('LANTERN', LightSettings.LANTERN_RADIUS, LightSettings.LANTERN_DURATION)
@@ -203,7 +200,7 @@ class Player(pygame.sprite.Sprite):
                 name, radius, duration = light_source
                 self.inventory[name] -= 1
                 
-                # Store the "Max" values for the shrinking math
+                # Preserve source max values for per-turn radius decay.
                 self.active_light_max_radius = radius
                 self.active_light_max_duration = duration
                 self.light_radius = radius
@@ -232,7 +229,7 @@ class Player(pygame.sprite.Sprite):
             if self.inventory.get('MONSTER REPELLENT', 0) > 0:
                 self.inventory['MONSTER REPELLENT'] -= 1
                 # TODO: Move repellent turn-buffer literal (+1) into a named gameplay constant.
-                self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
+                self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1
                 self.game.log_message("YOU SPRAY THE REPELLENT.")
                 self.game.audio.play_repellent_sound(self.inventory['MONSTER REPELLENT'])
                 self.game.advance_turn()
@@ -273,8 +270,7 @@ class Player(pygame.sprite.Sprite):
         tile_grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
         tile_state = self.dungeon.tile_data.get(tile_grid_pos)
 
-        # This should never happen since the player can only be on valid tiles,
-        # but we are adding this just in case to prevent crashes.
+        # Guard against invalid tile state to avoid runtime failure.
         if not tile_state:
             self.game.log_message("YOU CAN'T DIG HERE.")
             return
@@ -288,8 +284,7 @@ class Player(pygame.sprite.Sprite):
         self.game.map_memory.remember_visible_map_info()
         found_item, amount = self.dungeon.get_item_at_tile(tile_grid_pos)
 
-        # Pluralization logic, which is a bit hacky but it works for now.
-        # WE may want to use a helper function later.
+        # Build a display-friendly item label for quantity messages.
         if found_item:
             display_name = found_item
 
@@ -318,17 +313,17 @@ class Player(pygame.sprite.Sprite):
                 self.game.audio.play_key_sound()
 
             if found_item == "GOLD COINS" or found_item in ["RUBY", "SAPPHIRE", "EMERALD", "DIAMOND"]:
-                self.game.audio.play_coin_sound() # using coin sound for treasures for now
-                # change this to something different later
+                # Reuse coin SFX for all treasure pickups.
+                self.game.audio.play_coin_sound()
 
             if found_item == "MAGIC MAP" and self.inventory.get("MAP", 0) > 0:
                 self.inventory["MAP"] -= 1
                 if self.inventory["MAP"] <= 0:
                     self.inventory.pop("MAP", None)
 
-            # Add it to the inventory (create it if it doesn't exist)
+            # Increment inventory stack for discovered item.
             self.inventory[found_item] = self.inventory.get(found_item, 0) + amount
-            # Add it to discovered_items so the window draws it
+            # Track discovery so UI can display known items.
             self.discovered_items.add(found_item)
 
             if found_item in ["MAP", "MAGIC MAP"]:
@@ -380,6 +375,7 @@ class Player(pygame.sprite.Sprite):
     def _get_pulse_ratio(self) -> float:
         """Return a 0..1 triangle wave used by status-effect pulses."""
         # TODO: Replace pulse-shape literal (15) with a named animation constant.
+        # Generate a symmetric 0..1 pulse over one flash cycle.
         distance_from_center = abs(self.flash_frame - 15)
         return 1.0 - (distance_from_center / 15)
 
@@ -434,14 +430,14 @@ class Player(pygame.sprite.Sprite):
         This keeps the game visually smooth while gameplay still resolves in grid steps.
         """
         if self.is_moving:
-            # Calculate the direction vector towards the target position
+            # Move along the normalized direction vector toward target.
             direction = self.target_pos - self.position
             distance = direction.length()
 
             if distance < self.anim_speed:
-                # If we're close enough to the target, snap to it and stop moving
+                # Snap to destination when remaining distance is below one step.
                 self.position = self.target_pos
-                self.rect.topleft = (int(self.position.x), int(self.position.y)) # Update the rect's position to match the new position
+                self.rect.topleft = (int(self.position.x), int(self.position.y))
                 self.is_moving = False
             else:
                 direction.scale_to_length(self.anim_speed)

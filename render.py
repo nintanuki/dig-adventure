@@ -69,7 +69,7 @@ class RenderManager:
         Draws the dirt tiles only within the Action Window boundaries.
         """
         # TODO: Refactor tile/fog composition into dedicated rendering passes if rendering complexity grows.
-        # Loop through columns and rows based on our calculated grid size
+        # Draw map tiles in row-major order.
         for row in range(UISettings.ROWS):
             for col in range(UISettings.COLS):
                 x, y = self.game.grid_to_screen(col, row)
@@ -84,10 +84,10 @@ class RenderManager:
                     elif tile_state:
                         self.screen.blit(tile_state["dirt_surface"], (x, y))
                     else:
-                        # fallback for any non-wall tile that wasn't added to tile_data
+                        # Fallback draw path for non-wall tiles missing runtime state.
                         self.screen.blit(random.choice(self.scaled_dirt_tiles), (x, y))
 
-                if DebugSettings.GRID: # Toggle grey outlines for debugging
+                if DebugSettings.GRID:
                     tile_outline = pygame.Rect(x, y, GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
                     pygame.draw.rect(self.screen, ColorSettings.GRID_OUTLINE, tile_outline, 1)
 
@@ -181,41 +181,34 @@ class RenderManager:
         The fog is rendered as a separate surface so visibility can be controlled
         independently from tile rendering and sprite drawing.
         """
-        self.fog_surface.fill(color_with_alpha(ColorSettings.OVERLAY_BACKGROUND, 255)) # Start with a fully opaque black surface
+        # Start from a fully opaque darkness layer.
+        self.fog_surface.fill(color_with_alpha(ColorSettings.OVERLAY_BACKGROUND, 255))
 
-        # We are going to create a circular gradient mask that will "punch through" the fog of war to create our light radius effect.
-        # This will create a more natural looking light effect with smooth edges
+        # Subtract a radial alpha mask from the fog layer to reveal lit tiles.
         if self.game.player.light_radius > 0:
             radius_px = int(self.game.player.light_radius * GridSettings.TILE_SIZE)
             
-            # Create the mask surface (Twice the radius)
-            # This must be SRCALPHA and we start it COMPLETELY transparent
+            # Allocate a transparent mask surface with diameter-based bounds.
             light_mask = pygame.Surface((radius_px * 2, radius_px * 2), pygame.SRCALPHA)
             light_mask.fill(color_with_alpha(ColorSettings.OVERLAY_BACKGROUND, 0)) 
             
-            # Draw a WHITE gradient from the center outwards
-            # Center = White (Alpha 255)
-            # Edge = Transparent (Alpha 0)
+            # Draw concentric circles: center strongest, edge weakest.
             for i in range(radius_px, 0, -1):
-                # Inner circles are more opaque (brighter)
+                # Linear alpha falloff from center to edge.
                 alpha = int(255 * (1 - (i / radius_px)))
                 pygame.draw.circle(light_mask, color_with_alpha(ColorSettings.LIGHT_MASK, alpha), (radius_px, radius_px), i)
             
-            # Center it on the player
+            # Align reveal mask to the player's center in action-window space.
             player_center = (
                 self.game.player.rect.centerx - UISettings.ACTION_WINDOW_X,
                 self.game.player.rect.centery - UISettings.ACTION_WINDOW_Y
             )
             mask_rect = light_mask.get_rect(center=player_center)
             
-            # THE MAGIC BLEND MODE: BLEND_RGBA_SUB
-            # We are SUBTRACTING our white gradient from the black fog.
-            # (Black 255 Alpha) - (White 255 Alpha) = (Black 0 Alpha) -> Transparent!
-            # Since the area outside the circle is 0 alpha, nothing gets subtracted, 
-            # so the fog stays black and square-free.
+            # Use subtractive blending to carve visible space out of the fog layer.
             self.fog_surface.blit(light_mask, mask_rect, special_flags=pygame.BLEND_RGBA_SUB)
 
-        # Blit the fog to the screen
+        # Composite fog over gameplay scene.
         self.screen.blit(self.fog_surface, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
 
     def draw_end_game_screens(self):
@@ -363,30 +356,30 @@ class RenderManager:
 
         # TODO: Move conversion UI layout/alpha literals (200, 20, 22, 16, 5, -18) to UI settings.
 
-        # Draw semi-transparent overlay over the action window
+        # Dim gameplay area while conversion UI is active.
         overlay = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
         overlay.fill(color_with_alpha(ColorSettings.OVERLAY_BACKGROUND, 200))
         self.screen.blit(overlay, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
 
-        # Setup fonts
+        # Configure conversion UI fonts.
         font_items = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
         font_large = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
         font_prompt = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
 
-        # Start position for text display
+        # Base text layout anchors.
         start_x = UISettings.ACTION_WINDOW_X + 20
         start_y = UISettings.ACTION_WINDOW_Y + 20
         line_height = 22
 
-        # Current line position
+        # Mutable vertical cursor for stacked rows.
         y_pos = start_y
 
-        # Display title
+        # Render conversion title.
         title_surf = font_large.render("TREASURE EXCHANGED FOR COINS", False, ColorSettings.TEXT_TITLE)
         self.screen.blit(title_surf, (start_x, y_pos))
         y_pos += line_height + 16
 
-        # Display each treasure item with its conversion value
+        # Render revealed treasure rows and accumulate displayed total.
         total_gold = 0
         elapsed = pygame.time.get_ticks() - self.game.conversion_display_start_time
         reveal_count = max(0, elapsed // self.game.conversion_line_reveal_interval_ms)
@@ -406,7 +399,7 @@ class RenderManager:
             total_value = count * value_each
             total_gold += total_value
 
-            # Format: ITEM: count, value = total
+            # Build row prefix with quantity.
             if count > 1:
                 prefix_text = f"+ {count} "
             else:
@@ -434,13 +427,13 @@ class RenderManager:
         total_ready_at = (len(self.game.treasure_conversion_data) * self.game.conversion_line_reveal_interval_ms) + self.game.conversion_total_reveal_delay_ms
         total_is_ready = all_items_revealed and elapsed >= total_ready_at
 
-        # Display total only after all items have been revealed.
+        # Reveal total after item rows complete.
         if total_is_ready:
             y_pos += 5
             total_surf = font_large.render(f"= {total_gold} GOLD COINS!", False, ColorSettings.TEXT_TITLE)
             self.screen.blit(total_surf, (start_x, y_pos))
 
-        # Check if we should show the "PRESS START" prompt
+        # Fade in continue prompt after reveal delay.
         prompt_ready_at = total_ready_at + self.game.conversion_display_delay_ms
         if elapsed >= prompt_ready_at:
             prompt_alpha = min(255, int(((elapsed - prompt_ready_at) / self.game.conversion_prompt_fade_ms) * 255))

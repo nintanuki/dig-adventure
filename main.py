@@ -29,11 +29,12 @@ class GameManager:
             pygame.display.toggle_fullscreen()
         self.clock = pygame.time.Clock()
         
-        self.setup_controllers() # Controller Setup
-        self.load_assets() # Pre-load dirt asset to avoid loading it 60 times per second
-        self.dungeon = DungeonMaster(self.scaled_dirt_tiles) # Initialize the DungeonMaster with the pre-scaled dirt tiles from load_assets()
-        self.all_sprites = pygame.sprite.Group() # Create a group to hold all sprites
-        self.audio = AudioManager() # Initialize the audio manager
+        # -------- Core subsystem initialization --------
+        self.setup_controllers()
+        self.load_assets()
+        self.dungeon = DungeonMaster(self.scaled_dirt_tiles)
+        self.all_sprites = pygame.sprite.Group()
+        self.audio = AudioManager()
         self.game_active = False
         self.game_result = None
         self.score = 0
@@ -54,7 +55,7 @@ class GameManager:
         self.pending_leaderboard_score = 0
         self.initials_entry = ""
         
-        # Treasure Conversion Phase
+        # -------- Between-level: treasure conversion --------
         # TODO: Move conversion timing defaults (2000, 520, 450, 650) to GameSettings constants.
         self.in_treasure_conversion = False
         self.treasure_conversion_data = {}  # Stores treasures found in current level for conversion
@@ -64,13 +65,13 @@ class GameManager:
         self.conversion_total_reveal_delay_ms = 450
         self.conversion_prompt_fade_ms = 650
 
-        # Door unlock sequence pacing
+        # -------- Between-level: door unlock pacing --------
         # TODO: Move unlock pacing default (450) to GameSettings constants.
         self.pending_treasure_conversion = False
         self.treasure_conversion_pending_since = 0
         self.treasure_conversion_post_message_delay_ms = 450
 
-        # Shop Phase
+        # -------- Between-level: shop state --------
         # TODO: Move shop timing default (200) and limited stock defaults (3/1) into ItemSettings/GameSettings.
         self.in_shop_phase = False
         self.shop_selected_index = 0
@@ -86,16 +87,16 @@ class GameManager:
         
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
-        # Initialize Windows
+        # -------- UI windows --------
         self.message_log = MessageLog(self)
         self.inventory_window = InventoryWindow(self)
         self.map_window = MapWindow(self)
         self.map_memory = None
 
-        # CRT Effect
+        # -------- Post-processing --------
         self.crt = CRT(self.screen)
 
-        # Render Manager
+        # -------- Rendering facade --------
         self.render = None
 
         self.load_level()
@@ -122,7 +123,7 @@ class GameManager:
         new_game_manager.run()
         sys.exit()
 
-        # note, it does not stay in fullscreen.
+        # TODO: Preserve fullscreen state through reset/restart flow.
 
     @property
     def current_level_number(self) -> int:
@@ -473,10 +474,10 @@ class GameManager:
 
     def start_treasure_conversion(self) -> None:
         """Collect treasures from inventory and prepare for conversion display."""
-        # Collect treasure items from inventory (exclude gold coins which should not be converted)
+        # Build conversion entries from non-coin treasure inventory.
         treasure_items = {}
         for item, value in ItemSettings.TREASURE_SCORE_VALUES.items():
-            if item == 'GOLD COINS':  # Skip gold coins - they're the conversion target, not source
+            if item == 'GOLD COINS':
                 continue
             if item in self.player.inventory and self.player.inventory[item] > 0:
                 treasure_items[item] = {
@@ -494,15 +495,15 @@ class GameManager:
         if not self.in_treasure_conversion:
             return
         
-        # Check if enough time has passed to show the "PRESS START" prompt
+        # Gate input until conversion UI is fully displayed.
         elapsed = pygame.time.get_ticks() - self.conversion_display_start_time
         display_ready = elapsed >= self.conversion_display_delay_ms
 
-        # Check for player input (Start button / Enter key)
+        # Accept Start/Enter confirmation.
         keys = pygame.key.get_pressed()
         button_pressed = keys[pygame.K_RETURN]
         
-        # Also check gamepad
+        # Mirror confirmation input on connected controllers.
         # TODO: Replace controller button index literal (7 = Start) with named input constants.
         for joystick in self.connected_joysticks:
             if joystick.get_button(7):  # Start button
@@ -514,26 +515,26 @@ class GameManager:
 
     def complete_treasure_conversion(self) -> None:
         """Convert collected treasures to gold coins and proceed to the shop."""
-        # Convert treasures to gold coins
+        # Compute conversion total.
         total_gold = 0
         for item, data in self.treasure_conversion_data.items():
             gold_value = data['value_each'] * data['count']
             total_gold += gold_value
         
-        # Add the gold coins to inventory
+        # Apply converted currency to inventory.
         if total_gold > 0:
             self.player.inventory['GOLD COINS'] = self.player.inventory.get('GOLD COINS', 0) + total_gold
             self.player.discovered_items.add('GOLD COINS')
         
-        # Remove converted treasures from inventory
+        # Clear converted treasure entries.
         for item in self.treasure_conversion_data.keys():
             self.player.inventory.pop(item, None)
         
-        # Reset treasure conversion state
+        # Reset conversion state for next level.
         self.in_treasure_conversion = False
         self.treasure_conversion_data = {}
 
-        # Move to shop phase before the next level loads.
+        # Continue into the between-level shop.
         self.start_shop_phase()
 
     def start_shop_phase(self) -> None:
@@ -547,7 +548,7 @@ class GameManager:
             if item_name in self.shop_limited_stock_template:
                 self.shop_stock[item_name] = self.shop_limited_stock_template[item_name]
             else:
-                # None means infinite stock.
+                # Use None to represent unlimited stock.
                 self.shop_stock[item_name] = None
 
         self.log_message("KHAJIIT HAS WARES, IF YOU HAVE COIN.")
@@ -682,7 +683,7 @@ class GameManager:
             return
 
         if event.type == pygame.JOYBUTTONDOWN:
-            # Start button can always continue from the shop.
+            # Controller confirm mappings for shop interactions.
             # TODO: Replace controller button index literals (7/0/2) with named input constants.
             if event.button == 7:
                 self.complete_shop_phase()
@@ -713,7 +714,7 @@ class GameManager:
     def setup_controllers(self):
         """Initializes connected gamepads or joysticks."""
         pygame.joystick.init()
-        # Create a list of all connected controllers
+        # Cache all currently connected controllers.
         self.connected_joysticks = [pygame.joystick.Joystick(index) for index in range(pygame.joystick.get_count())]
 
     def load_assets(self):
@@ -870,7 +871,9 @@ class GameManager:
                 self.message_log.is_typing)
 
     # -------------------------
-    # UI / GAME FEEDBACK --> Leave in GameManager for now
+    # -------------------------
+    # UI / GAME FEEDBACK
+    # -------------------------
     # -------------------------
     
     def log_message(self, text, type_speed=None):
@@ -910,14 +913,14 @@ class GameManager:
 
             self.update_game_over_flow()
 
-            # Event Handling
+            # -------- Event handling --------
             for event in pygame.event.get():
-                # Handle quitting the game
+                # Exit request.
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
-                # Keyboard Inputs for fullscreen toggle and game restart
+                # Keyboard input routes.
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_F11:
                         pygame.display.toggle_fullscreen()
@@ -930,7 +933,7 @@ class GameManager:
 
                     self.handle_initials_event(event)
 
-                # Gamepad button inputs for fullscreen toggle and game restart
+                # Controller button input routes.
                 if event.type == pygame.JOYBUTTONDOWN:
                     # TODO: Replace controller button literals (6/7) with named constants.
                     if event.button == 6:
@@ -947,7 +950,7 @@ class GameManager:
                 if event.type == pygame.JOYHATMOTION and self.is_in_shop_phase:
                     self.handle_shop_event(event)
 
-                # Gamepad input for L2 trigger mute toggle (edge-triggered)
+                # Controller trigger mute toggle (edge-triggered).
                 # TODO: Replace axis literals (2, 4) and threshold literal (0.5) with named constants.
                 if event.type == pygame.JOYAXISMOTION and event.axis in (2, 4):
                     trigger_pressed = event.value > 0.5
@@ -958,31 +961,32 @@ class GameManager:
                         self.log_message("AUDIO MUTED." if is_muted else "AUDIO UNMUTED.")
                     self.l2_trigger_is_pressed = trigger_pressed
 
-            self.message_log.update() # Update message log to handle typing effect and message timing
+            # -------- Per-frame update --------
+            self.message_log.update()
             if self.ui_state == 'playing' and self.game_active:
-                if not self.is_transitioning and not self.is_busy and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase: # Only allow player input if we're not in the middle of an animation or message
+                if not self.is_transitioning and not self.is_busy and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase:
                     self.all_sprites.update()
 
                 if not self.is_transitioning and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase:
-                    # Always run the animation math (so sprites can finish their slide)
+                    # Always advance movement animation to complete in-flight motion.
                     # TODO: Replace hasattr('animate') with a protocol/base class for animatable sprites.
                     for sprite in self.all_sprites:
                         if hasattr(sprite, 'animate'):
                             sprite.animate()
 
-                    # Catch collisions immediately when a monster finishes moving onto the player.
+                    # Resolve collisions immediately after movement completes.
                     self.check_player_caught_by_monster()
 
-            # Drawing
+            # -------- Rendering --------
             self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
 
             if self.ui_state in {'playing', 'game_over'}:
-                self.render.draw_grid_background() # Draw the grid background
-                self.all_sprites.draw(self.screen) # Draw the sprites to the screen
+                self.render.draw_grid_background()
+                self.all_sprites.draw(self.screen)
 
-                if not DebugSettings.NO_FOG: # Toggle Fog of War for testing
+                if not DebugSettings.NO_FOG:
                     self.render.draw_fog_of_war()
-                self.render.draw_ui_frames() # Draw the UI frames and outlines
+                self.render.draw_ui_frames()
                 self.message_log.draw(self.screen)
                 self.inventory_window.draw(self.screen)
                 self.map_window.draw(self.screen)
@@ -999,7 +1003,8 @@ class GameManager:
             elif self.ui_state == 'leaderboard':
                 self.render.draw_leaderboard_screen()
 
-            self.crt.draw() # CRT Effect on top of everything else
+            # Apply CRT pass after world/UI rendering.
+            self.crt.draw()
 
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)

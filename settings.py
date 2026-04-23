@@ -1,4 +1,4 @@
-# Using classes for namespacing so they can be easily changed here and accessed from other files.
+# Keep shared configuration grouped in namespaced classes for predictable imports.
 import os
 import pygame
 
@@ -106,9 +106,9 @@ class ScreenSettings:
 class GridSettings:
     """Grid and tile scaling values used for map layout and sprite snapping."""
 
-    RAW_TILE_SIZE = 16 # The actual size of the image files (in pixels)
-    SCALE_FACTOR = 2 # The multiplier for how big they will appear in-game
-    TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
+    RAW_TILE_SIZE = 16 # Source tile size in pixels.
+    SCALE_FACTOR = 2 # Render scale multiplier applied to source tiles.
+    TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # Effective in-game tile size.
 
 class UISettings:
     """Layout coordinates and dimensions for game windows and HUD elements."""
@@ -177,12 +177,12 @@ class WindowSettings:
         "X - USE KEY DETECTOR",
         "Y - USE MONSTER REPELLENT",
         "LB / C - USE INVISIBILITY CLOAK"]
-    TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
+    TYPING_SPEED = 0.25 # Characters advanced per frame in typewriter animation.
 
 class PlayerSettings:
     """Player-specific tuning values."""
 
-    ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
+    ANIMATION_SPEED = 1 # Pixels advanced per frame during sprite interpolation.
 
 class MonsterSettings:
     """Monster behavior and movement tuning values."""
@@ -190,13 +190,13 @@ class MonsterSettings:
     COUNT = 3
     CHASE_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.3 
-    REPELLENT_DURATION = 5 # Number of turns the repellent effect lasts
-    ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
+    REPELLENT_DURATION = 5 # Number of turns the repellent effect remains active.
+    ANIMATION_SPEED = 1 # Pixels advanced per frame during sprite interpolation.
 
 class LightSettings:
     """Lighting radius and duration values for consumable light sources."""
 
-    DEFAULT_RADIUS = 0    # Game starts in total darkness
+    DEFAULT_RADIUS = 0    # Start each run with no active light source.
     BASE_RADIUS = 2
     BASE_DURATION = 3
     
@@ -263,26 +263,13 @@ class ItemSettings:
         'MATCH': (1, 5),
         'TORCH': (1, 5),
         'MONSTER REPELLENT': (1, 2)
-        # Anything not here will default to 1
+        # Items not listed here default to quantity 1.
     }
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        #  Uncomment below for testing
-        # 'KEY': 1,
-        # 'INVISIBILITY CLOAK': 99,
-        # # # 'MAP': 1,
-        # 'MAGIC MAP': 1,
-        # # # 'TORCH': 99,
-        # 'LANTERN': 99,
-        # 'MONSTER REPELLENT': 99,
-        # # 'KEY DETECTOR': 1,
-        # # 'GOLD COINS': 0,
-        # # 'RUBY': 500,
-        # # 'SAPPHIRE': 250,
-        # 'EMERALD': 100,
-        # 'DIAMOND': 5,
-        }
+        # For local test scenarios, temporarily adjust this dictionary as needed.
+    }
 
 class FontSettings:
     """Font files, sizes, and text-color mappings for UI rendering."""
@@ -308,8 +295,8 @@ class AudioSettings:
     """Global audio toggles and mixer-level defaults."""
 
     MUTE = False
-    MUTE_MUSIC = True  # Mute music but keep SFX
-    MUSIC_VOLUME = 0.2  # Hardcoded volume (0.0 to 1.0)
+    MUTE_MUSIC = True  # Keep music disabled while retaining sound effects.
+    MUSIC_VOLUME = 0.2  # Background music volume in the range [0.0, 1.0].
 
 class AssetPaths:
     """Resolved asset paths for sprites, audio, and music content."""
@@ -327,7 +314,7 @@ class AssetPaths:
     CLOSED_DOOR = os.path.join(GRAPHICS_DIR, 'tile_0045.png')
     OPEN_DOOR = os.path.join(GRAPHICS_DIR, 'tile_0021.png')
 
-    # Floor Tiles (this no longer needs to be a list, unless we want to add variety later.)
+    # Keep as a list to support future dirt-tile variety.
     DIRT_TILES = [
         os.path.join(GRAPHICS_DIR, 'tile_0000.png'),
     ]
@@ -366,7 +353,7 @@ class AssetPaths:
 
 class DebugSettings:
     """Settings related to debugging features."""
-    GRID = True # Toggle grey outlines for debugging
-    MUTE = False # Set to True to mute all sounds during testing, False to enable sounds
-    NO_FOG = False # Set to True to disable fog of war
-    SPAWN_LOG = True # Print spawn/item placement summary at dungeon setup
+    GRID = True # Draw tile outlines for visual debugging.
+    MUTE = False # Force mute all sound output during testing.
+    NO_FOG = False # Disable fog rendering for visibility debugging.
+    SPAWN_LOG = True # Print spawn/item placement summary during dungeon setup.

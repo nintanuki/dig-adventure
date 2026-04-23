@@ -76,7 +76,7 @@ class MapMemory:
         Returns:
             bool: True when the tile is visible under current reveal rules.
         """
-        # Both map variants reveal the full minimap terrain.
+        # Owning either map reveals terrain without line-of-sight checks.
         if self.player_has_any_map():
             return True
 
@@ -146,14 +146,14 @@ class MapMemory:
 
     def _remember_visible_entities(self):
         """Persist door and monster positions according to map type."""
-        # remember door once seen
+        # Persist door once it has been observed.
         door_grid_pos = self.game.screen_to_grid(self.game.door.position.x, self.game.door.position.y)
         if self.player_can_see_grid_pos(door_grid_pos):
             self.last_seen_door_pos = door_grid_pos
 
         visible_monster_positions = self.get_visible_monster_positions()
 
-        # The magic map tracks monsters in real time, including when none are visible.
+        # Magic map tracks monsters in real time, including zero-visible states.
         if self.player_has_magic_map():
             self.last_seen_monster_pos = visible_monster_positions
         elif visible_monster_positions:

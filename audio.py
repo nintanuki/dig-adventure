@@ -83,16 +83,17 @@ class AudioManager:
             print("Warning: No music tracks found in AssetPaths.MUSIC_TRACKS")
             return
 
-        # Pick a random track
+        # Select one track for continuous playback.
         track = random.choice(AssetPaths.MUSIC_TRACKS)
         
         try:
             pygame.mixer.music.load(track)
             pygame.mixer.music.set_volume(AudioSettings.MUSIC_VOLUME)
-            # Play with loops=-1 to loop indefinitely
+            # Use loops=-1 for indefinite looping.
             pygame.mixer.music.play(loops=-1)
         except pygame.error as e:
-            print(f"Could not load music track {track}: {e}") # Handle missing file or unsupported format gracefully
+            # Gracefully handle unsupported or missing audio assets.
+            print(f"Could not load music track {track}: {e}")
 
     def stop_music(self) -> None:
         """Stop the currently playing background track."""

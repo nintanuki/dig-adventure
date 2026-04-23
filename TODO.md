@@ -105,3 +105,28 @@ Do NOT add new features until steps 1–4 are complete.
 - Light source should not just be a radius; it should be blocked by walls (no seeing through walls)
 - Made spawns random again, but now must ensure entities do not spawn on top of each other or too close.
 - Create a special area in the UI for unique key items (symbols?) instead of tracking quantity in inventory sidebar
+
+---
+
+# PROGRESS NOTES (VERIFIED)
+
+These notes capture confirmed progress without changing checkbox status unless a task is fully complete.
+
+## Documentation and Clarity
+- Added comprehensive class/function docstrings across gameplay modules.
+- Added a player-facing game manual in README.
+- Added TODO annotations for magic-number migration and settings organization.
+
+## Architecture and Refactor Readiness
+- `GameManager` responsibilities are now explicitly documented and segmented with TODOs for future extraction.
+- Run-loop refactor targets are identified (event processing, state updates, frame rendering).
+- Shop/input handling has documented extraction points for dedicated handlers.
+
+## Known Completed Fixes (Already Checked)
+- Monster-player collision delay fix remains validated as completed.
+- Spawn overlap prevention remains validated as completed.
+- Grammar fix for article usage remains validated as completed.
+
+## Current Focus Guidance
+- Continue reducing complexity in `GameManager` before adding new mechanics.
+- Prioritize unresolved gameplay bugs before balance/features.

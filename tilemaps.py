@@ -3,15 +3,9 @@
 # LEGEND:
 # 'x' : Wall or obstacle (Impassable)
 # ' ' : Dirt (Walkable/Diggable)
-# ' ' : Player Start Location
-# ' ' : Monster Start Location
-# ' ' : Door spawns here
-# ' ' : Key is hidden here
-# ' ' : Metal Detector is hidden here
-# ' ' : Map is hidden here
+# Remaining entities/items are placed at runtime on walkable cells.
 
-# Note: These maps were auto-generated and while I like the designs the start locations are repetitive.
-# I will mix them up later, for now I just want to test this.
+# Note: These layouts were initially generated and may be iterated for balance/readability.
 
 DUNGEONS = {'The Clover': {'desc': 'Four interconnected rooms with a central pillar.',
                 'grid': [['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'],

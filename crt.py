@@ -30,7 +30,7 @@ class CRT:
     def draw(self):
         """Draws the CRT effect by copying the base TV image, applying a random alpha for flickering,
         adding scan lines, and blitting it on top of the current screen."""
-        # COPY each frame (prevents stacking)
+        # Copy per frame so the overlay effect does not accumulate between frames.
         tv = self.base_tv.copy()
 
         tv.set_alpha(random.randint(*ScreenSettings.CRT_ALPHA_RANGE))

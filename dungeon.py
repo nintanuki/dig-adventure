@@ -42,7 +42,7 @@ class DungeonMaster:
         self.level_unique_items_found = set()
         dungeon_data = DUNGEONS[dungeon_name]
 
-        # Normalize map symbols so '.' also counts as walkable dirt
+        # Normalize map symbols so '.' is treated as diggable floor.
         self.current_grid = []
         for row in dungeon_data["grid"]:
             normalized_row = []
@@ -50,7 +50,7 @@ class DungeonMaster:
                 normalized_row.append(" " if cell == "." else cell)
             self.current_grid.append(normalized_row)
 
-        # Safeguard: Ensure the grid matches expected dimensions
+        # Validate map dimensions early to catch malformed layouts.
         if len(self.current_grid) != UISettings.ROWS:
             raise ValueError(f"{self.dungeon_name} has wrong row count.")
         for row in self.current_grid:
@@ -98,7 +98,7 @@ class DungeonMaster:
         if len(available_positions) < required_positions:
             raise ValueError("Not enough walkable tiles to place all entities and fixed items.")
 
-        # Randomize all important positions
+        # Reserve unique walkable positions for entities and fixed items.
         self.player_grid_pos = self.draw_random_position(available_positions)
         self.door_grid_pos = self.draw_random_position(available_positions)
 
@@ -174,15 +174,14 @@ class DungeonMaster:
             tuple[str | None, int]: A pair of (item_name, amount). Returns
                 (None, 0) when no item is found.
         """
-        # Check if a specific item (like the Key) was pre-placed
+        # Resolve fixed item placements before random loot rolls.
         fixed_item = self.tile_data[grid_pos]["item"]
         if fixed_item:
             if fixed_item in ItemSettings.LEVEL_SCOPED_ITEMS:
                 self.level_unique_items_found.add(fixed_item)
             return fixed_item, 1
         
-        # Otherwise, roll for a random item using the configured spawn chances,
-        # excluding per-level unique items that were already found.
+        # Roll random loot from configured weights, excluding already-found level-unique items.
         eligible_items: list[tuple[str, float]] = []
         for item, chance in ItemSettings.SPAWN_CHANCE.items():
             if item in ItemSettings.LEVEL_SCOPED_ITEMS and item in self.level_unique_items_found:
@@ -196,13 +195,13 @@ class DungeonMaster:
         roll = random.random()
         cumulative_chance = 0
 
-        # Iterate through items and their spawn chances to determine what item, if any, spawns
+        # Traverse weighted distribution cumulatively until roll threshold is reached.
         for item, chance in eligible_items:
             cumulative_chance += chance
             if roll < cumulative_chance:
-                # If this item is selected to spawn, we then check how many should spawn
-                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1)) # Default to 1 if not specified
-                amount = random.randint(min_qty, max_qty) # Random quantity within the defined range for this item
+                # Determine quantity range for selected item.
+                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1))
+                amount = random.randint(min_qty, max_qty)
                 if item in ItemSettings.LEVEL_SCOPED_ITEMS:
                     self.level_unique_items_found.add(item)
                 return item, amount
@@ -230,7 +229,7 @@ class DungeonMaster:
         """
         if 0 <= row < len(self.current_grid) and 0 <= col < len(self.current_grid[row]):
             return self.current_grid[row][col]
-        return "x"  # treat out of bounds as wall
+        return "x"  # Treat out-of-bounds queries as solid walls.
 
     def is_walkable(self, col: int, row: int) -> bool:
         """
@@ -276,6 +275,7 @@ class DungeonMaster:
         """
         Return all grid points on a line from start to end using Bresenham's algorithm.
         """
+        # Bresenham line stepping to enumerate grid cells between endpoints.
         x1, y1 = start
         x2, y2 = end
 

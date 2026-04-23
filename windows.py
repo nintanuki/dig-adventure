@@ -84,8 +84,7 @@ class MessageLog:
         Returns:
             tuple[str, str] | None: Matched term and color, or None.
         """
-        # Highlight controller labels only when they appear as line-leading prompts
-        # like "A - DIG..." so regular words are unaffected.
+        # Highlight controller labels only in prompt-leading form (for example "A - DIG...").
         if index == 0 and len(text) >= 4 and text[1:4] == " - " and text[0].upper() in self.control_label_colors:
             label = text[0]
             return label, self.control_label_colors[label.upper()]
@@ -143,13 +142,13 @@ class MessageLog:
         Adds a new message to the log and removes old ones if full.
         Use a typewriter effect for the most recent message, while keeping previous messages static.
         """
-        # If there is an active message finishing up, move it to history first
+        # Persist the previous active message before starting a new one.
         if self.full_text:
             self.messages.append(self.full_text)
             if len(self.messages) > WindowSettings.MAX_MESSAGES:
                 self.messages.pop(0)
 
-        # Set up the new message to be typed
+        # Initialize typewriter state for the incoming message.
         self.full_text = text
         self.active_message = ""
         self.char_index = 0
@@ -164,18 +163,18 @@ class MessageLog:
         Args:
             surface: Target surface for the message window.
         """
-        # Calculate starting vertical position inside the Log Box
+        # Compute text anchor inside message window.
         start_x = UISettings.LOG_X + WindowSettings.TEXT_PADDING
         start_y = UISettings.LOG_Y + WindowSettings.TEXT_PADDING
 
-        # Draw History (Static white text)
+        # Draw historical lines.
         for index, message in enumerate(self.messages):
             y_pos = start_y + (index * WindowSettings.LINE_HEIGHT)
             self._draw_colored_line(surface, message, start_x, y_pos, FontSettings.DEFAULT_COLOR)
 
-        # Draw Active Message (Typewriter effect in Yellow)
+        # Draw active typewriter line.
         if self.full_text:
-            # Position it right after the last historical message
+            # Place active line directly below message history.
             y_pos = start_y + (len(self.messages) * WindowSettings.LINE_HEIGHT)
             self._draw_colored_line(surface, self.active_message, start_x, y_pos, FontSettings.LAST_MESSAGE_COLOR)
 
@@ -183,7 +182,7 @@ class MessageLog:
         """Increments the character count."""
         if self.is_typing:
             self.char_index += self.current_type_speed
-            # Ensure we don't go out of bounds of the string
+            # Clamp slicing by using integer cursor and full-text bounds.
             self.active_message = self.full_text[:int(self.char_index)]
             
             if self.char_index >= len(self.full_text):
@@ -261,11 +260,11 @@ class InventoryWindow:
         Args:
             surface: Target surface for the inventory window.
         """
-        # Starting coordinates based on Sidebar settings
+        # Base sidebar text anchors.
         start_x = UISettings.SIDEBAR_X + WindowSettings.TEXT_PADDING
         start_y = UISettings.SIDEBAR_Y + WindowSettings.TEXT_PADDING
         
-        # Header
+        # Inventory header.
         header_surf = self.font.render("INVENTORY", False, ColorSettings.TEXT_TITLE)
         surface.blit(header_surf, (start_x, start_y))
 
@@ -273,30 +272,28 @@ class InventoryWindow:
         # TODO: Move inventory spacing literals (-1, +25) to WindowSettings constants.
         tight_line_height = WindowSettings.LINE_HEIGHT - 1
 
-        # Loop through the player's inventory dictionary
-        # Use a counter for visual row indexing, as we might skip some items
+        # Iterate inventory rows while tracking only visible entries.
         for item, count in self.game.player.inventory.items():
-            # LOGIC: Only show if they have it OR if they've found it before
+            # Render item if owned now or previously discovered.
             has_it = count > 0
             discovered = item in self.game.player.discovered_items
 
             if has_it or discovered:
                 item_color = self._get_item_label_color(item)
 
-                # 1. Render the Label (Syntax-highlight item names)
+                # Render label using item-specific color.
                 label_text = f"{item}: "
                 label_surf = self.font.render(label_text, False, item_color)
                 
-                # 2. Render the Number (Red if 0, otherwise default white)
+                # Render quantity; zero-count values use error color.
                 num_color = ColorSettings.TEXT_ERROR if count <= 0 else FontSettings.DEFAULT_COLOR
                 num_surf = self.font.render(str(count), False, num_color)
 
-                # 3. Calculate Positions
+                # Compute row y-position.
                 y_pos = start_y + 25 + (visual_row * tight_line_height)
                 
-                # Blit Label
+                # Draw label and quantity in one row.
                 surface.blit(label_surf, (start_x, y_pos))
-                # Blit Number immediately after the label
                 surface.blit(num_surf, (start_x + label_surf.get_width(), y_pos))
                 
                 visual_row += 1
@@ -329,7 +326,7 @@ class MapWindow:
             surface.blit(label_surf, label_rect)
             return
 
-        # Fit the minimap into the map window and center it.
+        # Fit the minimap into available map-window space.
         padding = UISettings.MINIMAP_PADDING
         available_w = UISettings.MAP_WIDTH - (padding * 2)
         available_h = UISettings.MAP_HEIGHT - (padding * 2)
@@ -344,7 +341,7 @@ class MapWindow:
         start_x = UISettings.MAP_X + (UISettings.MAP_WIDTH - map_pixel_w) // 2
         start_y = UISettings.MAP_Y + (UISettings.MAP_HEIGHT - map_pixel_h) // 2
 
-        # 2. Iterate through the grid ONCE
+        # Draw remembered terrain cells.
         for r in range(UISettings.ROWS):
             for c in range(UISettings.COLS):
                 grid_pos = (c, r)
@@ -371,7 +368,7 @@ class MapWindow:
                     pygame.draw.rect(surface, color, rect)
 
                     if remembered == "o":
-                        # Draw a small X so dug tiles are easy to distinguish.
+                        # Mark dug tiles with a small X for readability.
                         inset = 1
                         pygame.draw.line(
                             surface,
@@ -388,7 +385,7 @@ class MapWindow:
                             1,
                         )
 
-        # draw remembered door
+        # Draw last known door position.
         if self.game.map_memory.last_seen_door_pos is not None:
             d_col, d_row = self.game.map_memory.last_seen_door_pos
             pygame.draw.rect(surface, ColorSettings.MINIMAP_DOOR,
@@ -397,7 +394,7 @@ class MapWindow:
                 mini_tile_size - 1, mini_tile_size - 1)
             )
 
-        # draw remembered monster positions
+        # Draw remembered monster positions.
         for m_col, m_row in self.game.map_memory.last_seen_monster_pos:
             pygame.draw.rect(surface, ColorSettings.MINIMAP_MONSTER,
                 (start_x + (m_col * mini_tile_size),
@@ -405,7 +402,7 @@ class MapWindow:
                 mini_tile_size - 1, mini_tile_size - 1)
             )
 
-        # Draw player while lit, or always with the magic map radar.
+        # Draw player marker while lit, or always with magic map.
         if self.game.map_memory.should_draw_player_on_minimap():
             p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
             pygame.draw.rect(surface, ColorSettings.MINIMAP_PLAYER, 
