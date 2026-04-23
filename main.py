@@ -214,7 +214,17 @@ class GameManager:
 
     def add_leaderboard_entry(self, initials: str, score: int) -> None:
         """Insert and persist one top-score entry."""
-        self.leaderboard.append((self._sanitize_initials(initials), score))
+        clean_initials = self._sanitize_initials(initials)
+        existing_index = next(
+            (i for i, (name, _) in enumerate(self.leaderboard) if name == clean_initials),
+            None
+        )
+        if existing_index is not None:
+            if score <= self.leaderboard[existing_index][1]:
+                return
+            self.leaderboard[existing_index] = (clean_initials, score)
+        else:
+            self.leaderboard.append((clean_initials, score))
         self.leaderboard.sort(key=lambda entry: entry[1], reverse=True)
         self.leaderboard = self.leaderboard[:GameSettings.LEADERBOARD_LIMIT]
         self.high_score = max(self.high_score, self.leaderboard[0][1] if self.leaderboard else 0)

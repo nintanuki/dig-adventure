@@ -249,7 +249,7 @@ class ItemSettings:
         # # 'RUBY': 500,
         # # 'SAPPHIRE': 250,
         # 'EMERALD': 100,
-        'DIAMOND': 5,
+        # 'DIAMOND': 5,
         }
 
 class FontSettings:
