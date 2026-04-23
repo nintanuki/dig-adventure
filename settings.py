@@ -268,7 +268,8 @@ class ItemSettings:
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
-        # For local test scenarios, temporarily adjust this dictionary as needed.
+        # For local test scenarios, temporarily adjust this dictionary as needed
+        # Add "godmode" setting later to toggle between normal and test inventories without manual edits.
     }
 
 class FontSettings:
