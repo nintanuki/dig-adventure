@@ -13,7 +13,14 @@ from crt import CRT
 from tilemaps import DUNGEON_ORDER
 
 class GameManager:
+    """Coordinate game state, flow, rendering phases, and input orchestration."""
+
     def __init__(self, start_fullscreen: bool = False):
+        """Initialize runtime systems, persistent state, and the first dungeon level.
+
+        Args:
+            start_fullscreen (bool): Whether to launch directly in fullscreen mode.
+        """
         # Initialize Pygame and set up the display
         pygame.init()
         self.screen = pygame.display.set_mode((ScreenSettings.RESOLUTION), pygame.SCALED)
@@ -48,6 +55,7 @@ class GameManager:
         self.initials_entry = ""
         
         # Treasure Conversion Phase
+        # TODO: Move conversion timing defaults (2000, 520, 450, 650) to GameSettings constants.
         self.in_treasure_conversion = False
         self.treasure_conversion_data = {}  # Stores treasures found in current level for conversion
         self.conversion_display_start_time = 0
@@ -57,11 +65,13 @@ class GameManager:
         self.conversion_prompt_fade_ms = 650
 
         # Door unlock sequence pacing
+        # TODO: Move unlock pacing default (450) to GameSettings constants.
         self.pending_treasure_conversion = False
         self.treasure_conversion_pending_since = 0
         self.treasure_conversion_post_message_delay_ms = 450
 
         # Shop Phase
+        # TODO: Move shop timing default (200) and limited stock defaults (3/1) into ItemSettings/GameSettings.
         self.in_shop_phase = False
         self.shop_selected_index = 0
         self.shop_display_start_time = 0
@@ -91,6 +101,8 @@ class GameManager:
         self.load_level()
         self.audio.stop_music()
 
+        # TODO: Refactor inventory/shop/leaderboard lifecycle concerns into dedicated manager classes.
+
     def reset_game(self):
         """
         Restart the game by replacing the current GameManager instance
@@ -114,24 +126,54 @@ class GameManager:
 
     @property
     def current_level_number(self) -> int:
+        """Return the current 1-based dungeon level number.
+
+        Returns:
+            int: Current level index expressed as a human-facing number.
+        """
         return self.current_level_index + 1
 
     @property
     def is_transitioning(self) -> bool:
+        """Report whether a level transition card is currently active.
+
+        Returns:
+            bool: True while transition timing is in progress.
+        """
         return pygame.time.get_ticks() < self.transition_end_time
 
     @property
     def is_in_treasure_conversion_phase(self) -> bool:
+        """Report whether the treasure conversion UI phase is active.
+
+        Returns:
+            bool: True when conversion UI/input handling should run.
+        """
         return self.in_treasure_conversion
 
     @property
     def is_in_shop_phase(self) -> bool:
+        """Report whether the between-level shop phase is active.
+
+        Returns:
+            bool: True when shop UI/input handling should run.
+        """
         return self.in_shop_phase
 
     def get_high_score_path(self) -> str:
+        """Return the absolute path to the high-score data file.
+
+        Returns:
+            str: Filesystem path for the high-score file.
+        """
         return os.path.join(os.path.dirname(__file__), GameSettings.HIGH_SCORE_FILE)
 
     def get_leaderboard_path(self) -> str:
+        """Return the absolute path to the leaderboard data file.
+
+        Returns:
+            str: Filesystem path for the leaderboard file.
+        """
         return os.path.join(os.path.dirname(__file__), GameSettings.LEADERBOARD_FILE)
 
     def load_high_score(self) -> int:
@@ -157,6 +199,14 @@ class GameManager:
             pass
 
     def _sanitize_initials(self, initials: str) -> str:
+        """Normalize initials to exactly three uppercase alphabetic characters.
+
+        Args:
+            initials (str): Raw initials input.
+
+        Returns:
+            str: Sanitized three-character initials string.
+        """
         letters = ''.join(char for char in initials.upper() if char.isalpha())
         return (letters[:3]).ljust(3, 'A')
 
@@ -389,6 +439,7 @@ class GameManager:
             f"YOU UNLOCK THE DOOR. DESCENDING TO LEVEL {next_level_number}...",
             type_speed=0.12,
         )
+        # TODO: Promote message type speed literal (0.12) to a named setting.
         self.pending_treasure_conversion = True
         self.treasure_conversion_pending_since = pygame.time.get_ticks()
 
@@ -452,6 +503,7 @@ class GameManager:
         button_pressed = keys[pygame.K_RETURN]
         
         # Also check gamepad
+        # TODO: Replace controller button index literal (7 = Start) with named input constants.
         for joystick in self.connected_joysticks:
             if joystick.get_button(7):  # Start button
                 button_pressed = True
@@ -616,6 +668,7 @@ class GameManager:
                 if selected_option == 'CONTINUE':
                     self.complete_shop_phase()
                 else:
+                    # TODO: Replace bulk-purchase literal (5) with a named shop input constant.
                     quantity = 5 if event.key in (pygame.K_x, pygame.K_5) else 1
                     self.buy_shop_item(selected_option, quantity=quantity)
                 return
@@ -630,6 +683,7 @@ class GameManager:
 
         if event.type == pygame.JOYBUTTONDOWN:
             # Start button can always continue from the shop.
+            # TODO: Replace controller button index literals (7/0/2) with named input constants.
             if event.button == 7:
                 self.complete_shop_phase()
                 return
@@ -649,6 +703,8 @@ class GameManager:
                 else:
                     self.buy_shop_item(selected_option, quantity=5)
                 return
+
+        # TODO: Refactor shop event handling into smaller command handlers (navigate/select/bulk-buy/continue).
 
     # -------------------------
     # BOOT / SETUP
@@ -683,11 +739,13 @@ class GameManager:
     # -------------------------
 
     def spawn_player(self):
+        """Spawn the player sprite at the precomputed dungeon spawn tile."""
         col, row = self.dungeon.player_grid_pos
         x, y = self.grid_to_screen(col, row)
         self.player = Player(self, (x, y), self.all_sprites)
 
     def spawn_monster(self):
+        """Spawn all monster sprites at the precomputed dungeon spawn tiles."""
         self.monsters = []
         for col, row in self.dungeon.monster_grid_positions:
             x, y = self.grid_to_screen(col, row)
@@ -695,25 +753,48 @@ class GameManager:
             self.monsters.append(monster)
 
     def spawn_door(self):
+        """Spawn the level door sprite at the precomputed dungeon door tile."""
         col, row = self.dungeon.door_grid_pos
         x, y = self.grid_to_screen(col, row)
         self.door = Door(self, (x, y), self.all_sprites)
+
+    # TODO: Refactor spawning helpers into a dedicated SpawnManager when setup logic grows further.
 
     # -------------------------
     # COORDINATE + MAP HELPERS --> Future MapUtils Class?
     # -------------------------
 
     def grid_to_screen(self, col, row):
+        """Convert grid coordinates to top-left screen pixel coordinates.
+
+        Args:
+            col: Grid column.
+            row: Grid row.
+
+        Returns:
+            tuple[int, int]: Screen-space pixel coordinates.
+        """
         return (
             UISettings.ACTION_WINDOW_X + col * GridSettings.TILE_SIZE,
             UISettings.ACTION_WINDOW_Y + row * GridSettings.TILE_SIZE,
         )
 
     def screen_to_grid(self, x, y):
+        """Convert screen pixel coordinates to grid coordinates.
+
+        Args:
+            x: Screen-space x position.
+            y: Screen-space y position.
+
+        Returns:
+            tuple[int, int]: Grid column and row indices.
+        """
         return (
             int((x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE),
             int((y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE),
         )
+
+    # TODO: Refactor coordinate conversion helpers into a small utility class/module shared by gameplay systems.
 
     # -------------------------
     # TURN / GAME STATE --> TurnManager Class (maybe not is_busy())
@@ -801,6 +882,12 @@ class GameManager:
     # -------------------------
 
     def add_score(self, item_name: str, amount: int = 1) -> None:
+        """Increase the run score based on treasure value and quantity.
+
+        Args:
+            item_name (str): Treasure item key used to look up score value.
+            amount (int): Quantity of the item collected.
+        """
         value = ItemSettings.TREASURE_SCORE_VALUES.get(item_name, 0)
         self.score += value * amount
 
@@ -812,6 +899,8 @@ class GameManager:
         """
         Run the game loop.
         """
+        # TODO: Split run() into process_events(), update_state(), and render_frame() for maintainability.
+        # TODO: Introduce an InputMap/Controls constants group to remove button/axis magic numbers in this loop.
         # Main game loop
         while True:
             if self.ui_state == 'playing':
@@ -843,6 +932,7 @@ class GameManager:
 
                 # Gamepad button inputs for fullscreen toggle and game restart
                 if event.type == pygame.JOYBUTTONDOWN:
+                    # TODO: Replace controller button literals (6/7) with named constants.
                     if event.button == 6:
                         pygame.display.toggle_fullscreen()
 
@@ -858,6 +948,7 @@ class GameManager:
                     self.handle_shop_event(event)
 
                 # Gamepad input for L2 trigger mute toggle (edge-triggered)
+                # TODO: Replace axis literals (2, 4) and threshold literal (0.5) with named constants.
                 if event.type == pygame.JOYAXISMOTION and event.axis in (2, 4):
                     trigger_pressed = event.value > 0.5
                     if trigger_pressed and not self.l2_trigger_is_pressed:
@@ -874,6 +965,7 @@ class GameManager:
 
                 if not self.is_transitioning and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase:
                     # Always run the animation math (so sprites can finish their slide)
+                    # TODO: Replace hasattr('animate') with a protocol/base class for animatable sprites.
                     for sprite in self.all_sprites:
                         if hasattr(sprite, 'animate'):
                             sprite.animate()

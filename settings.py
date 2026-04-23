@@ -2,8 +2,13 @@
 import os
 import pygame
 
+# TODO: Reorganize settings into domain-focused modules (display, input, gameplay, UI, audio, assets, debug)
+# to reduce the size of this single constants file.
+
 
 class ColorSettings:
+    """Centralized named colors used throughout UI and gameplay rendering."""
+
     # Base color names
     WHITE = 'white'
     BLACK = 'black'
@@ -74,6 +79,17 @@ class ColorSettings:
 
 
 def color_with_alpha(color_name: str, alpha: int) -> pygame.Color:
+    # TODO: If we want settings to remain constants-only, move this helper to a utility module
+    # (for example render_utils.py) and keep this file purely declarative.
+    """Create a pygame color with an explicit alpha component.
+
+    Args:
+        color_name (str): Any pygame-compatible color name or value.
+        alpha (int): Alpha channel value in the 0-255 range.
+
+    Returns:
+        pygame.Color: Color value with the requested transparency.
+    """
     color = pygame.Color(color_name)
     color.a = alpha
     return color
@@ -88,11 +104,15 @@ class ScreenSettings:
     CRT_SCANLINE_HEIGHT = 3
 
 class GridSettings:
+    """Grid and tile scaling values used for map layout and sprite snapping."""
+
     RAW_TILE_SIZE = 16 # The actual size of the image files (in pixels)
     SCALE_FACTOR = 2 # The multiplier for how big they will appear in-game
     TILE_SIZE = RAW_TILE_SIZE * SCALE_FACTOR # What rest the code will use for grid snapping
 
 class UISettings:
+    """Layout coordinates and dimensions for game windows and HUD elements."""
+
     LEFT_MARGIN = 64
     TOP_MARGIN = 56
     GAP = GridSettings.TILE_SIZE
@@ -136,6 +156,8 @@ class UISettings:
     DUNGEON_NAME_Y = LEVEL_Y + 15
 
 class GameSettings:
+    """Global gameplay flow constants and persistence limits."""
+
     LEVEL_TRANSITION_MS = 2000
     HIGH_SCORE_FILE = 'high_score.txt'
     LEADERBOARD_FILE = 'leaderboard.txt'
@@ -144,6 +166,8 @@ class GameSettings:
     GAME_OVER_PROMPT_FADE_MS = 750
 
 class WindowSettings:
+    """Message window behavior and text layout settings."""
+
     MAX_MESSAGES = 5
     LINE_HEIGHT = 22
     TEXT_PADDING = 16
@@ -156,9 +180,13 @@ class WindowSettings:
     TYPING_SPEED = 0.25 # Characters per frame for the typewriter effect
 
 class PlayerSettings:
+    """Player-specific tuning values."""
+
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class MonsterSettings:
+    """Monster behavior and movement tuning values."""
+
     COUNT = 3
     CHASE_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.3 
@@ -166,6 +194,8 @@ class MonsterSettings:
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class LightSettings:
+    """Lighting radius and duration values for consumable light sources."""
+
     DEFAULT_RADIUS = 0    # Game starts in total darkness
     BASE_RADIUS = 2
     BASE_DURATION = 3
@@ -180,6 +210,8 @@ class LightSettings:
     LANTERN_DURATION = BASE_DURATION * 3
 
 class ItemSettings:
+    """Item inventory, spawn, scoring, and shop economy configuration."""
+
     INVISIBILITY_CLOAK_DURATION = 5
     LEVEL_SCOPED_ITEMS = {"KEY", "MAP", "MAGIC MAP", "KEY DETECTOR"}
 
@@ -253,6 +285,8 @@ class ItemSettings:
         }
 
 class FontSettings:
+    """Font files, sizes, and text-color mappings for UI rendering."""
+
     FONT = 'font/Pixeled.ttf'
     MESSAGE_SIZE = 8
     SCORE_SIZE = 12
@@ -271,11 +305,17 @@ class FontSettings:
     }
 
 class AudioSettings:
+    """Global audio toggles and mixer-level defaults."""
+
     MUTE = False
     MUTE_MUSIC = True  # Mute music but keep SFX
     MUSIC_VOLUME = 0.2  # Hardcoded volume (0.0 to 1.0)
 
 class AssetPaths:
+    """Resolved asset paths for sprites, audio, and music content."""
+
+    # TODO: Consider moving asset paths to a dedicated asset_manifest.py to keep settings focused on gameplay constants.
+
     # Images
     GRAPHICS_DIR = 'graphics/'
 

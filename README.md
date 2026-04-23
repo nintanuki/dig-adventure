@@ -1,173 +1,140 @@
-# Dig Adventure
+# Dungeon Digger
 
-A turn-based dungeon crawler where every move matters.
-
-You explore a dark, grid-based dungeon in search of a hidden key while avoiding a relentless monster. The environment is completely dark at the start — your only way to see is by using limited light sources. Every action you take advances the world, including the monster.
-
-Survival depends on careful movement, resource management, and reading the situation before it’s too late.
-
----
-
-# Core Gameplay
-
-## Turn-Based Movement
-
-* The game runs on a **1:1 action system**
-* Every player action triggers a monster action:
-
-  * Move
-  * Dig
-  * Use item
-
-Every decision has consequences.
-
----
+Dungeon Digger is a turn-based dungeon crawler where each action you take advances the world.
+You dig for treasure, survive monsters, unlock doors, and descend through every level.
 
 ## Objective
 
-* Dig for **Treasure**
-* Find the **hidden key**
-* Locate the **exit door**
-* Escape the dungeon
-* Get the high score
+Clear all dungeon levels in order by finding a key and unlocking the door on each level.
 
-Failing to avoid the monster results in immediate game over.
+To win a run:
+1. Explore the level.
+2. Find the key.
+3. Reach the door.
+4. Use Dig at the door while carrying a key.
+5. Repeat until you clear the final dungeon.
 
----
+## Core Rules
 
-## Visibility & Light
+- The game is turn-based: most player actions advance the turn.
+- Monsters move/respond after your turn actions.
+- If a monster reaches your tile and you are not invisible, you lose (this can happen even in darkness).
+- You cannot move through walls.
+- Digging can reveal loot, tools, treasure, or nothing.
+- Keys, maps, and key detectors are level-scoped and do not carry between levels.
+- Treasure is exchanged for gold between levels.
+- Gold is used in the shop between levels.
 
-* The game begins in **complete darkness**
-* You must use light sources to see:
+## How Turns Work
 
-  * Match
-  * Torch
-  * Lantern
+The following actions generally consume a turn:
+- Moving
+- Digging
+- Lighting a source (Match, Torch, Lantern)
+- Using Key Detector
+- Using Monster Repellent
+- Using Invisibility Cloak
 
-Each light source:
+Some invalid actions do not advance a turn (for example, trying to use an item you do not have).
 
-* Has a **limited duration**
-* Provides a **different visibility radius**
-* Gradually fades over time
+## Controls (Keyboard)
 
-When your light runs out, you are back in darkness.
+### Global
+- Enter: Start game / continue on end screens
+- F11: Toggle fullscreen
 
----
+### Movement
+- W A S D
+- Arrow keys
 
-## Digging System
+### Actions
+- Space: Dig (or attempt to unlock door if standing on it with a key)
+- E: Use Key Detector
+- T: Use best available light source
+- R: Use Monster Repellent
+- C: Use Invisibility Cloak
 
-* Most tiles must be **dug** to reveal what’s underneath
-* Digging can uncover:
+### Shop
+- Up/Down or W/S: Move selection
+- Enter / Space / Z: Buy selected item (or Continue)
+- X or 5: Buy 5 of selected item (where applicable)
 
-  * The key
-  * Useful items
-  * Treasure
-  * Nothing at all
+### Initials Entry (Leaderboard)
+- Type letters A-Z
+- Backspace: Delete last letter
+- Enter: Submit initials (once 3 letters are entered)
 
-Each tile can only be dug once.
+## Controls (Controller)
 
----
+### Global
+- Start (Button 7): Start / continue / confirm end-screen flow
+- Back/Select (Button 6): Toggle fullscreen
+- L2 trigger axis (platform dependent): Toggle audio mute
 
-## Inventory & Items
+### Movement
+- D-pad
 
-### Utility Items
+### Actions
+- A (Button 0): Dig
+- B (Button 1): Light
+- X (Button 2): Key Detector
+- Y (Button 3): Monster Repellent
+- LB (Button 4): Invisibility Cloak
 
-* **Match / Torch / Lantern** — provide temporary light
-* **Monster Repellent** — keeps the monster away for a few turns
-* **Key Detector** — gives proximity hints to the key
-* **Map** — helps track explored areas
+### Shop
+- D-pad Up/Down: Move selection
+- A (Button 0): Buy selected item
+- X (Button 2): Buy 5 selected item
+- Start (Button 7): Continue to next level
 
-### Treasure
+## Items and Effects
 
-* Gold and gems can be found while digging
-  (Currently limited use, intended for future systems)
+### Utility and Progression
+- Key: Required to unlock the level door.
+- Map: Reveals terrain memory on minimap.
+- Magic Map: Stronger map behavior, including enhanced minimap utility.
+- Key Detector: Gives proximity hints to the key.
 
----
+### Survival Tools
+- Match, Torch, Lantern: Provide temporary light radius for visibility.
+- Monster Repellent: Temporarily repels monsters.
+- Invisibility Cloak: Temporarily prevents monsters from detecting you.
 
-## The Monster
+### Treasure and Currency
+- Gold Coins, Ruby, Sapphire, Emerald, Diamond: Treasure used for score and/or conversion.
+- Between levels, non-coin treasure is exchanged into gold for shopping.
 
-* Moves **after every player action**
-* Uses **distance-based logic** to track you
-* Can wander, idle, or chase depending on proximity
-* If it reaches your tile, you lose
+## Score and Leaderboard
 
----
+- Treasure increases score.
+- High score is persisted.
+- Runs that qualify for top leaderboard placement prompt initials entry.
+- Leaderboard stores top entries and is shown at the end of a run.
 
-## Map & Memory
+## Game Flow
 
-* The minimap tracks:
+1. Title Screen
+2. Level gameplay
+3. Door unlock sequence
+4. Treasure conversion
+5. Shop
+6. Next level transition
+7. Final win screen or game-over flow
 
-  * Explored areas
-  * Dug tiles
-  * Previously seen locations
-* Visibility is limited to your current light radius
+## Tips for New Players
 
-Exploration is gradual and information is incomplete.
+- Light management is survival: save stronger lights for dangerous areas.
+- Use the key detector when you feel lost.
+- Repellent and cloak are clutch tools when cornered.
+- Prioritize reaching the door safely over greed.
+- Buy ahead in the shop when you can afford it.
 
----
+## Running the Game
 
-# Controls
+From the project directory:
 
-## Keyboard
+```bash
+python main.py
+```
 
-* Movement:
-
-  * `W / A / S / D` or Arrow Keys
-
-* Actions:
-
-  * `Space` — Dig
-  * `T` — Use light source
-  * `E` — Use key detector
-  * `R` — Use monster repellent
-
----
-
-## Controller (if connected)
-
-* D-Pad — Movement
-* Buttons:
-
-  * `A` — Dig
-  * `B` — Use light
-  * `X` — Key detector
-  * `Y` — Repellent
-
----
-
-# Strategy Tips
-
-* Light is your most valuable resource — don’t waste it
-* Digging blindly can be dangerous, but necessary
-* Use the key detector to avoid wandering aimlessly
-* Pay attention to movement patterns — the monster is predictable, until it isn’t
-* Plan multiple moves ahead whenever possible
-
----
-
-# Current State
-
-The game is fully playable with:
-
-* Turn-based movement
-* Procedural dungeon selection
-* Fog of war and light system
-* Inventory and item usage
-* Monster AI
-* UI (log, inventory, minimap)
-
-Ongoing work focuses on:
-
-* Refactoring and code cleanup
-* Bug fixes and balance
-* Expanding gameplay systems
-
----
-
-# Summary
-
-Dig Adventure is about tension, uncertainty, and decision-making under pressure.
-
-You are never safe.
-You are never fully informed.
-And every move could be your last.
+If your environment uses a different Python command, use that equivalent.

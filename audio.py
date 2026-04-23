@@ -3,6 +3,8 @@ import random
 from settings import *
 
 class AudioManager:
+    """Load, route, and play game music and sound effects across fixed channels."""
+
     CHANNEL_IDS = {
         'movement': 0,
         'boundary': 1,
@@ -51,11 +53,23 @@ class AudioManager:
         }
 
     def _load_sound(self, path: str) -> pygame.mixer.Sound:
-        """Load one sound effect from disk."""
+        """Load one sound effect from disk.
+
+        Args:
+            path (str): File path to the sound asset.
+
+        Returns:
+            pygame.mixer.Sound: Loaded sound object.
+        """
         return pygame.mixer.Sound(path)
 
     def _play_on_channel(self, channel_name: str, sound: pygame.mixer.Sound) -> None:
-        """Play a sound effect on its reserved channel."""
+        """Play a sound effect on its reserved channel.
+
+        Args:
+            channel_name (str): Logical channel key.
+            sound (pygame.mixer.Sound): Sound to play.
+        """
         if AudioSettings.MUTE or DebugSettings.MUTE:
             return
         self.channels[channel_name].play(sound)
@@ -148,7 +162,11 @@ class AudioManager:
         self._play_on_channel('spray', self.long_spray_sound)
 
     def play_repellent_sound(self, cans_left: int):
-        """Play long spray when the last can is used up, otherwise short spray."""
+        """Play repellent spray sound based on remaining can count.
+
+        Args:
+            cans_left (int): Remaining repellent cans after use.
+        """
         if cans_left == 0:
             self.play_long_spray_sound()
         else:

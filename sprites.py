@@ -7,6 +7,8 @@ PlayerAction = Literal['move', 'dig', 'detector', 'light', 'repellent', 'cloak']
 PlayerIntent = tuple[int, int, PlayerAction | None]
 
 class Player(pygame.sprite.Sprite):
+    """Represent the player entity, inventory state, and turn actions."""
+
     def __init__(self, game, position: tuple[int, int], groups) -> None:
         """
         Initialize the player sprite and its gameplay state.
@@ -205,6 +207,7 @@ class Player(pygame.sprite.Sprite):
                 self.active_light_max_radius = radius
                 self.active_light_max_duration = duration
                 self.light_radius = radius
+                # TODO: Move turn-buffer literal (+1) into a named gameplay constant.
                 self.light_turns_left = duration + 1 # fix off by one error
                 
                 if self.inventory.get("MAGIC MAP", 0) > 0:
@@ -228,6 +231,7 @@ class Player(pygame.sprite.Sprite):
         elif action == 'repellent':
             if self.inventory.get('MONSTER REPELLENT', 0) > 0:
                 self.inventory['MONSTER REPELLENT'] -= 1
+                # TODO: Move repellent turn-buffer literal (+1) into a named gameplay constant.
                 self.repellent_turns = MonsterSettings.REPELLENT_DURATION + 1 # this should really be in ItemSettings
                 self.game.log_message("YOU SPRAY THE REPELLENT.")
                 self.game.audio.play_repellent_sound(self.inventory['MONSTER REPELLENT'])
@@ -243,6 +247,7 @@ class Player(pygame.sprite.Sprite):
                 if self.inventory['INVISIBILITY CLOAK'] <= 0:
                     self.inventory.pop('INVISIBILITY CLOAK', None)
 
+                # TODO: Move invisibility turn-buffer literal (+1) into a named gameplay constant.
                 self.invisibility_turns = ItemSettings.INVISIBILITY_CLOAK_DURATION + 1
                 self.game.log_message("YOU WRAP YOURSELF IN THE INVISIBILITY CLOAK.")
                 self.game.audio.play_vanish_sound()
@@ -332,6 +337,8 @@ class Player(pygame.sprite.Sprite):
             self.game.log_message("NOTHING BUT DIRT HERE.")
         self.game.advance_turn()
 
+        # TODO: Refactor item pluralization/inventory mutation into a dedicated loot-resolution helper.
+
     def activate_key_detector(self) -> None:
         """
         Check the player's distance from the hidden key and log a hint.
@@ -342,6 +349,8 @@ class Player(pygame.sprite.Sprite):
         player_grid_pos = self.game.screen_to_grid(self.position.x, self.position.y)
         key_grid_pos = self.dungeon.key_grid_pos
         distance = self.dungeon.manhattan_distance(player_grid_pos, key_grid_pos)
+
+        # TODO: Move detector distance thresholds (1, 3, 5, 7) into settings constants.
 
         if distance == 0:
             self.game.log_message("THE KEY DETECTOR IS GOING WILD!")
@@ -370,18 +379,21 @@ class Player(pygame.sprite.Sprite):
 
     def _get_pulse_ratio(self) -> float:
         """Return a 0..1 triangle wave used by status-effect pulses."""
+        # TODO: Replace pulse-shape literal (15) with a named animation constant.
         distance_from_center = abs(self.flash_frame - 15)
         return 1.0 - (distance_from_center / 15)
 
     def get_action_window_border_style(self) -> tuple[str, int]:
         """Return (RGB color, alpha) for the animated action-window border."""
         if self.is_invisible():
+            # TODO: Move border alpha thresholds (95, 255, 15) into UI/animation constants.
             border_alpha = 95 if self.flash_frame < 15 else 255
             border_color = ColorSettings.BORDER_REPELLED if self.is_repelled() else ColorSettings.BORDER_DEFAULT
             return border_color, border_alpha
 
         if self.is_repelled():
             pulse_ratio = self._get_pulse_ratio()
+            # TODO: Move repellent pulse alpha range literals (80, 80) into UI/animation constants.
             border_alpha = 80 + int(80 * pulse_ratio)
             return ColorSettings.BORDER_REPELLED, border_alpha
 
@@ -393,6 +405,7 @@ class Player(pygame.sprite.Sprite):
         is_repelled = self.is_repelled()
 
         if is_invisible or is_repelled:
+            # TODO: Move flash animation cycle length literal (30) into animation constants.
             self.flash_frame = (self.flash_frame + 1) % 30
         else:
             self.flash_frame = 0
@@ -401,12 +414,14 @@ class Player(pygame.sprite.Sprite):
 
         if is_repelled:
             pulse_ratio = self._get_pulse_ratio()
+            # TODO: Move repellent tint alpha range literals (70, 40) into UI/animation constants.
             tint_alpha = 70 + int(40 * pulse_ratio)
             tint_surface = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
             tint_surface.fill(color_with_alpha(ColorSettings.REPELLED_TINT, tint_alpha))
             self.image.blit(tint_surface, (0, 0))
 
         if is_invisible:
+            # TODO: Move invisibility alpha thresholds (95, 255, 15) into UI/animation constants.
             alpha = 95 if self.flash_frame < 15 else 255
             self.image.set_alpha(alpha)
         else:
@@ -445,6 +460,8 @@ class Player(pygame.sprite.Sprite):
             self.process_turn_action()
 
 class Monster(pygame.sprite.Sprite):
+    """Represent monster behavior, movement, and chase decision logic."""
+
     def __init__(self, game, position: tuple[int, int], groups) -> None:
         """
         Initialize the monster sprite and its movement state.
@@ -474,7 +491,15 @@ class Monster(pygame.sprite.Sprite):
         self.is_chasing = False
 
     def _choose_primary_chase_step(self, delta_pixels_x: float, delta_pixels_y: float) -> tuple[int, int]:
-        """Return a one-tile move in the dominant axis toward the player."""
+        """Return a one-tile movement vector toward the player.
+
+        Args:
+            delta_pixels_x (float): Horizontal delta from monster to player.
+            delta_pixels_y (float): Vertical delta from monster to player.
+
+        Returns:
+            tuple[int, int]: Pixel step aligned to one cardinal direction.
+        """
         step_x = 0
         step_y = 0
 
@@ -667,6 +692,8 @@ class Monster(pygame.sprite.Sprite):
         pass
 
 class Door(pygame.sprite.Sprite):
+    """Represent the level door sprite and open/closed visual states."""
+
     def __init__(self, game, position: tuple[int, int], groups) -> None:
         """Initialize the door sprite with open and closed states."""
         super().__init__(groups)
@@ -688,4 +715,5 @@ class Door(pygame.sprite.Sprite):
         self.image = self.open_image
 
     def update(self) -> None:
+        """No-op per-frame update hook required by the sprite group API."""
         pass

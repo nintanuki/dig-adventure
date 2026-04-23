@@ -1,7 +1,14 @@
 from settings import UISettings
 
 class MapMemory:
+    """Track and expose the player's remembered minimap terrain and entities."""
+
     def __init__(self, game) -> None:
+        """Initialize per-level map memory state.
+
+        Args:
+            game: Active game manager providing world and player state.
+        """
         self.game = game
         self.dungeon = self.game.dungeon
 
@@ -13,31 +20,62 @@ class MapMemory:
             self.reveal_full_terrain_memory()
 
     def player_has_magic_map(self):
-        """Return True when the player owns the magic map item."""
+        """Return whether the player owns the magic map.
+
+        Returns:
+            bool: True when magic map inventory count is positive.
+        """
         return self.game.player.inventory.get("MAGIC MAP", 0) > 0
 
     def player_has_regular_map(self):
-        """Return True when the player owns the regular map item."""
+        """Return whether the player owns the regular map.
+
+        Returns:
+            bool: True when regular map inventory count is positive.
+        """
         return self.game.player.inventory.get("MAP", 0) > 0
 
     def player_has_any_map(self):
-        """Return True when the player owns either map variant."""
+        """Return whether either map variant is owned.
+
+        Returns:
+            bool: True when regular or magic map is present.
+        """
         return self.player_has_regular_map() or self.player_has_magic_map()
 
     def player_has_active_light_source(self):
-        """Return True when the player currently has an active light."""
+        """Return whether the player currently emits light.
+
+        Returns:
+            bool: True when light radius is greater than zero.
+        """
         return self.game.player.light_radius > 0
 
     def should_update_map_memory(self):
-        """Map memory updates with light, or continuously with magic map radar."""
+        """Return whether map memory should update this turn.
+
+        Returns:
+            bool: True when light is active or magic map is owned.
+        """
         return self.player_has_active_light_source() or self.player_has_magic_map()
 
     def should_draw_player_on_minimap(self):
-        """Player dot appears while lit, or always with the magic map radar."""
+        """Return whether the player marker should render on the minimap.
+
+        Returns:
+            bool: True when marker visibility conditions are met.
+        """
         return self.player_has_active_light_source() or self.player_has_magic_map()
     
     def player_can_see_grid_pos(self, target_grid_pos):
-        """Check if terrain at a grid coordinate should be revealed on the minimap."""
+        """Check if terrain at a grid coordinate should be revealed.
+
+        Args:
+            target_grid_pos: Target (col, row) grid coordinate.
+
+        Returns:
+            bool: True when the tile is visible under current reveal rules.
+        """
         # Both map variants reveal the full minimap terrain.
         if self.player_has_any_map():
             return True
@@ -122,7 +160,11 @@ class MapMemory:
             self.last_seen_monster_pos = visible_monster_positions
 
     def get_visible_monster_positions(self):
-        """Return monster positions visible now (all with magic map, else light/LOS)."""
+        """Return currently visible monster coordinates.
+
+        Returns:
+            set[tuple[int, int]]: Visible monster grid positions.
+        """
         visible_positions = set()
 
         for monster in self.game.monsters:
@@ -137,7 +179,14 @@ class MapMemory:
         return visible_positions
 
     def _can_see_entity_grid_pos(self, target_grid_pos):
-        """Check visibility for entities using light/LOS rules only."""
+        """Check if an entity grid position is visible with light and LOS rules.
+
+        Args:
+            target_grid_pos: Target (col, row) entity coordinate.
+
+        Returns:
+            bool: True when the entity position is visible.
+        """
         if not self.player_has_active_light_source():
             return False
 

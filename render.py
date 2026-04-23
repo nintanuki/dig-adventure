@@ -4,7 +4,14 @@ import colorsys
 from settings import *
 
 class RenderManager:
+    """Draw gameplay, overlays, and menu/state-specific UI screens."""
+
     def __init__(self, game) -> None:
+        """Capture render dependencies from the active game manager.
+
+        Args:
+            game: Active game manager containing sprites, state, and surfaces.
+        """
         self.game = game
         self.screen = game.screen
         self.dungeon = game.dungeon
@@ -21,6 +28,11 @@ class RenderManager:
         return int(red * 255), int(green * 255), int(blue * 255)
 
     def _get_map_border_color(self) -> tuple[int, int, int]:
+        """Return the minimap border color based on map ownership state.
+
+        Returns:
+            tuple[int, int, int]: RGB color used for map window border.
+        """
         if self.game.map_memory.player_has_magic_map():
             return self._rainbow_color()
         if self.game.map_memory.player_has_regular_map():
@@ -28,11 +40,21 @@ class RenderManager:
         return ColorSettings.BORDER_DEFAULT
 
     def _get_inventory_border_color(self) -> tuple[int, int, int]:
+        """Return the inventory border color based on key ownership.
+
+        Returns:
+            tuple[int, int, int]: RGB color for inventory window border.
+        """
         if self.game.player.inventory.get("KEY", 0) > 0:
             return ColorSettings.BORDER_KEY_ACTIVE
         return ColorSettings.BORDER_DEFAULT
 
     def _get_message_border_color(self) -> tuple[int, int, int]:
+        """Return the message-log border color from current game outcome/state.
+
+        Returns:
+            tuple[int, int, int]: RGB color for message window border.
+        """
         if not self.game.game_active and self.game.game_result == "loss":
             return ColorSettings.BORDER_MESSAGE_FAILURE
 
@@ -46,6 +68,7 @@ class RenderManager:
         Loops through the screen and draws the dirt tiles with grey outlines.
         Draws the dirt tiles only within the Action Window boundaries.
         """
+        # TODO: Refactor tile/fog composition into dedicated rendering passes if rendering complexity grows.
         # Loop through columns and rows based on our calculated grid size
         for row in range(UISettings.ROWS):
             for col in range(UISettings.COLS):
@@ -196,8 +219,10 @@ class RenderManager:
         self.screen.blit(self.fog_surface, (UISettings.ACTION_WINDOW_X, UISettings.ACTION_WINDOW_Y))
 
     def draw_end_game_screens(self):
+        """Draw game-over overlay and continue prompt for finished runs."""
         # Draw Game Over Overlay
         if self.game.ui_state == 'game_over':
+            # TODO: Move end-screen overlay alpha (180) and prompt Y offset (+42) to UI/Game settings.
             # Dim the screen
             overlay = pygame.Surface((ScreenSettings.WIDTH, ScreenSettings.HEIGHT))
             overlay.set_alpha(180)
@@ -254,6 +279,8 @@ class RenderManager:
         """Draw initials input for top-ten leaderboard placement."""
         self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
 
+        # TODO: Replace layout magic numbers in this screen (160, 240, 310, 360, 430) with UI constants.
+
         title_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
         body_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
         prompt_font = pygame.font.Font(FontSettings.FONT, FontSettings.HUD_SIZE)
@@ -282,6 +309,8 @@ class RenderManager:
     def draw_leaderboard_screen(self):
         """Draw the persisted top-ten scoreboard."""
         self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
+
+        # TODO: Replace leaderboard layout literals (80, 140, 34, -145, +60, 260, -60) with UI constants.
 
         title_font = pygame.font.Font(FontSettings.FONT, FontSettings.ENDGAME_SIZE)
         row_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
@@ -331,6 +360,8 @@ class RenderManager:
         """Draw the treasure to gold conversion display in the action window."""
         if not self.game.is_in_treasure_conversion_phase:
             return
+
+        # TODO: Move conversion UI layout/alpha literals (200, 20, 22, 16, 5, -18) to UI settings.
 
         # Draw semi-transparent overlay over the action window
         overlay = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -427,6 +458,8 @@ class RenderManager:
         """Draw the between-level shop inside the action window."""
         if not self.game.is_in_shop_phase:
             return
+
+        # TODO: Move shop UI layout/alpha literals (210, 20, 22, 16, 6, +12, -18) to UI settings.
 
         overlay = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
         overlay.fill(color_with_alpha(ColorSettings.OVERLAY_BACKGROUND, 210))

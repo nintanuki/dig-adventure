@@ -4,7 +4,14 @@ import math
 from settings import UISettings, FontSettings, WindowSettings, ColorSettings
 
 class MessageLog:
+    """Render and animate the scrolling in-game message log."""
+
     def __init__(self, game):
+        """Initialize message history, highlighting rules, and typewriter state.
+
+        Args:
+            game: Active game manager providing state and settings access.
+        """
         self.game = game
         self.messages = list(WindowSettings.WELCOME_MESSAGE) 
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
@@ -49,6 +56,14 @@ class MessageLog:
         return sorted(term_colors.items(), key=lambda item: len(item[0]), reverse=True)
 
     def _is_word_char(self, char: str) -> bool:
+        """Return whether a character should count as part of a word.
+
+        Args:
+            char (str): Character to classify.
+
+        Returns:
+            bool: True for alphanumeric characters and underscores.
+        """
         return char.isalnum() or char == "_"
 
     def _has_word_boundaries(self, text: str, index: int, length: int) -> bool:
@@ -59,6 +74,16 @@ class MessageLog:
         return before_ok and after_ok
 
     def _find_match_at(self, text: str, upper_text: str, index: int) -> tuple[str, str] | None:
+        """Find a highlight token that starts at a text index.
+
+        Args:
+            text (str): Original mixed-case text.
+            upper_text (str): Uppercased version of the same text.
+            index (int): Candidate start index.
+
+        Returns:
+            tuple[str, str] | None: Matched term and color, or None.
+        """
         # Highlight controller labels only when they appear as line-leading prompts
         # like "A - DIG..." so regular words are unaffected.
         if index == 0 and len(text) >= 4 and text[1:4] == " - " and text[0].upper() in self.control_label_colors:
@@ -98,6 +123,15 @@ class MessageLog:
         return segments
 
     def _draw_colored_line(self, surface, text: str, x: int, y: int, default_color: str) -> None:
+        """Draw one line of text with inline segment coloring.
+
+        Args:
+            surface: Target surface for drawing.
+            text (str): Text line to render.
+            x (int): Start x pixel position.
+            y (int): Baseline y pixel position.
+            default_color (str): Color used for non-highlighted text.
+        """
         draw_x = x
         for segment_text, segment_color in self._split_colored_segments(text, default_color):
             text_surface = self.font.render(segment_text, False, segment_color)
@@ -122,8 +156,14 @@ class MessageLog:
         self.current_type_speed = type_speed if type_speed is not None else self.type_speed
         self.is_typing = True
 
+        # TODO: Refactor message formatting/highlighting rules into a dedicated text presentation utility.
+
     def draw(self, surface):
-        """Renders the current messages inside the log window."""
+        """Render current message history and active typewriter text.
+
+        Args:
+            surface: Target surface for the message window.
+        """
         # Calculate starting vertical position inside the Log Box
         start_x = UISettings.LOG_X + WindowSettings.TEXT_PADDING
         start_y = UISettings.LOG_Y + WindowSettings.TEXT_PADDING
@@ -150,16 +190,33 @@ class MessageLog:
                 self.is_typing = False
 
 class InventoryWindow:
+    """Render the player's inventory list and item-state highlighting."""
+
     def __init__(self, game):
+        """Initialize inventory window rendering dependencies.
+
+        Args:
+            game: Active game manager instance.
+        """
         self.game = game
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
     def _rainbow_color(self) -> tuple[int, int, int]:
+        """Return a dynamic rainbow color for special inventory items.
+
+        Returns:
+            tuple[int, int, int]: RGB color tuple.
+        """
         hue = (pygame.time.get_ticks() * 0.0002) % 1.0
         red, green, blue = colorsys.hsv_to_rgb(hue, 0.9, 1.0)
         return int(red * 255), int(green * 255), int(blue * 255)
 
     def _cloak_glow_color(self) -> tuple[int, int, int]:
+        """Return a pulsing glow color for the invisibility cloak label.
+
+        Returns:
+            tuple[int, int, int]: RGB color tuple.
+        """
         pulse = (math.sin(pygame.time.get_ticks() * 0.01) + 1.0) / 2.0
         min_color = pygame.Color(ColorSettings.CLOAK_GLOW_MIN)
         max_color = pygame.Color(ColorSettings.CLOAK_GLOW_MAX)
@@ -170,6 +227,14 @@ class InventoryWindow:
         )
 
     def _get_item_label_color(self, item: str) -> tuple[int, int, int] | str:
+        """Select a display color for an inventory item label.
+
+        Args:
+            item (str): Inventory item name.
+
+        Returns:
+            tuple[int, int, int] | str: Pygame-compatible color.
+        """
         if item == 'RUBY':
             return ColorSettings.TREASURE_RUBY
         if item == 'SAPPHIRE':
@@ -191,7 +256,11 @@ class InventoryWindow:
         return FontSettings.DEFAULT_COLOR
 
     def draw(self, surface):
-        """Renders the player's inventory items in the sidebar."""
+        """Render the player's discovered inventory and counts.
+
+        Args:
+            surface: Target surface for the inventory window.
+        """
         # Starting coordinates based on Sidebar settings
         start_x = UISettings.SIDEBAR_X + WindowSettings.TEXT_PADDING
         start_y = UISettings.SIDEBAR_Y + WindowSettings.TEXT_PADDING
@@ -201,6 +270,7 @@ class InventoryWindow:
         surface.blit(header_surf, (start_x, start_y))
 
         visual_row = 0
+        # TODO: Move inventory spacing literals (-1, +25) to WindowSettings constants.
         tight_line_height = WindowSettings.LINE_HEIGHT - 1
 
         # Loop through the player's inventory dictionary
@@ -232,11 +302,23 @@ class InventoryWindow:
                 visual_row += 1
 
 class MapWindow:
+    """Render the minimap terrain memory and entity markers."""
+
     def __init__(self, game):
+        """Initialize minimap rendering dependencies.
+
+        Args:
+            game: Active game manager instance.
+        """
         self.game = game
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
     def draw(self, surface):
+        """Render the minimap (or shop label) into the map UI window.
+
+        Args:
+            surface: Target surface for map window rendering.
+        """
         if self.game.is_in_shop_phase:
             label_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
             label_surf = label_font.render("ITEM SHOP", False, ColorSettings.TEXT_TITLE)
@@ -274,6 +356,8 @@ class MapWindow:
                         mini_tile_size - 1,
                         mini_tile_size - 1
                     )
+
+                    # TODO: Replace minimap cell inset literal (-1) and line inset literal (1) with UI constants.
 
                     remembered = self.game.map_memory.seen_tiles[grid_pos]
 

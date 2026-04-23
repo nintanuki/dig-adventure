@@ -3,6 +3,8 @@ from settings import UISettings, ItemSettings, MonsterSettings, DebugSettings
 from tilemaps import DUNGEONS
 
 class DungeonMaster:
+    """Own dungeon layout data, mutable tile state, and map-rule queries."""
+
     def __init__(self, scaled_dirt_tiles: list) -> None:
         """
         Own the dungeon layout and mutable per-tile dungeon state.
@@ -122,6 +124,11 @@ class DungeonMaster:
             )
 
     def get_walkable_positions(self) -> list[tuple[int, int]]:
+        """Collect all walkable grid coordinates in the active dungeon.
+
+        Returns:
+            list[tuple[int, int]]: Walkable (col, row) positions.
+        """
         positions = []
 
         for row in range(UISettings.ROWS):
@@ -133,6 +140,11 @@ class DungeonMaster:
 
 
     def get_random_walkable_position(self) -> tuple[int, int]:
+        """Return one random walkable grid position.
+
+        Returns:
+            tuple[int, int]: Random walkable (col, row) coordinate.
+        """
         return random.choice(self.get_walkable_positions())
 
     def draw_random_position(self, available_positions: list[tuple[int, int]]) -> tuple[int, int]:
@@ -235,6 +247,15 @@ class DungeonMaster:
         return self.get_map_cell(col, row) != "x"
 
     def is_diggable(self, col: int, row: int) -> bool:
+        """Check whether the tile can be dug by the player.
+
+        Args:
+            col (int): Grid column.
+            row (int): Grid row.
+
+        Returns:
+            bool: True when the tile is diggable dirt.
+        """
         return self.get_map_cell(col, row) == " "
 
     def blocks_vision(self, col: int, row: int) -> bool:
