@@ -1,5 +1,83 @@
 # Using classes for namespacing so they can be easily changed here and accessed from other files.
 import os
+import pygame
+
+
+class ColorNames:
+    WHITE = 'white'
+    BLACK = 'black'
+    YELLOW = 'yellow'
+    RED = 'red'
+    GREEN = 'green'
+    BLUE = 'blue'
+    CYAN = 'cyan'
+    PURPLE = 'purple'
+    GOLD = 'gold'
+    DODGER_BLUE = 'dodgerblue'
+    TAN = 'tan'
+    FIREBRICK = 'firebrick'
+    LIME_GREEN = 'limegreen'
+    ORCHID = 'orchid'
+    MEDIUM_ORCHID = 'mediumorchid'
+    PLUM = 'plum'
+    DARK_GRAY = 'darkgray'
+    DIM_GRAY = 'dimgray'
+    SADDLE_BROWN = 'saddlebrown'
+    SLATE_GRAY = 'slategray'
+
+
+class ColorSettings:
+    SCREEN_BACKGROUND = ColorNames.BLACK
+    GRID_OUTLINE = ColorNames.BLACK
+
+    TEXT_DEFAULT = ColorNames.WHITE
+    TEXT_ACTIVE_MESSAGE = ColorNames.YELLOW
+    TEXT_TITLE = ColorNames.YELLOW
+    TEXT_PROMPT = ColorNames.CYAN
+    TEXT_GOLD = ColorNames.GOLD
+    TEXT_WIN = ColorNames.GREEN
+    TEXT_LOSS = ColorNames.RED
+    TEXT_CONTINUE = ColorNames.CYAN
+    TEXT_ERROR = ColorNames.RED
+    TEXT_SELECTOR = ColorNames.YELLOW
+
+    TREASURE_RUBY = ColorNames.RED
+    TREASURE_SAPPHIRE = ColorNames.DODGER_BLUE
+    TREASURE_EMERALD = ColorNames.GREEN
+    TREASURE_DIAMOND = ColorNames.CYAN
+
+    BORDER_DEFAULT = ColorNames.WHITE
+    BORDER_KEY_ACTIVE = ColorNames.GOLD
+    BORDER_MAP_ACTIVE = ColorNames.GOLD
+    BORDER_MESSAGE_SUCCESS = ColorNames.LIME_GREEN
+    BORDER_MESSAGE_FAILURE = ColorNames.FIREBRICK
+    BORDER_REPELLED = ColorNames.MEDIUM_ORCHID
+
+    MINIMAP_WALL = ColorNames.DARK_GRAY
+    MINIMAP_DUG = ColorNames.SADDLE_BROWN
+    MINIMAP_FLOOR = ColorNames.DIM_GRAY
+    MINIMAP_DOOR = ColorNames.YELLOW
+    MINIMAP_MONSTER = ColorNames.RED
+    MINIMAP_PLAYER = ColorNames.BLUE
+
+    OVERLAY_BACKGROUND = ColorNames.BLACK
+    LIGHT_MASK = ColorNames.WHITE
+
+    CLOAK_GLOW_MIN = ColorNames.ORCHID
+    CLOAK_GLOW_MAX = ColorNames.PLUM
+    REPELLED_TINT = ColorNames.PURPLE
+
+    MESSAGE_CONTROL_X = ColorNames.DODGER_BLUE
+    MESSAGE_CONTROL_Y = ColorNames.YELLOW
+    MESSAGE_CONTROL_B = ColorNames.RED
+    MESSAGE_CONTROL_A = ColorNames.GREEN
+    MESSAGE_DOOR = ColorNames.TAN
+
+
+def color_with_alpha(color_name: str, alpha: int) -> pygame.Color:
+    color = pygame.Color(color_name)
+    color.a = alpha
+    return color
 
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
@@ -20,7 +98,7 @@ class UISettings:
     TOP_MARGIN = 56
     GAP = GridSettings.TILE_SIZE
 
-    BORDER_COLOR = 'white'
+    BORDER_COLOR = ColorSettings.BORDER_DEFAULT
     BORDER_RADIUS = 5
     DOOR_UNLOCK_BORDER_FLASH_MS = 2500
 
@@ -115,7 +193,9 @@ class ItemSettings:
         'TORCH': 250,
         'LANTERN': 1000,
         'MONSTER REPELLENT': 500,
-        'INVISIBILITY CLOAK': 5000,
+        'KEY DETECTOR': 2000,
+        'MAP': 5000,
+        'INVISIBILITY CLOAK': 10000,
     }
 
     # Digging probabilities (must be between 0.0 and 1.0)
@@ -145,7 +225,7 @@ class ItemSettings:
         'RUBY': (1, 7),
         'SAPPHIRE': (1, 5),
         'EMERALD': (1, 3),
-        'MATCH': (1, 10),
+        'MATCH': (1, 5),
         'TORCH': (1, 5),
         'MONSTER REPELLENT': (1, 5)
         # Anything not here will default to 1
@@ -154,19 +234,19 @@ class ItemSettings:
     INITIAL_INVENTORY = {
         'MATCH': 1,
         #  Uncomment below for testing
-        # 'KEY': 1,
-        # 'INVISIBILITY CLOAK': 100,
+        'KEY': 1,
+        'INVISIBILITY CLOAK': 99,
         # 'MAP': 1,
-        # 'MAGIC MAP': 1,
-        # 'TORCH': 999,
-        # 'LANTERN': 999,
-        # 'MONSTER REPELLENT': 999,
-        # 'KEY DETECTOR': 1,
-        # 'GOLD COINS': 0,
-        # 'RUBY': 0,
-        # 'SAPPHIRE': 0,
-        # 'EMERALD': 0,
-        # 'DIAMOND': 0,
+        'MAGIC MAP': 1,
+        # 'TORCH': 99,
+        'LANTERN': 99,
+        'MONSTER REPELLENT': 99,
+        'KEY DETECTOR': 1,
+        'GOLD COINS': 0,
+        'RUBY': 500,
+        'SAPPHIRE': 250,
+        'EMERALD': 100,
+        'DIAMOND': 5,
         }
 
 class FontSettings:
@@ -175,16 +255,16 @@ class FontSettings:
     SCORE_SIZE = 12
     HUD_SIZE = 10
     ENDGAME_SIZE = 32
-    DEFAULT_COLOR = 'white'
-    LAST_MESSAGE_COLOR = 'yellow'
+    DEFAULT_COLOR = ColorSettings.TEXT_DEFAULT
+    LAST_MESSAGE_COLOR = ColorSettings.TEXT_ACTIVE_MESSAGE
 
     WORD_COLORS = {
-        "RUBY": "red",
-        "SAPPHIRE": "blue",
-        "EMERALD": "green",
-        "KEY": "yellow",
-        "MONSTER": "purple",
-        "MONSTER REPELLENT": "purple"
+        "RUBY": ColorSettings.TREASURE_RUBY,
+        "SAPPHIRE": ColorNames.BLUE,
+        "EMERALD": ColorSettings.TREASURE_EMERALD,
+        "KEY": ColorNames.YELLOW,
+        "MONSTER": ColorNames.PURPLE,
+        "MONSTER REPELLENT": ColorNames.PURPLE
     }
 
 class AudioSettings:
@@ -238,6 +318,7 @@ class AssetPaths:
     MUSIC_TRACKS = [
         os.path.join(MUSIC_DIR, 'Goof Troop SNES - Illusion.mp3'),
         os.path.join(MUSIC_DIR, 'Goof Troop SNES - Lose My Way.mp3'),
+        os.path.join(MUSIC_DIR, 'The Magical Quest Starring Mickey Mouse - Dark Forest.mp3'),
     ]
 
 class DebugSettings:

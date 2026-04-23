@@ -1,5 +1,7 @@
 import pygame
-from settings import UISettings, FontSettings, WindowSettings
+import colorsys
+import math
+from settings import UISettings, FontSettings, WindowSettings, ColorSettings
 
 class MessageLog:
     def __init__(self, game):
@@ -14,28 +16,29 @@ class MessageLog:
         self.active_message = ""
         self.char_index = 0
         self.type_speed = WindowSettings.TYPING_SPEED
+        self.current_type_speed = self.type_speed
         self.is_typing = False
 
     def _build_highlight_terms(self) -> list[tuple[str, str]]:
         """Build ordered highlight terms for message-window text coloring."""
         self.control_label_colors = {
-            "X": "dodgerblue",
-            "Y": "yellow",
-            "B": "red",
-            "A": "green",
+            "X": ColorSettings.MESSAGE_CONTROL_X,
+            "Y": ColorSettings.MESSAGE_CONTROL_Y,
+            "B": ColorSettings.MESSAGE_CONTROL_B,
+            "A": ColorSettings.MESSAGE_CONTROL_A,
         }
 
         term_colors = {
-            "YOU WERE CAUGHT BY THE MONSTER": "red",
-            "KEY": "yellow",
-            "REPELLENT": "purple",
-            "RUBY": "red",
-            "EMERALD": "green",
-            "SAPPHIRE": "blue",
-            "GOLD COINS": "gold",
-            "GOLD": "gold",
-            "DOORS": "tan",
-            "DOOR": "tan",
+            "YOU WERE CAUGHT BY THE MONSTER": ColorSettings.TEXT_LOSS,
+            "KEY": ColorSettings.BORDER_KEY_ACTIVE,
+            "REPELLENT": ColorSettings.REPELLED_TINT,
+            "RUBY": ColorSettings.TREASURE_RUBY,
+            "EMERALD": ColorSettings.TREASURE_EMERALD,
+            "SAPPHIRE": ColorSettings.TREASURE_SAPPHIRE,
+            "GOLD COINS": ColorSettings.TEXT_GOLD,
+            "GOLD": ColorSettings.TEXT_GOLD,
+            "DOORS": ColorSettings.MESSAGE_DOOR,
+            "DOOR": ColorSettings.MESSAGE_DOOR,
         }
 
         for term, color in FontSettings.WORD_COLORS.items():
@@ -101,7 +104,7 @@ class MessageLog:
             surface.blit(text_surface, (draw_x, y))
             draw_x += text_surface.get_width()
 
-    def add_message(self, text):
+    def add_message(self, text, type_speed=None):
         """
         Adds a new message to the log and removes old ones if full.
         Use a typewriter effect for the most recent message, while keeping previous messages static.
@@ -116,6 +119,7 @@ class MessageLog:
         self.full_text = text
         self.active_message = ""
         self.char_index = 0
+        self.current_type_speed = type_speed if type_speed is not None else self.type_speed
         self.is_typing = True
 
     def draw(self, surface):
@@ -138,7 +142,7 @@ class MessageLog:
     def update(self):
         """Increments the character count."""
         if self.is_typing:
-            self.char_index += self.type_speed
+            self.char_index += self.current_type_speed
             # Ensure we don't go out of bounds of the string
             self.active_message = self.full_text[:int(self.char_index)]
             
@@ -150,6 +154,42 @@ class InventoryWindow:
         self.game = game
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
+    def _rainbow_color(self) -> tuple[int, int, int]:
+        hue = (pygame.time.get_ticks() * 0.0002) % 1.0
+        red, green, blue = colorsys.hsv_to_rgb(hue, 0.9, 1.0)
+        return int(red * 255), int(green * 255), int(blue * 255)
+
+    def _cloak_glow_color(self) -> tuple[int, int, int]:
+        pulse = (math.sin(pygame.time.get_ticks() * 0.01) + 1.0) / 2.0
+        min_color = pygame.Color(ColorSettings.CLOAK_GLOW_MIN)
+        max_color = pygame.Color(ColorSettings.CLOAK_GLOW_MAX)
+        return (
+            int(min_color.r + (max_color.r - min_color.r) * pulse),
+            int(min_color.g + (max_color.g - min_color.g) * pulse),
+            int(min_color.b + (max_color.b - min_color.b) * pulse),
+        )
+
+    def _get_item_label_color(self, item: str) -> tuple[int, int, int] | str:
+        if item == 'RUBY':
+            return ColorSettings.TREASURE_RUBY
+        if item == 'SAPPHIRE':
+            return ColorSettings.TREASURE_SAPPHIRE
+        if item == 'EMERALD':
+            return ColorSettings.TREASURE_EMERALD
+        if item == 'DIAMOND':
+            return ColorSettings.TREASURE_DIAMOND
+        if item == 'INVISIBILITY CLOAK':
+            return self._cloak_glow_color()
+        if item == 'MAGIC MAP':
+            return self._rainbow_color()
+        if item == 'KEY':
+            return ColorSettings.BORDER_KEY_ACTIVE
+        if item == 'GOLD COINS':
+            return ColorSettings.TEXT_GOLD
+        if item == 'MONSTER REPELLENT':
+            return ColorSettings.REPELLED_TINT
+        return FontSettings.DEFAULT_COLOR
+
     def draw(self, surface):
         """Renders the player's inventory items in the sidebar."""
         # Starting coordinates based on Sidebar settings
@@ -157,7 +197,7 @@ class InventoryWindow:
         start_y = UISettings.SIDEBAR_Y + WindowSettings.TEXT_PADDING
         
         # Header
-        header_surf = self.font.render("INVENTORY", False, 'yellow')
+        header_surf = self.font.render("INVENTORY", False, ColorSettings.TEXT_TITLE)
         surface.blit(header_surf, (start_x, start_y))
 
         visual_row = 0
@@ -171,12 +211,14 @@ class InventoryWindow:
             discovered = item in self.game.player.discovered_items
 
             if has_it or discovered:
-                # 1. Render the Label (Always White)
+                item_color = self._get_item_label_color(item)
+
+                # 1. Render the Label (Syntax-highlight item names)
                 label_text = f"{item}: "
-                label_surf = self.font.render(label_text, False, FontSettings.DEFAULT_COLOR)
+                label_surf = self.font.render(label_text, False, item_color)
                 
-                # 2. Render the Number (Red if 0, otherwise White)
-                num_color = 'red' if count <= 0 else FontSettings.DEFAULT_COLOR
+                # 2. Render the Number (Red if 0, otherwise default white)
+                num_color = ColorSettings.TEXT_ERROR if count <= 0 else FontSettings.DEFAULT_COLOR
                 num_surf = self.font.render(str(count), False, num_color)
 
                 # 3. Calculate Positions
@@ -195,6 +237,16 @@ class MapWindow:
         self.font = pygame.font.Font(FontSettings.FONT, FontSettings.MESSAGE_SIZE)
 
     def draw(self, surface):
+        if self.game.is_in_shop_phase:
+            label_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
+            label_surf = label_font.render("ITEM SHOP", False, ColorSettings.TEXT_TITLE)
+            label_rect = label_surf.get_rect(center=(
+                UISettings.MAP_X + (UISettings.MAP_WIDTH // 2),
+                UISettings.MAP_Y + (UISettings.MAP_HEIGHT // 2),
+            ))
+            surface.blit(label_surf, label_rect)
+            return
+
         # Fit the minimap into the map window and center it.
         padding = UISettings.MINIMAP_PADDING
         available_w = UISettings.MAP_WIDTH - (padding * 2)
@@ -226,18 +278,18 @@ class MapWindow:
                     remembered = self.game.map_memory.seen_tiles[grid_pos]
 
                     if remembered == "#":
-                        color = (120, 120, 120)   # wall
+                        color = ColorSettings.MINIMAP_WALL   # wall
                     elif remembered == "o":
-                        color = (139, 90, 43)     # dug spot
+                        color = ColorSettings.MINIMAP_DUG     # dug spot
                     else:
-                        color = (50, 50, 50)      # explored dirt/floor
+                        color = ColorSettings.MINIMAP_FLOOR      # explored dirt/floor
 
                     pygame.draw.rect(surface, color, rect)
 
         # draw remembered door
-        if self.game.map_memory.last_seen_door_pos:
+        if self.game.map_memory.last_seen_door_pos is not None:
             d_col, d_row = self.game.map_memory.last_seen_door_pos
-            pygame.draw.rect(surface, 'yellow',
+            pygame.draw.rect(surface, ColorSettings.MINIMAP_DOOR,
                 (start_x + (d_col * mini_tile_size),
                 start_y + (d_row * mini_tile_size),
                 mini_tile_size - 1, mini_tile_size - 1)
@@ -245,7 +297,7 @@ class MapWindow:
 
         # draw remembered monster positions
         for m_col, m_row in self.game.map_memory.last_seen_monster_pos:
-            pygame.draw.rect(surface, 'red',
+            pygame.draw.rect(surface, ColorSettings.MINIMAP_MONSTER,
                 (start_x + (m_col * mini_tile_size),
                 start_y + (m_row * mini_tile_size),
                 mini_tile_size - 1, mini_tile_size - 1)
@@ -254,7 +306,7 @@ class MapWindow:
         # Draw player while lit, or always with the magic map radar.
         if self.game.map_memory.should_draw_player_on_minimap():
             p_col, p_row = self.game.screen_to_grid(self.game.player.position.x, self.game.player.position.y)
-            pygame.draw.rect(surface, 'blue', 
+            pygame.draw.rect(surface, ColorSettings.MINIMAP_PLAYER, 
                              (start_x + (p_col * mini_tile_size), 
                               start_y + (p_row * mini_tile_size), 
                               mini_tile_size - 1, mini_tile_size - 1))

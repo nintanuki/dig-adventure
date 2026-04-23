@@ -373,19 +373,19 @@ class Player(pygame.sprite.Sprite):
         distance_from_center = abs(self.flash_frame - 15)
         return 1.0 - (distance_from_center / 15)
 
-    def get_action_window_border_style(self) -> tuple[tuple[int, int, int], int]:
+    def get_action_window_border_style(self) -> tuple[str, int]:
         """Return (RGB color, alpha) for the animated action-window border."""
         if self.is_invisible():
             border_alpha = 95 if self.flash_frame < 15 else 255
-            border_color = (180, 110, 220) if self.is_repelled() else (255, 255, 255)
+            border_color = ColorSettings.BORDER_REPELLED if self.is_repelled() else ColorSettings.BORDER_DEFAULT
             return border_color, border_alpha
 
         if self.is_repelled():
             pulse_ratio = self._get_pulse_ratio()
             border_alpha = 80 + int(80 * pulse_ratio)
-            return (180, 110, 220), border_alpha
+            return ColorSettings.BORDER_REPELLED, border_alpha
 
-        return (255, 255, 255), 255
+        return ColorSettings.BORDER_DEFAULT, 255
 
     def update_invisibility_visual(self) -> None:
         """Apply visual effects for invisibility and repellent states."""
@@ -403,7 +403,7 @@ class Player(pygame.sprite.Sprite):
             pulse_ratio = self._get_pulse_ratio()
             tint_alpha = 70 + int(40 * pulse_ratio)
             tint_surface = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
-            tint_surface.fill((130, 45, 170, tint_alpha))
+            tint_surface.fill(color_with_alpha(ColorSettings.REPELLED_TINT, tint_alpha))
             self.image.blit(tint_surface, (0, 0))
 
         if is_invisible:

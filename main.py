@@ -31,6 +31,7 @@ class GameManager:
         self.high_score = self.load_high_score()
         self.level_order = list(DUNGEON_ORDER)
         self.current_level_index = 0
+        self.pending_level_index = 0
         self.transition_label = ""
         self.transition_end_time = 0
         self.pending_level_load = False
@@ -41,8 +42,28 @@ class GameManager:
         self.in_treasure_conversion = False
         self.treasure_conversion_data = {}  # Stores treasures found in current level for conversion
         self.conversion_display_start_time = 0
-        self.conversion_display_delay_ms = 1000  # Delay before showing "PRESS START TO CONTINUE"
-        self.pending_level_load_after_conversion = False
+        self.conversion_display_delay_ms = 2000  # Delay before showing "PRESS START TO CONTINUE" after total appears
+        self.conversion_line_reveal_interval_ms = 520
+        self.conversion_total_reveal_delay_ms = 450
+        self.conversion_prompt_fade_ms = 650
+
+        # Door unlock sequence pacing
+        self.pending_treasure_conversion = False
+        self.treasure_conversion_pending_since = 0
+        self.treasure_conversion_post_message_delay_ms = 450
+
+        # Shop Phase
+        self.in_shop_phase = False
+        self.shop_selected_index = 0
+        self.shop_display_start_time = 0
+        self.shop_display_delay_ms = 200
+        self.shop_stock: dict[str, int | None] = {}
+        self.shop_limited_stock_template = {
+            'LANTERN': 3,
+            'INVISIBILITY CLOAK': 1,
+            'MAP': 1,
+            'KEY DETECTOR': 1,
+        }
         
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
@@ -90,6 +111,10 @@ class GameManager:
     def is_in_treasure_conversion_phase(self) -> bool:
         return self.in_treasure_conversion
 
+    @property
+    def is_in_shop_phase(self) -> bool:
+        return self.in_shop_phase
+
     def get_high_score_path(self) -> str:
         return os.path.join(os.path.dirname(__file__), GameSettings.HIGH_SCORE_FILE)
 
@@ -132,10 +157,6 @@ class GameManager:
 
         self.player.inventory = progress['inventory'].copy()
         self.player.discovered_items = set(progress['discovered_items'])
-
-        for item_name in ItemSettings.LEVEL_SCOPED_ITEMS:
-            self.player.inventory.pop(item_name, None)
-            self.player.discovered_items.discard(item_name)
 
     def load_level(self, player_progress: dict[str, object] | None = None) -> None:
         """Build the currently selected dungeon level and spawn fresh entities."""
@@ -191,9 +212,42 @@ class GameManager:
             return
 
         next_level_number = self.current_level_number + 1
-        self.log_message(f"YOU UNLOCK THE DOOR. DESCENDING TO LEVEL {next_level_number}...")
-        self.current_level_index += 1
+        self.pending_level_index = self.current_level_index + 1
+        self.audio.stop_music()
+        self.log_message(
+            f"YOU UNLOCK THE DOOR. DESCENDING TO LEVEL {next_level_number}...",
+            type_speed=0.12,
+        )
+        self.pending_treasure_conversion = True
+        self.treasure_conversion_pending_since = pygame.time.get_ticks()
+
+    def update_door_unlock_sequence(self) -> None:
+        """Delay treasure exchange until after unlock message has finished typing."""
+        if not self.pending_treasure_conversion:
+            return
+
+        if self.message_log.is_typing:
+            return
+
+        elapsed = pygame.time.get_ticks() - self.treasure_conversion_pending_since
+        if elapsed < self.treasure_conversion_post_message_delay_ms:
+            return
+
+        self.pending_treasure_conversion = False
+        self.remove_between_level_items()
         self.start_treasure_conversion()
+
+    def remove_between_level_items(self) -> None:
+        """Remove inventory items that should never carry across dungeon boundaries."""
+        removed_any = False
+        for item_name in ItemSettings.LEVEL_SCOPED_ITEMS:
+            if self.player.inventory.get(item_name, 0) > 0:
+                removed_any = True
+            self.player.inventory.pop(item_name, None)
+            self.player.discovered_items.discard(item_name)
+
+        if removed_any:
+            self.log_message("KEYS, MAPS, AND DETECTORS DON'T CARRY BETWEEN LEVELS.")
 
     def start_treasure_conversion(self) -> None:
         """Collect treasures from inventory and prepare for conversion display."""
@@ -211,7 +265,7 @@ class GameManager:
         self.treasure_conversion_data = treasure_items
         self.in_treasure_conversion = True
         self.conversion_display_start_time = pygame.time.get_ticks()
-        self.audio.stop_music()
+        self.log_message("YOUR TREASURE IS EXCHANGED FOR GOLD COINS.")
 
     def update_treasure_conversion(self) -> None:
         """Handle input and state updates during treasure conversion phase."""
@@ -222,13 +276,13 @@ class GameManager:
         elapsed = pygame.time.get_ticks() - self.conversion_display_start_time
         display_ready = elapsed >= self.conversion_display_delay_ms
 
-        # Check for player input (A button / Enter key)
+        # Check for player input (Start button / Enter key)
         keys = pygame.key.get_pressed()
-        button_pressed = keys[pygame.K_RETURN] or keys[pygame.K_z]
+        button_pressed = keys[pygame.K_RETURN]
         
         # Also check gamepad
         for joystick in self.connected_joysticks:
-            if joystick.get_button(0):  # A button
+            if joystick.get_button(7):  # Start button
                 button_pressed = True
                 break
 
@@ -236,7 +290,7 @@ class GameManager:
             self.complete_treasure_conversion()
 
     def complete_treasure_conversion(self) -> None:
-        """Convert collected treasures to gold coins and proceed to level load."""
+        """Convert collected treasures to gold coins and proceed to the shop."""
         # Convert treasures to gold coins
         total_gold = 0
         for item, data in self.treasure_conversion_data.items():
@@ -255,9 +309,175 @@ class GameManager:
         # Reset treasure conversion state
         self.in_treasure_conversion = False
         self.treasure_conversion_data = {}
-        
-        # Proceed to level transition
+
+        # Move to shop phase before the next level loads.
+        self.start_shop_phase()
+
+    def start_shop_phase(self) -> None:
+        """Open the between-level shop with refreshed stock."""
+        self.in_shop_phase = True
+        self.shop_selected_index = 0
+        self.shop_display_start_time = pygame.time.get_ticks()
+        self.shop_stock = {}
+
+        for item_name in ItemSettings.SHOP_PRICES:
+            if item_name in self.shop_limited_stock_template:
+                self.shop_stock[item_name] = self.shop_limited_stock_template[item_name]
+            else:
+                # None means infinite stock.
+                self.shop_stock[item_name] = None
+
+        self.log_message("KHAJIIT HAS WARES, IF YOU HAVE COIN.")
+
+    def get_shop_menu_options(self) -> list[str]:
+        """Return shop items plus a continue option."""
+        options = []
+        for item_name in ItemSettings.SHOP_PRICES:
+            options.append(item_name)
+
+        options.append('CONTINUE')
+        return options
+
+    def move_shop_selection(self, delta: int) -> None:
+        """Move the highlighted shop row up or down."""
+        options = self.get_shop_menu_options()
+        if not options:
+            self.shop_selected_index = 0
+            return
+
+        self.shop_selected_index = (self.shop_selected_index + delta) % len(options)
+
+    def _format_purchase_message(self, item_name: str, quantity: int) -> str:
+        """Build purchase confirmation text with simple plural rules."""
+        if quantity == 1:
+            if item_name == 'MONSTER REPELLENT':
+                return 'YOU BOUGHT A CAN OF MONSTER REPELLENT.'
+            article = 'AN' if item_name[0] in 'AEIOU' else 'A'
+            return f'YOU BOUGHT {article} {item_name}.'
+
+        if item_name == 'MATCH':
+            plural_name = 'MATCHES'
+        elif item_name == 'TORCH':
+            plural_name = 'TORCHES'
+        elif item_name.endswith('Y'):
+            plural_name = item_name[:-1] + 'IES'
+        elif item_name.endswith('S'):
+            plural_name = item_name
+        else:
+            plural_name = item_name + 'S'
+
+        return f'YOU BOUGHT {quantity} {plural_name}.'
+
+    def buy_shop_item(self, item_name: str, quantity: int = 1) -> None:
+        """Try to buy one shop item and immediately update inventory and gold."""
+        if item_name not in ItemSettings.SHOP_PRICES:
+            return
+
+        stock = self.shop_stock.get(item_name)
+        if stock is not None and stock <= 0:
+            self.log_message("THAT ITEM IS OUT OF STOCK.")
+            self.audio.play_boundary_sound()
+            return
+
+        purchase_quantity = quantity
+        if stock is not None:
+            purchase_quantity = min(purchase_quantity, stock)
+
+        if purchase_quantity <= 0:
+            return
+
+        unit_price = ItemSettings.SHOP_PRICES[item_name]
+        total_price = unit_price * purchase_quantity
+        current_gold = self.player.inventory.get('GOLD COINS', 0)
+
+        if current_gold < total_price:
+            self.log_message("YOU CAN'T AFFORD THAT.")
+            self.audio.play_boundary_sound()
+            return
+
+        self.player.inventory['GOLD COINS'] = current_gold - total_price
+        self.player.inventory[item_name] = self.player.inventory.get(item_name, 0) + purchase_quantity
+        self.player.discovered_items.add(item_name)
+        self.log_message(self._format_purchase_message(item_name, purchase_quantity))
+        self.audio.play_coin_sound()
+
+        if stock is not None:
+            self.shop_stock[item_name] = max(0, stock - purchase_quantity)
+
+        # Clamp selection in case the purchased item just sold out and disappeared.
+        options = self.get_shop_menu_options()
+        if options:
+            self.shop_selected_index = min(self.shop_selected_index, len(options) - 1)
+        else:
+            self.shop_selected_index = 0
+
+    def complete_shop_phase(self) -> None:
+        """Close the shop and begin loading the next level."""
+        self.in_shop_phase = False
+        self.current_level_index = self.pending_level_index
+        self.log_message(f"YOU LEAVE THE SHOP. DESCENDING TO LEVEL {self.current_level_number}...")
         self.start_level_transition()
+
+    def handle_shop_event(self, event: pygame.event.Event) -> None:
+        """Process keyboard/controller input for the between-level shop."""
+        if not self.in_shop_phase:
+            return
+
+        elapsed = pygame.time.get_ticks() - self.shop_display_start_time
+        if elapsed < self.shop_display_delay_ms:
+            return
+
+        options = self.get_shop_menu_options()
+        if not options:
+            return
+
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_UP, pygame.K_w):
+                self.move_shop_selection(-1)
+                return
+
+            if event.key in (pygame.K_DOWN, pygame.K_s):
+                self.move_shop_selection(1)
+                return
+
+            if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_z, pygame.K_x, pygame.K_5):
+                selected_option = options[self.shop_selected_index]
+                if selected_option == 'CONTINUE':
+                    self.complete_shop_phase()
+                else:
+                    quantity = 5 if event.key in (pygame.K_x, pygame.K_5) else 1
+                    self.buy_shop_item(selected_option, quantity=quantity)
+                return
+
+        if event.type == pygame.JOYHATMOTION:
+            _, hat_y = event.value
+            if hat_y == 1:
+                self.move_shop_selection(-1)
+            elif hat_y == -1:
+                self.move_shop_selection(1)
+            return
+
+        if event.type == pygame.JOYBUTTONDOWN:
+            # Start button can always continue from the shop.
+            if event.button == 7:
+                self.complete_shop_phase()
+                return
+
+            if event.button == 0:  # A button confirms selection.
+                selected_option = options[self.shop_selected_index]
+                if selected_option == 'CONTINUE':
+                    self.complete_shop_phase()
+                else:
+                    self.buy_shop_item(selected_option)
+                return
+
+            if event.button == 2:  # X button buys 5 at once.
+                selected_option = options[self.shop_selected_index]
+                if selected_option == 'CONTINUE':
+                    self.complete_shop_phase()
+                else:
+                    self.buy_shop_item(selected_option, quantity=5)
+                return
 
     # -------------------------
     # BOOT / SETUP
@@ -401,9 +621,9 @@ class GameManager:
     # UI / GAME FEEDBACK --> Leave in GameManager for now
     # -------------------------
     
-    def log_message(self, text):
+    def log_message(self, text, type_speed=None):
         """The central hub for all game objects to send text to the UI."""
-        self.message_log.add_message(text)
+        self.message_log.add_message(text, type_speed=type_speed)
 
     # -------------------------
     # Score
@@ -424,6 +644,7 @@ class GameManager:
         # Main game loop
         while True:
             self.update_level_transition()
+            self.update_door_unlock_sequence()
             self.update_treasure_conversion()
 
             # Event Handling
@@ -437,6 +658,8 @@ class GameManager:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_F11:
                         pygame.display.toggle_fullscreen()
+                    if self.is_in_shop_phase:
+                        self.handle_shop_event(event)
                     # Restart only after game over / escape
                     if not self.game_active and event.key == pygame.K_RETURN:
                         self.reset_game()
@@ -444,9 +667,14 @@ class GameManager:
                 if event.type == pygame.JOYBUTTONDOWN:
                     if event.button == 6:
                         pygame.display.toggle_fullscreen()
+                    if self.is_in_shop_phase:
+                        self.handle_shop_event(event)
                     # Restart only after game over / escape
                     if not self.game_active and event.button == 7:
                         self.reset_game()
+
+                if event.type == pygame.JOYHATMOTION and self.is_in_shop_phase:
+                    self.handle_shop_event(event)
 
                 # Gamepad input for L2 trigger mute toggle (edge-triggered)
                 if event.type == pygame.JOYAXISMOTION and event.axis in (2, 4):
@@ -460,10 +688,10 @@ class GameManager:
 
             self.message_log.update() # Update message log to handle typing effect and message timing
             if self.game_active:
-                if not self.is_transitioning and not self.is_busy and not self.is_in_treasure_conversion_phase: # Only allow player input if we're not in the middle of an animation or message
+                if not self.is_transitioning and not self.is_busy and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase: # Only allow player input if we're not in the middle of an animation or message
                     self.all_sprites.update()
 
-                if not self.is_transitioning and not self.is_in_treasure_conversion_phase:
+                if not self.is_transitioning and not self.is_in_treasure_conversion_phase and not self.is_in_shop_phase:
                     # Always run the animation math (so sprites can finish their slide)
                     for sprite in self.all_sprites:
                         if hasattr(sprite, 'animate'):
@@ -473,7 +701,7 @@ class GameManager:
                     self.check_player_caught_by_monster()
 
             # Drawing
-            self.screen.fill('black')
+            self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
             self.render.draw_grid_background() # Draw the grid background
             self.all_sprites.draw(self.screen) # Draw the sprites to the screen
             
@@ -486,6 +714,7 @@ class GameManager:
             self.render.draw_level_transition()
             self.render.draw_end_game_screens()
             self.render.draw_treasure_conversion()
+            self.render.draw_shop_menu()
             self.crt.draw() # CRT Effect on top of everything else
 
             pygame.display.flip()
