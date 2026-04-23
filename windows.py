@@ -268,7 +268,7 @@ class MapWindow:
                 grid_pos = (c, r)
 
                 if grid_pos in self.game.map_memory.seen_tiles:
-                    rect = (
+                    rect = pygame.Rect(
                         start_x + (c * mini_tile_size),
                         start_y + (r * mini_tile_size),
                         mini_tile_size - 1,
@@ -285,6 +285,24 @@ class MapWindow:
                         color = ColorSettings.MINIMAP_FLOOR      # explored dirt/floor
 
                     pygame.draw.rect(surface, color, rect)
+
+                    if remembered == "o":
+                        # Draw a small X so dug tiles are easy to distinguish.
+                        inset = 1
+                        pygame.draw.line(
+                            surface,
+                            ColorSettings.BLACK,
+                            (rect.left + inset, rect.top + inset),
+                            (rect.right - inset, rect.bottom - inset),
+                            1,
+                        )
+                        pygame.draw.line(
+                            surface,
+                            ColorSettings.BLACK,
+                            (rect.left + inset, rect.bottom - inset),
+                            (rect.right - inset, rect.top + inset),
+                            1,
+                        )
 
         # draw remembered door
         if self.game.map_memory.last_seen_door_pos is not None:

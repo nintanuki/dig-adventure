@@ -3,7 +3,8 @@ import os
 import pygame
 
 
-class ColorNames:
+class ColorSettings:
+    # Base color names
     WHITE = 'white'
     BLACK = 'black'
     YELLOW = 'yellow'
@@ -25,53 +26,51 @@ class ColorNames:
     SADDLE_BROWN = 'saddlebrown'
     SLATE_GRAY = 'slategray'
 
+    SCREEN_BACKGROUND = BLACK
+    GRID_OUTLINE = BLACK
 
-class ColorSettings:
-    SCREEN_BACKGROUND = ColorNames.BLACK
-    GRID_OUTLINE = ColorNames.BLACK
+    TEXT_DEFAULT = WHITE
+    TEXT_ACTIVE_MESSAGE = YELLOW
+    TEXT_TITLE = YELLOW
+    TEXT_PROMPT = CYAN
+    TEXT_GOLD = GOLD
+    TEXT_WIN = GREEN
+    TEXT_LOSS = RED
+    TEXT_CONTINUE = CYAN
+    TEXT_ERROR = RED
+    TEXT_SELECTOR = YELLOW
 
-    TEXT_DEFAULT = ColorNames.WHITE
-    TEXT_ACTIVE_MESSAGE = ColorNames.YELLOW
-    TEXT_TITLE = ColorNames.YELLOW
-    TEXT_PROMPT = ColorNames.CYAN
-    TEXT_GOLD = ColorNames.GOLD
-    TEXT_WIN = ColorNames.GREEN
-    TEXT_LOSS = ColorNames.RED
-    TEXT_CONTINUE = ColorNames.CYAN
-    TEXT_ERROR = ColorNames.RED
-    TEXT_SELECTOR = ColorNames.YELLOW
+    TREASURE_RUBY = RED
+    TREASURE_SAPPHIRE = DODGER_BLUE
+    TREASURE_EMERALD = GREEN
+    TREASURE_DIAMOND = CYAN
 
-    TREASURE_RUBY = ColorNames.RED
-    TREASURE_SAPPHIRE = ColorNames.DODGER_BLUE
-    TREASURE_EMERALD = ColorNames.GREEN
-    TREASURE_DIAMOND = ColorNames.CYAN
+    BORDER_DEFAULT = WHITE
+    BORDER_KEY_ACTIVE = GOLD
+    BORDER_MAP_ACTIVE = GOLD
+    BORDER_MESSAGE_SUCCESS = LIME_GREEN
+    BORDER_MESSAGE_FAILURE = FIREBRICK
+    BORDER_REPELLED = MEDIUM_ORCHID
 
-    BORDER_DEFAULT = ColorNames.WHITE
-    BORDER_KEY_ACTIVE = ColorNames.GOLD
-    BORDER_MAP_ACTIVE = ColorNames.GOLD
-    BORDER_MESSAGE_SUCCESS = ColorNames.LIME_GREEN
-    BORDER_MESSAGE_FAILURE = ColorNames.FIREBRICK
-    BORDER_REPELLED = ColorNames.MEDIUM_ORCHID
+    MINIMAP_WALL = DARK_GRAY
+    MINIMAP_DUG = SADDLE_BROWN
+    MINIMAP_FLOOR = SADDLE_BROWN
+    MINIMAP_DOOR = YELLOW
+    MINIMAP_MONSTER = RED
+    MINIMAP_PLAYER = BLUE
 
-    MINIMAP_WALL = ColorNames.DARK_GRAY
-    MINIMAP_DUG = ColorNames.SADDLE_BROWN
-    MINIMAP_FLOOR = ColorNames.DIM_GRAY
-    MINIMAP_DOOR = ColorNames.YELLOW
-    MINIMAP_MONSTER = ColorNames.RED
-    MINIMAP_PLAYER = ColorNames.BLUE
+    OVERLAY_BACKGROUND = BLACK
+    LIGHT_MASK = WHITE
 
-    OVERLAY_BACKGROUND = ColorNames.BLACK
-    LIGHT_MASK = ColorNames.WHITE
+    CLOAK_GLOW_MIN = ORCHID
+    CLOAK_GLOW_MAX = PLUM
+    REPELLED_TINT = PURPLE
 
-    CLOAK_GLOW_MIN = ColorNames.ORCHID
-    CLOAK_GLOW_MAX = ColorNames.PLUM
-    REPELLED_TINT = ColorNames.PURPLE
-
-    MESSAGE_CONTROL_X = ColorNames.DODGER_BLUE
-    MESSAGE_CONTROL_Y = ColorNames.YELLOW
-    MESSAGE_CONTROL_B = ColorNames.RED
-    MESSAGE_CONTROL_A = ColorNames.GREEN
-    MESSAGE_DOOR = ColorNames.TAN
+    MESSAGE_CONTROL_X = DODGER_BLUE
+    MESSAGE_CONTROL_Y = YELLOW
+    MESSAGE_CONTROL_B = RED
+    MESSAGE_CONTROL_A = GREEN
+    MESSAGE_DOOR = TAN
 
 
 def color_with_alpha(color_name: str, alpha: int) -> pygame.Color:
@@ -204,9 +203,9 @@ class ItemSettings:
         # Consumables
         'MATCH': 0.25,
         'TORCH': 0.15,
-        'LANTERN': 0.05,
+        'LANTERN': 0.02,
         'MONSTER REPELLENT': 0.10,
-        'INVISIBILITY CLOAK': 0.05,
+        'INVISIBILITY CLOAK': 0.01,
         
         # Treasure
         'GOLD COINS': 0.20,
@@ -227,26 +226,26 @@ class ItemSettings:
         'EMERALD': (1, 3),
         'MATCH': (1, 5),
         'TORCH': (1, 5),
-        'MONSTER REPELLENT': (1, 5)
+        'MONSTER REPELLENT': (1, 2)
         # Anything not here will default to 1
     }
 
     INITIAL_INVENTORY = {
         'MATCH': 1,
         #  Uncomment below for testing
-        'KEY': 1,
-        'INVISIBILITY CLOAK': 99,
-        # 'MAP': 1,
-        'MAGIC MAP': 1,
-        # 'TORCH': 99,
-        'LANTERN': 99,
-        'MONSTER REPELLENT': 99,
-        'KEY DETECTOR': 1,
-        'GOLD COINS': 0,
-        'RUBY': 500,
-        'SAPPHIRE': 250,
-        'EMERALD': 100,
-        'DIAMOND': 5,
+        # 'KEY': 1,
+        # 'INVISIBILITY CLOAK': 99,
+        # # 'MAP': 1,
+        # 'MAGIC MAP': 1,
+        # # 'TORCH': 99,
+        # 'LANTERN': 99,
+        # 'MONSTER REPELLENT': 99,
+        # 'KEY DETECTOR': 1,
+        # 'GOLD COINS': 0,
+        # 'RUBY': 500,
+        # 'SAPPHIRE': 250,
+        # 'EMERALD': 100,
+        # 'DIAMOND': 5,
         }
 
 class FontSettings:
@@ -260,11 +259,11 @@ class FontSettings:
 
     WORD_COLORS = {
         "RUBY": ColorSettings.TREASURE_RUBY,
-        "SAPPHIRE": ColorNames.BLUE,
+        "SAPPHIRE": ColorSettings.BLUE,
         "EMERALD": ColorSettings.TREASURE_EMERALD,
-        "KEY": ColorNames.YELLOW,
-        "MONSTER": ColorNames.PURPLE,
-        "MONSTER REPELLENT": ColorNames.PURPLE
+        "KEY": ColorSettings.YELLOW,
+        "MONSTER": ColorSettings.PURPLE,
+        "MONSTER REPELLENT": ColorSettings.PURPLE
     }
 
 class AudioSettings:
