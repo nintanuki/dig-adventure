@@ -239,17 +239,17 @@ class ItemSettings:
         #  Uncomment below for testing
         # 'KEY': 1,
         # 'INVISIBILITY CLOAK': 99,
-        # # 'MAP': 1,
-        'MAGIC MAP': 1,
-        # # 'TORCH': 99,
+        # # # 'MAP': 1,
+        # 'MAGIC MAP': 1,
+        # # # 'TORCH': 99,
         # 'LANTERN': 99,
         # 'MONSTER REPELLENT': 99,
-        # 'KEY DETECTOR': 1,
-        # 'GOLD COINS': 0,
-        # 'RUBY': 500,
-        # 'SAPPHIRE': 250,
+        # # 'KEY DETECTOR': 1,
+        # # 'GOLD COINS': 0,
+        # # 'RUBY': 500,
+        # # 'SAPPHIRE': 250,
         # 'EMERALD': 100,
-        # 'DIAMOND': 5,
+        'DIAMOND': 5,
         }
 
 class FontSettings:
