@@ -159,7 +159,7 @@ class PlayerSettings:
     ANIMATION_SPEED = 1 # Pixels per frame for smooth movement
 
 class MonsterSettings:
-    COUNT = 2
+    COUNT = 3
     CHASE_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.3 
     REPELLENT_DURATION = 5 # Number of turns the repellent effect lasts
@@ -240,7 +240,7 @@ class ItemSettings:
         # 'KEY': 1,
         # 'INVISIBILITY CLOAK': 99,
         # # 'MAP': 1,
-        # 'MAGIC MAP': 1,
+        'MAGIC MAP': 1,
         # # 'TORCH': 99,
         # 'LANTERN': 99,
         # 'MONSTER REPELLENT': 99,

@@ -13,11 +13,13 @@ from crt import CRT
 from tilemaps import DUNGEON_ORDER
 
 class GameManager:
-    def __init__(self):
+    def __init__(self, start_fullscreen: bool = False):
         # Initialize Pygame and set up the display
         pygame.init()
         self.screen = pygame.display.set_mode((ScreenSettings.RESOLUTION), pygame.SCALED)
         pygame.display.set_caption('Dungeon Digger')
+        if start_fullscreen:
+            pygame.display.toggle_fullscreen()
         self.clock = pygame.time.Clock()
         
         self.setup_controllers() # Controller Setup
@@ -101,7 +103,10 @@ class GameManager:
         We will implement a more elegant reset in the future,
         but this is a good quick solution for now to speed up testing.
         """
-        new_game_manager = GameManager()
+        current_surface = pygame.display.get_surface()
+        was_fullscreen = bool(current_surface and (current_surface.get_flags() & pygame.FULLSCREEN))
+
+        new_game_manager = GameManager(start_fullscreen=was_fullscreen)
         new_game_manager.run()
         sys.exit()
 
