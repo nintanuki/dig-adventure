@@ -35,6 +35,7 @@ class AudioManager:
         self.dig_sound = self._load_sound(AssetPaths.DIG_SOUND)
         self.monster_chase_sound = self._load_sound(AssetPaths.MONSTER_CHASE_SOUND)
         self.coin_sound = self._load_sound(AssetPaths.COIN_SOUND)
+        self.coin_sound.set_volume(0.5)
         self.light_sound = self._load_sound(AssetPaths.LIGHT_SOUND)
         self.match_light_sound = self._load_sound(AssetPaths.MATCH_LIGHT_SOUND)
         self.vanish_sound = self._load_sound(AssetPaths.VANISH_SOUND)
