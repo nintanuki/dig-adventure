@@ -17,7 +17,7 @@ class GameManager:
         # Initialize Pygame and set up the display
         pygame.init()
         self.screen = pygame.display.set_mode((ScreenSettings.RESOLUTION), pygame.SCALED)
-        pygame.display.set_caption('Dig Adventure')
+        pygame.display.set_caption('Dungeon Digger')
         self.clock = pygame.time.Clock()
         
         self.setup_controllers() # Controller Setup
