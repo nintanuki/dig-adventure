@@ -176,7 +176,7 @@ class WindowSettings:
         "A - DIG AND UNLOCK DOORS",
         "X - USE KEY DETECTOR",
         "Y - USE MONSTER REPELLENT",
-        "LB / C - USE INVISIBILITY CLOAK"]
+        "L1 - USE INVISIBILITY CLOAK"]
     TYPING_SPEED = 0.25 # Characters advanced per frame in typewriter animation.
 
 class PlayerSettings:
@@ -267,7 +267,7 @@ class ItemSettings:
     }
 
     INITIAL_INVENTORY = {
-        'MATCH': 1,
+        # 'MATCH': 1,
         # For local test scenarios, temporarily adjust this dictionary as needed
         # Add "godmode" setting later to toggle between normal and test inventories without manual edits.
     }
