@@ -55,6 +55,16 @@ class MessageLog:
 
         return sorted(term_colors.items(), key=lambda item: len(item[0]), reverse=True)
 
+    def _default_color_for_message(self, text: str, fallback_color: str) -> str:
+        """Return default line color, with custom overrides for warning lines."""
+        warning_messages = {
+            "YOU HEAR A MONSTER NEARBY!",
+            "YOU'VE BEEN SPOTTED BY A MONSTER!",
+        }
+        if text.upper() in warning_messages:
+            return ColorSettings.TEXT_LOSS
+        return fallback_color
+
     def _is_word_char(self, char: str) -> bool:
         """Return whether a character should count as part of a word.
 
@@ -131,16 +141,20 @@ class MessageLog:
             y (int): Baseline y pixel position.
             default_color (str): Color used for non-highlighted text.
         """
+        effective_default_color = self._default_color_for_message(text, default_color)
         draw_x = x
-        for segment_text, segment_color in self._split_colored_segments(text, default_color):
+        for segment_text, segment_color in self._split_colored_segments(text, effective_default_color):
             text_surface = self.font.render(segment_text, False, segment_color)
             surface.blit(text_surface, (draw_x, y))
             draw_x += text_surface.get_width()
 
     def add_message(self, text, type_speed=None):
         """
-        Adds a new message to the log and removes old ones if full.
-        Use a typewriter effect for the most recent message, while keeping previous messages static.
+        Queue a new active message and start its typewriter animation.
+
+        Args:
+            text (str): Message text to display.
+            type_speed (float | None): Optional characters-per-frame override.
         """
         # Persist the previous active message before starting a new one.
         if self.full_text:
@@ -234,24 +248,6 @@ class InventoryWindow:
         Returns:
             tuple[int, int, int] | str: Pygame-compatible color.
         """
-        if item == 'RUBY':
-            return ColorSettings.TREASURE_RUBY
-        if item == 'SAPPHIRE':
-            return ColorSettings.TREASURE_SAPPHIRE
-        if item == 'EMERALD':
-            return ColorSettings.TREASURE_EMERALD
-        if item == 'DIAMOND':
-            return ColorSettings.TREASURE_DIAMOND
-        if item == 'INVISIBILITY CLOAK':
-            return self._cloak_glow_color()
-        if item == 'MAGIC MAP':
-            return self._rainbow_color()
-        if item == 'KEY':
-            return ColorSettings.BORDER_KEY_ACTIVE
-        if item == 'GOLD COINS':
-            return ColorSettings.TEXT_GOLD
-        if item == 'MONSTER REPELLENT':
-            return ColorSettings.REPELLED_TINT
         return FontSettings.DEFAULT_COLOR
 
     def draw(self, surface):
@@ -263,7 +259,7 @@ class InventoryWindow:
         # Base sidebar text anchors.
         start_x = UISettings.SIDEBAR_X + WindowSettings.TEXT_PADDING
         start_y = UISettings.SIDEBAR_Y + WindowSettings.TEXT_PADDING
-        
+
         # Inventory header.
         header_surf = self.font.render("INVENTORY", False, ColorSettings.TEXT_TITLE)
         surface.blit(header_surf, (start_x, start_y))
@@ -271,6 +267,12 @@ class InventoryWindow:
         visual_row = 0
         # TODO: Move inventory spacing literals (-1, +25) to WindowSettings constants.
         tight_line_height = WindowSettings.LINE_HEIGHT - 1
+
+        # Reserve a small gutter on every row for the active-light marker so
+        # labels stay aligned whether or not the marker is drawn.
+        marker_gutter_surf = self.font.render("> ", False, ColorSettings.TEXT_SELECTOR)
+        marker_gutter_width = marker_gutter_surf.get_width()
+        active_light_source = self.game.player.selected_light_source
 
         # Iterate inventory rows while tracking only visible entries.
         for item, count in self.game.player.inventory.items():
@@ -284,18 +286,23 @@ class InventoryWindow:
                 # Render label using item-specific color.
                 label_text = f"{item}: "
                 label_surf = self.font.render(label_text, False, item_color)
-                
+
                 # Render quantity; zero-count values use error color.
                 num_color = ColorSettings.TEXT_ERROR if count <= 0 else FontSettings.DEFAULT_COLOR
                 num_surf = self.font.render(str(count), False, num_color)
 
                 # Compute row y-position.
                 y_pos = start_y + 25 + (visual_row * tight_line_height)
-                
-                # Draw label and quantity in one row.
-                surface.blit(label_surf, (start_x, y_pos))
-                surface.blit(num_surf, (start_x + label_surf.get_width(), y_pos))
-                
+
+                # Mark the row whose item is the active B-button light source.
+                if item == active_light_source:
+                    surface.blit(marker_gutter_surf, (start_x, y_pos))
+
+                # Draw label and quantity in one row, shifted past the gutter.
+                label_x = start_x + marker_gutter_width
+                surface.blit(label_surf, (label_x, y_pos))
+                surface.blit(num_surf, (label_x + label_surf.get_width(), y_pos))
+
                 visual_row += 1
 
 class MapWindow:
@@ -316,7 +323,7 @@ class MapWindow:
         Args:
             surface: Target surface for map window rendering.
         """
-        if self.game.is_in_shop_phase:
+        if self.game.in_shop_phase:
             label_font = pygame.font.Font(FontSettings.FONT, FontSettings.SCORE_SIZE)
             label_surf = label_font.render("ITEM SHOP", False, ColorSettings.TEXT_TITLE)
             label_rect = label_surf.get_rect(center=(

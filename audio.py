@@ -18,6 +18,8 @@ class AudioManager:
         'detector': 9,
         'light': 10,
         'vanish': 11,
+        'menu_move': 12,
+        'menu_select': 13,
     }
 
     def __init__(self):
@@ -26,6 +28,10 @@ class AudioManager:
         Uses fixed channels for important sounds to prevent them from being cut off by other effects.
         """
         pygame.mixer.set_num_channels(len(self.CHANNEL_IDS))
+
+        # Track last played song to avoid back-to-back repeats.
+        self._last_bgm_track = None
+        self._music_mode = "normal"
 
         # Initialize Music
         self.play_random_bgm()
@@ -46,6 +52,8 @@ class AudioManager:
         self.found_detector_sound = self._load_sound(AssetPaths.FOUND_DETECTOR_SOUND)
         self.hot_detector_sound = self._load_sound(AssetPaths.HOT_DETECTOR_SOUND)
         self.warm_detector_sound = self._load_sound(AssetPaths.WARM_DETECTOR_SOUND)
+        self.menu_move_sound = self._load_sound(AssetPaths.MENU_MOVE_SOUND)
+        self.menu_select_sound = self._load_sound(AssetPaths.MENU_SELECT_SOUND)
 
         self.channels = {
             name: pygame.mixer.Channel(channel_id)
@@ -75,7 +83,7 @@ class AudioManager:
         self.channels[channel_name].play(sound)
 
     def play_random_bgm(self):
-        """Selects a random track and starts looping it."""
+        """Selects a random track (avoiding the last played) and starts looping it."""
         if AudioSettings.MUTE or AudioSettings.MUTE_MUSIC:
             return
 
@@ -83,8 +91,12 @@ class AudioManager:
             print("Warning: No music tracks found in AssetPaths.MUSIC_TRACKS")
             return
 
-        # Select one track for continuous playback.
-        track = random.choice(AssetPaths.MUSIC_TRACKS)
+        # Exclude the last played track so the same song never repeats back-to-back.
+        available = [t for t in AssetPaths.NORMAL_MUSIC_TRACKS if t != self._last_bgm_track]
+        if not available:
+            available = AssetPaths.MUSIC_TRACKS
+        track = random.choice(available)
+        self._last_bgm_track = track
         
         try:
             pygame.mixer.music.load(track)
@@ -94,6 +106,31 @@ class AudioManager:
         except pygame.error as e:
             # Gracefully handle unsupported or missing audio assets.
             print(f"Could not load music track {track}: {e}")
+
+    def play_chase_music(self) -> None:
+        """Switch to battle music while a monster is chasing."""
+        if AudioSettings.MUTE or AudioSettings.MUTE_MUSIC:
+            return
+
+        if self._music_mode == "chase":
+            return
+
+        self._music_mode = "chase"
+        pygame.mixer.music.load(AssetPaths.CHASE_MUSIC)
+        pygame.mixer.music.set_volume(AudioSettings.MUSIC_VOLUME)
+        pygame.mixer.music.play(loops=-1)
+
+
+    def play_normal_music(self) -> None:
+        """Return to normal background music."""
+        if AudioSettings.MUTE or AudioSettings.MUTE_MUSIC:
+            return
+
+        if self._music_mode == "normal":
+            return
+
+        self._music_mode = "normal"
+        self.play_random_bgm()
 
     def stop_music(self) -> None:
         """Stop the currently playing background track."""
@@ -184,3 +221,11 @@ class AudioManager:
     def play_warm_detector_sound(self):
         """Play the weaker detector sound for distant key feedback."""
         self._play_on_channel('detector', self.warm_detector_sound)
+
+    def play_menu_move_sound(self):
+        """Play the menu navigation move sound."""
+        self._play_on_channel('menu_move', self.menu_move_sound)
+
+    def play_menu_select_sound(self):
+        """Play the menu selection confirm sound."""
+        self._play_on_channel('menu_select', self.menu_select_sound)

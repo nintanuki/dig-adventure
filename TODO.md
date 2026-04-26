@@ -34,9 +34,10 @@ Do NOT add new features until steps 1–4 are complete.
 - [ ] Monster gets stuck between walls
 - [X] Monster-player collision delay (should trigger instant game over)
 - [ ] Map drawing is incorrect / broken
-- [ ] Entire map not revealed on win/loss
+- [X] Entire map not revealed on win/loss
 - [ ] Play found gold/treasure sound AFTER dig sound (they currently overlap)
 - [ ] Check that we don't need high_score.txt now that we have leaderboard.txt
+- [ ] Enemy line of sight doesn't seem to work diagonally
 
 ## Visual / UX Bugs
 - [ ] Text is blurry (font/rendering issue)
@@ -131,3 +132,16 @@ These notes capture confirmed progress without changing checkbox status unless a
 ## Current Focus Guidance
 - Continue reducing complexity in `GameManager` before adding new mechanics.
 - Prioritize unresolved gameplay bugs before balance/features.
+
+# Notes & Ideas
+- Make shopkeeper and NPCs drop hints.
+- Add save game feature. Player enters their name to create a new file, and it autosaves after every dungeon cleared ( decide if this is before or after the shop, probably after, before next nevel loads, so player keeps their purchases but might get a different dungeon on reload and have better luck)
+- Allow player to toggle light source, so B doesn't always automatically light lantern > torch > match
+- ^ Maybe have an indicator or highlight on the item in the inventory window with the toggle, and group light sources
+- Figure out how the tutorial will work
+- With the addition of the "tutorial" dungeon and easier levels loaded at start, more dirt tiles = more treasure meaning the player can buy the $10,000 invisibility cloak by level 2! Make it more expensive? The game is also more boring now that it starts with less "challenging" maps, just lots of digging in open space with low threat of monsters.
+- remove allowing A to start the game, must press start
+- replace pokemon and minecraft sounds
+
+# Tutorial Plan
+- since the message window gets busy easily and the player sometimes ignores or misses those messages, the tutorial text should pop up on the action window, in large text with a "press A to continue" prompt. Decide what the messages will be, in what order and what will prompt them.

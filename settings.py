@@ -155,6 +155,54 @@ class UISettings:
     LEVEL_Y = ScreenSettings.HEIGHT - 34
     DUNGEON_NAME_Y = LEVEL_Y + 15
 
+    # AUDIO MUTED indicator anchored to the top-right of the action window,
+    # opposite the HIGH SCORE label. Used as a topright anchor when blitting.
+    MUTE_RIGHT_X = ACTION_WINDOW_X + ACTION_WINDOW_WIDTH
+    MUTE_Y = SCORE_Y
+
+
+class RenderSettings:
+    """Constants for title, overlay, and between-screen render timing/layout."""
+
+    TITLE_CHASE_INITIAL_DELAY_MS = 60000
+    TITLE_CHASE_COOLDOWN_MS = 60000
+    TITLE_CHASE_DURATION_MS = 2400
+    TITLE_CHASE_SPRITE_OFFSET_Y = -96
+    TITLE_CHASE_SPRITE_SPACING = 42
+
+    ENDGAME_OVERLAY_ALPHA = 180
+    ENDGAME_PROMPT_OFFSET_Y = 42
+
+    TREASURE_OVERLAY_ALPHA = 200
+    TREASURE_START_X = 20
+    TREASURE_START_Y = 20
+    TREASURE_LINE_HEIGHT = 22
+    TREASURE_TITLE_GAP = 16
+    TREASURE_TOTAL_GAP = 5
+    TREASURE_PROMPT_BOTTOM_PADDING = 18
+
+    SHOP_OVERLAY_ALPHA = 210
+    SHOP_START_X = 20
+    SHOP_START_Y = 20
+    SHOP_LINE_HEIGHT = 22
+    SHOP_TITLE_GAP = 16
+    SHOP_GOLD_GAP = 6
+    SHOP_SELECTOR_OFFSET_X = 12
+
+    INITIALS_TITLE_Y = 160
+    INITIALS_INVITE_Y = 240
+    INITIALS_SCORE_Y = 268
+    INITIALS_CHARS_Y = 295
+    INITIALS_HELP_Y = 430
+
+    LEADERBOARD_TITLE_Y = 80
+    LEADERBOARD_START_Y = 140
+    LEADERBOARD_ROW_HEIGHT = 34
+    LEADERBOARD_RANK_X_OFFSET = -145
+    LEADERBOARD_SCORE_X_OFFSET = 60
+    LEADERBOARD_EMPTY_Y = 260
+    LEADERBOARD_PROMPT_Y_OFFSET = 60
+
 class GameSettings:
     """Global gameplay flow constants and persistence limits."""
 
@@ -164,6 +212,17 @@ class GameSettings:
     LEADERBOARD_LIMIT = 10
     GAME_OVER_CONTINUE_DELAY_MS = 650
     GAME_OVER_PROMPT_FADE_MS = 750
+    DOOR_UNLOCK_MESSAGE_TYPE_SPEED = 0.12
+
+    TREASURE_CONVERSION_DISPLAY_DELAY_MS = 2000
+    TREASURE_CONVERSION_LINE_REVEAL_INTERVAL_MS = 520
+    TREASURE_CONVERSION_TOTAL_REVEAL_DELAY_MS = 450
+    TREASURE_CONVERSION_PROMPT_FADE_MS = 650
+    TREASURE_CONVERSION_POST_MESSAGE_DELAY_MS = 450
+
+    SHOP_DISPLAY_DELAY_MS = 200
+    SHOP_BULK_PURCHASE_QUANTITY = 5
+    STATUS_EFFECT_TURN_BUFFER = 1
 
 class WindowSettings:
     """Message window behavior and text layout settings."""
@@ -176,22 +235,54 @@ class WindowSettings:
         "A - DIG AND UNLOCK DOORS",
         "X - USE KEY DETECTOR",
         "Y - USE MONSTER REPELLENT",
-        "L1 - USE INVISIBILITY CLOAK"]
+        "L2 - USE INVISIBILITY CLOAK"]
     TYPING_SPEED = 0.25 # Characters advanced per frame in typewriter animation.
 
 class PlayerSettings:
     """Player-specific tuning values."""
 
     ANIMATION_SPEED = 1 # Pixels advanced per frame during sprite interpolation.
+    FLASH_CYCLE_FRAMES = 30
+    FLASH_HALF_CYCLE = FLASH_CYCLE_FRAMES // 2
 
 class MonsterSettings:
     """Monster behavior and movement tuning values."""
 
     COUNT = 3
     CHASE_RADIUS = 3  # Manhattan distance
-    IDLE_CHANCE = 0.3 
+    IDLE_CHANCE = 0.3
+    MIN_PLAYER_DISTANCE = 5  # Minimum Manhattan distance between a monster and the player at spawn.
     REPELLENT_DURATION = 5 # Number of turns the repellent effect remains active.
     ANIMATION_SPEED = 1 # Pixels advanced per frame during sprite interpolation.
+
+class InputSettings:
+    """Controller button and axis mappings used by gameplay and menus.
+
+    Constants are named after the physical button on the controller, not the
+    action it performs. The only exception is JOY_BUTTON_QUIT_COMBO, which is
+    a special multi-button chord rather than a single button.
+    """
+
+    JOY_BUTTON_A = 0
+    JOY_BUTTON_B = 1
+    JOY_BUTTON_X = 2
+    JOY_BUTTON_Y = 3
+    JOY_BUTTON_L1 = 4
+    JOY_BUTTON_R1 = 5
+    JOY_BUTTON_BACK = 6
+    JOY_BUTTON_START = 7
+    JOY_BUTTON_QUIT_COMBO = (7, 6, 4, 5)
+
+    JOY_AXIS_L2 = 4
+    JOY_AXIS_R2 = 5
+    JOY_TRIGGER_THRESHOLD = 0.5
+
+class NPCSettings:
+    """NPC spawn tuning values."""
+
+    MAX_COUNT = 2
+    SPAWN_CHANCE = 0.1  # Probability for each potential NPC slot to actually spawn.
+    FADE_SPEED = 1       # Alpha units subtracted per frame during fade-out (~255 frames = ~4s at 60fps).
 
 class LightSettings:
     """Lighting radius and duration values for consumable light sources."""
@@ -213,6 +304,7 @@ class ItemSettings:
     """Item inventory, spawn, scoring, and shop economy configuration."""
 
     INVISIBILITY_CLOAK_DURATION = 5
+    INVISIBILITY_CLOAK_COOLDOWN = 3
     LEVEL_SCOPED_ITEMS = {"KEY", "MAP", "MAGIC MAP", "KEY DETECTOR"}
 
     TREASURE_SCORE_VALUES = {
@@ -224,7 +316,7 @@ class ItemSettings:
     }
 
     SHOP_PRICES = {
-        'MATCH': 50,
+        'MATCH': 100,
         'TORCH': 250,
         'LANTERN': 1000,
         'MONSTER REPELLENT': 500,
@@ -232,6 +324,19 @@ class ItemSettings:
         'MAP': 5000,
         'INVISIBILITY CLOAK': 10000,
     }
+
+    SHOP_LIMITED_STOCK_TEMPLATE = {
+        'LANTERN': 3,
+        'INVISIBILITY CLOAK': 1,
+        'MAP': 1,
+        'KEY DETECTOR': 1,
+    }
+
+    DETECTOR_DISTANCE_FOUND = 0
+    DETECTOR_DISTANCE_HOT = 1
+    DETECTOR_DISTANCE_STEADY = 3
+    DETECTOR_DISTANCE_SLOW = 5
+    DETECTOR_DISTANCE_FAINT = 7
 
     # Digging probabilities (must be between 0.0 and 1.0)
     # The higher the number, the more common it is.
@@ -241,7 +346,7 @@ class ItemSettings:
         'TORCH': 0.15,
         'LANTERN': 0.02,
         'MONSTER REPELLENT': 0.10,
-        'INVISIBILITY CLOAK': 0.01,
+        'INVISIBILITY SCROLL': 0.01,
         
         # Treasure
         'GOLD COINS': 0.20,
@@ -260,17 +365,22 @@ class ItemSettings:
         'RUBY': (1, 7),
         'SAPPHIRE': (1, 5),
         'EMERALD': (1, 3),
-        'MATCH': (1, 5),
+        'MATCH': (1, 3),
         'TORCH': (1, 5),
-        'MONSTER REPELLENT': (1, 2)
+        # 'MONSTER REPELLENT': (1, 2)
         # Items not listed here default to quantity 1.
     }
 
-    INITIAL_INVENTORY = {
-        # 'MATCH': 1,
-        # For local test scenarios, temporarily adjust this dictionary as needed
-        # Add "godmode" setting later to toggle between normal and test inventories without manual edits.
+    NORMAL_INITIAL_INVENTORY = {}
+
+    TEST_INITIAL_INVENTORY = {
+        'INVISIBILITY CLOAK': 1,
+        'KEY': 1,
+        'MAGIC MAP': 1,
+        'LANTERN': 99,
     }
+
+    INITIAL_INVENTORY = NORMAL_INITIAL_INVENTORY.copy()
 
 class FontSettings:
     """Font files, sizes, and text-color mappings for UI rendering."""
@@ -296,8 +406,8 @@ class AudioSettings:
     """Global audio toggles and mixer-level defaults."""
 
     MUTE = False
-    MUTE_MUSIC = True  # Keep music disabled while retaining sound effects.
-    MUSIC_VOLUME = 0.2  # Background music volume in the range [0.0, 1.0].
+    MUTE_MUSIC = False  # Keep music disabled while retaining sound effects.
+    MUSIC_VOLUME = 1  # Background music volume in the range [0.0, 1.0].
 
 class AssetPaths:
     """Resolved asset paths for sprites, audio, and music content."""
@@ -305,10 +415,15 @@ class AssetPaths:
     # TODO: Consider moving asset paths to a dedicated asset_manifest.py to keep settings focused on gameplay constants.
 
     # Images
-    GRAPHICS_DIR = 'graphics/'
+    BASE_DIR = os.path.dirname(__file__)
+    GRAPHICS_DIR = os.path.join(BASE_DIR, 'graphics')
+    MONSTER_VARIANTS_DIR = os.path.join(GRAPHICS_DIR, 'monsters')
+    PLAYER_VARIANTS_DIR = os.path.join(GRAPHICS_DIR, 'player')
+    NPC_VARIANTS_DIR = os.path.join(GRAPHICS_DIR, 'npcs')
 
     # Sprites
     PLAYER = os.path.join(GRAPHICS_DIR, 'tile_0097.png')
+    PLAYER_CLOAK = os.path.join(PLAYER_VARIANTS_DIR, 'tile_0096.png')
     MONSTER = os.path.join(GRAPHICS_DIR, 'tile_0121.png')
 
     # Door
@@ -327,10 +442,10 @@ class AssetPaths:
     TV = os.path.join(GRAPHICS_DIR, 'tv.png')
 
     # Audio
-    SOUND_DIR = 'sound/'
+    SOUND_DIR = os.path.join(BASE_DIR, 'sound')
     MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
-    DIG_SOUND = os.path.join(SOUND_DIR, 'minecraft_digging_dirt_sound_effect.mp3')
-    BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'pokemon_wall_bump_sound_effect.mp3')
+    DIG_SOUND = os.path.join(SOUND_DIR, 'dig_sound_effect.mp3')
+    BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'wall_bump_sound_effect.mp3')
     KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
     SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
     MONSTER_CHASE_SOUND = os.path.join(SOUND_DIR, 'sfx_sound_nagger1.wav')
@@ -343,14 +458,16 @@ class AssetPaths:
     FOUND_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop3.wav')
     HOT_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop7.wav')
     WARM_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop6.wav')
+    MENU_MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_menu_move2.wav')
+    MENU_SELECT_SOUND = os.path.join(SOUND_DIR, 'sfx_menu_select3.wav')
 
     # Music
-    MUSIC_DIR = 'music/'
-    MUSIC_TRACKS = [
-        os.path.join(MUSIC_DIR, 'Goof Troop SNES - Illusion.mp3'),
-        os.path.join(MUSIC_DIR, 'Goof Troop SNES - Lose My Way.mp3'),
-        os.path.join(MUSIC_DIR, 'The Magical Quest Starring Mickey Mouse - Dark Forest.mp3'),
+    MUSIC_DIR = os.path.join(BASE_DIR, 'music')
+    NORMAL_MUSIC_TRACKS = [
+        os.path.join(MUSIC_DIR, 'Goblins_Den_(Regular).wav'),
     ]
+    CHASE_MUSIC = os.path.join(MUSIC_DIR, 'Goblins_Dance_(Battle).wav')
+    MUSIC_TRACKS = NORMAL_MUSIC_TRACKS
 
 class DebugSettings:
     """Settings related to debugging features."""
@@ -358,3 +475,4 @@ class DebugSettings:
     MUTE = False # Force mute all sound output during testing.
     NO_FOG = False # Disable fog rendering for visibility debugging.
     SPAWN_LOG = True # Print spawn/item placement summary during dungeon setup.
+    USE_TEST_INITIAL_INVENTORY = False # Start runs with ItemSettings.TEST_INITIAL_INVENTORY when enabled.

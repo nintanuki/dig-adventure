@@ -121,14 +121,6 @@ Some invalid actions do not advance a turn (for example, trying to use an item y
 6. Next level transition
 7. Final win screen or game-over flow
 
-## Tips for New Players
-
-- Light management is survival: save stronger lights for dangerous areas.
-- Use the key detector when you feel lost.
-- Repellent and cloak are clutch tools when cornered.
-- Prioritize reaching the door safely over greed.
-- Buy ahead in the shop when you can afford it.
-
 ## Running the Game
 
 From the project directory:

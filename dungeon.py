@@ -1,5 +1,5 @@
 import random
-from settings import UISettings, ItemSettings, MonsterSettings, DebugSettings
+from settings import UISettings, ItemSettings, MonsterSettings, NPCSettings, DebugSettings
 from tilemaps import DUNGEONS
 
 class DungeonMaster:
@@ -73,7 +73,7 @@ class DungeonMaster:
         dungeon_name = random.choice(list(DUNGEONS.keys()))
         self.load_dungeon(dungeon_name)
 
-    def setup_tile_map(self) -> None:
+    def setup_tile_map(self, monster_count: int | None = None) -> None:
         """
         Build mutable per-tile state on top of the static dungeon layout.
 
@@ -93,8 +93,13 @@ class DungeonMaster:
                         "dirt_surface": random.choice(self.scaled_dirt_tiles),
                     }
 
+        if monster_count is None:
+            monster_count = MonsterSettings.COUNT
+        if monster_count < 0:
+            raise ValueError("monster_count must be >= 0")
+
         available_positions = self.get_walkable_positions()
-        required_positions = 2 + MonsterSettings.COUNT + 2  # player, door, monsters, key, map
+        required_positions = 2 + monster_count + 2  # player, door, monsters, key, map
         if len(available_positions) < required_positions:
             raise ValueError("Not enough walkable tiles to place all entities and fixed items.")
 
@@ -102,14 +107,19 @@ class DungeonMaster:
         self.player_grid_pos = self.draw_random_position(available_positions)
         self.door_grid_pos = self.draw_random_position(available_positions)
 
-        monster_count = MonsterSettings.COUNT
         self.monster_grid_positions = [
-            self.draw_random_position(available_positions)
+            self.draw_position_far_from_player(available_positions)
             for _ in range(monster_count)
         ]
 
         self.key_grid_pos = self.place_fixed_item("KEY", available_positions)
         map_grid_pos = self.place_fixed_item("MAP", available_positions)
+
+        # Spawn 0–NPCSettings.MAX_COUNT NPCs on remaining walkable tiles.
+        self.npc_grid_positions = []
+        for _ in range(NPCSettings.MAX_COUNT):
+            if available_positions and random.random() < NPCSettings.SPAWN_CHANCE:
+                self.npc_grid_positions.append(self.draw_random_position(available_positions))
 
         if DebugSettings.SPAWN_LOG:
             def fmt_pos(pos: tuple[int, int]) -> str:
@@ -137,19 +147,25 @@ class DungeonMaster:
                     positions.append((col, row))
 
         return positions
-
-
-    def get_random_walkable_position(self) -> tuple[int, int]:
-        """Return one random walkable grid position.
-
-        Returns:
-            tuple[int, int]: Random walkable (col, row) coordinate.
-        """
-        return random.choice(self.get_walkable_positions())
-
     def draw_random_position(self, available_positions: list[tuple[int, int]]) -> tuple[int, int]:
         """Draw and remove one random position from the available pool."""
         selected = random.choice(available_positions)
+        available_positions.remove(selected)
+        return selected
+
+    def draw_position_far_from_player(self, available_positions: list[tuple[int, int]]) -> tuple[int, int]:
+        """Draw a random position at least MIN_PLAYER_DISTANCE tiles from the player.
+
+        Falls back to any available position if no qualifying tile exists, so
+        small or densely-walled maps never deadlock during setup.
+        """
+        player_col, player_row = self.player_grid_pos
+        far_positions = [
+            pos for pos in available_positions
+            if abs(pos[0] - player_col) + abs(pos[1] - player_row) >= MonsterSettings.MIN_PLAYER_DISTANCE
+        ]
+        pool = far_positions if far_positions else available_positions
+        selected = random.choice(pool)
         available_positions.remove(selected)
         return selected
 
@@ -207,7 +223,32 @@ class DungeonMaster:
                 return item, amount
                 
         return None, 0
-    
+
+    def roll_random_loot(self) -> tuple[str | None, int]:
+        """Roll a random loot drop using the same distribution as tile digging."""
+        eligible_items: list[tuple[str, float]] = []
+        for item, chance in ItemSettings.SPAWN_CHANCE.items():
+            if item in ItemSettings.LEVEL_SCOPED_ITEMS and item in self.level_unique_items_found:
+                continue
+            eligible_items.append((item, chance))
+
+        total_chance = sum(chance for _, chance in eligible_items)
+        if total_chance <= 0:
+            return None, 0
+
+        roll = random.random()
+        cumulative_chance = 0
+        for item, chance in eligible_items:
+            cumulative_chance += chance
+            if roll < cumulative_chance:
+                min_qty, max_qty = ItemSettings.SPAWN_QUANTITIES.get(item, (1, 1))
+                amount = random.randint(min_qty, max_qty)
+                if item in ItemSettings.LEVEL_SCOPED_ITEMS:
+                    self.level_unique_items_found.add(item)
+                return item, amount
+
+        return None, 0
+
     # -------------------------
     # MAP RULES / LOOKUPS
     # -------------------------
