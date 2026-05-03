@@ -2,16 +2,17 @@ import pygame
 import sys
 
 from settings import *
-from audio import AudioManager
-from sprites import Player, Monster, Door, NPC
-from windows import MessageLog, InventoryWindow, MapWindow
-from dungeon import DungeonMaster
-from dungeon_config import DUNGEON_CONFIG, LEVEL_DUNGEON_ORDER, get_monster_count_for_dungeon
-from mapmemory import MapMemory
-from render import RenderManager
-from crt import CRT
-from managers import ScoreLeaderboardManager, BetweenLevelManager
-from tutorial import TutorialManager, default_duration_for as tutorial_default_duration
+from systems.audio import AudioManager
+from ui.windows import MessageLog, InventoryWindow, MapWindow
+from core.dungeon import DungeonLevel
+from core.dungeon_config import DUNGEON_CONFIG, LEVEL_DUNGEON_ORDER
+from ui.crt import CRT
+from systems.managers import ScoreLeaderboardManager, IntermissionFlow
+from systems.save_manager import SaveManager
+from core.tutorial import TutorialManager
+from util import coords
+from core import loot
+from core.level_loader import LevelLoader
 
 class GameManager:
     """Coordinate game state, flow, rendering phases, and input orchestration."""
@@ -20,29 +21,35 @@ class GameManager:
         """Initialize runtime systems, persistent state, and the first dungeon level.
 
         Args:
-            start_fullscreen (bool): Whether to launch directly in fullscreen mode.
+            start_fullscreen: Whether to launch directly in fullscreen mode.
         """
-        # Initialize Pygame and set up the display
         pygame.init()
         self.screen = pygame.display.set_mode((ScreenSettings.RESOLUTION), pygame.SCALED)
-        pygame.display.set_caption('Dungeon Digger')
+        pygame.display.set_caption(ScreenSettings.TITLE)
         if start_fullscreen:
             pygame.display.toggle_fullscreen()
         self.clock = pygame.time.Clock()
-        
-        # -------- Core subsystem initialization --------
+
         self.setup_controllers()
         self.load_assets()
-        self.dungeon = DungeonMaster(self.scaled_dirt_tiles)
+        self.dungeon = DungeonLevel(self.scaled_dirt_tiles)
         self.all_sprites = pygame.sprite.Group()
         self.audio = AudioManager()
         self.score_manager = ScoreLeaderboardManager(self)
-        self.between_level_manager = BetweenLevelManager(self)
+        self.intermission = IntermissionFlow(self)
+        self.save_manager = SaveManager(self)
         self.game_active = False
         self.game_result = None
         self.score = 0
         self.high_score = self.score_manager.load_high_score()
         self.leaderboard = self.score_manager.load_leaderboard()
+        # Identity of the active save: name shown to the player and the
+        # 1-indexed slot the auto-save will write into. Both are populated
+        # when the player picks NEW GAME or LOAD GAME and remain set for
+        # the rest of the run. None means no save is bound (e.g. before the
+        # title flow has resolved).
+        self.player_name = ""
+        self.active_save_slot: int | None = None
         self.level_order = list(LEVEL_DUNGEON_ORDER)
         self.level_numbers = sorted(DUNGEON_CONFIG.level_difficulty_by_number.keys())
         self.current_level_index = 0
@@ -59,6 +66,23 @@ class GameManager:
 
         self.ui_state = 'title'
         self.title_menu_index = 0
+        self.newgame_prompt_active = False
+        self.newgame_prompt_index = 0
+        # State for the slot-select / overwrite-confirm / name-entry / delete
+        # confirm screens introduced with the save system. slot_select_index
+        # is the highlighted row on either of the slot-select screens (0..9).
+        # confirm_index drives NO=0 / YES=1 selections in both confirm
+        # dialogs, defaulting to NO so an accidental confirm is harmless.
+        # confirm_target_slot remembers which slot a confirm dialog is
+        # acting on, so the dialogs themselves are stateless. The two
+        # previous_left_stick_* fields are edge-detection memory for analog
+        # navigation, modeled on the existing r2_trigger_is_pressed pattern.
+        self.slot_select_index = 0
+        self.name_entry_buffer = ""
+        self.confirm_index = 0
+        self.confirm_target_slot = 0
+        self.previous_left_stick_x = 0.0
+        self.previous_left_stick_y = 0.0
         self.npcs: list = []
 
         # State for game over flow and leaderboard entry.
@@ -67,11 +91,8 @@ class GameManager:
         self.pending_leaderboard_score = 0
         self.initials_entry = "AAA"
         self.initials_index = 0
-        self.between_level_manager.initialize_state()
+        self.intermission.initialize_state()
 
-        # -------- Tutorial --------
-        self.tutorial_dismiss_input_locked = False
-        
         # Pre-create the fog surface to avoid doing it every frame during rendering.
         self.fog_surface = pygame.Surface((UISettings.ACTION_WINDOW_WIDTH, UISettings.ACTION_WINDOW_HEIGHT), pygame.SRCALPHA)
 
@@ -87,11 +108,41 @@ class GameManager:
         # -------- Rendering facade --------
         self.render = None
 
-        # Load the first level after all systems are initialized, so that level setup can rely on any subsystem being ready.
-        self.load_level()
+        # LevelLoader needs dungeon + all_sprites alive — both built above.
+        self.level_loader = LevelLoader(self)
+        self.level_loader.load_level()
         self.audio.stop_music()
 
-        # TODO: Continue splitting run() into process_events(), update_state(), and render_frame().
+    # -------------------------
+    # BOOT / SETUP
+    # -------------------------
+
+    def setup_controllers(self) -> None:
+        """Cache currently-connected controllers so quit-combo and event polling are cheap."""
+        pygame.joystick.init()
+        self.connected_joysticks = [
+            pygame.joystick.Joystick(index)
+            for index in range(pygame.joystick.get_count())
+        ]
+
+    def load_assets(self) -> None:
+        """Load and pre-scale the dirt, dug, and wall tile surfaces used by every level."""
+        self.scaled_dirt_tiles = []
+        for dirt_path in AssetPaths.DIRT_TILES:
+            dirt_surf = pygame.image.load(dirt_path).convert_alpha()
+            self.scaled_dirt_tiles.append(
+                pygame.transform.scale(dirt_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
+            )
+
+        dug_surf = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
+        self.scaled_dug_tile = pygame.transform.scale(
+            dug_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+        )
+
+        wall_surf = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
+        self.scaled_wall_tile = pygame.transform.scale(
+            wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
+        )
 
     def reset_game(self):
         """
@@ -127,7 +178,7 @@ class GameManager:
         """Return the configured level number for the current level index.
 
         Returns:
-            int: Current configured level number.
+            Current configured level number.
         """
         if not self.level_numbers:
             return self.current_level_index
@@ -138,25 +189,27 @@ class GameManager:
         """Report whether a level transition card is currently active.
 
         Returns:
-            bool: True while transition timing is in progress.
+            True while transition timing is in progress.
         """
         return pygame.time.get_ticks() < self.transition_end_time
 
-
     def start_gameplay_from_title(self, skip_tutorial: bool = False) -> None:
-        """Leave title screen and begin active gameplay.
+        """
+        Leave title screen and begin active gameplay at level 1.
+
+        current_level_index is a 0-indexed position into level_numbers, so
+        index 0 corresponds to level 1. Earlier code used 1 here, which
+        silently skipped level 1 entirely and dropped the player into
+        level 2 on a fresh run.
 
         Args:
-            skip_tutorial: When True, advance past level 0 (The Arena) to level 1.
+            skip_tutorial: When True, skip the tutorial and start at level 1.
         """
-        self.audio.play_menu_select_sound()
-        if skip_tutorial and len(self.level_order) > 1:
-            self.current_level_index = 1
-            self.pending_level_index = 1
-            player_progress = self.capture_player_progress()
-            self.load_level(player_progress)
-        # Activate the tutorial system only when the player chose PLAY. It
-        # then runs for the entire session and is level-agnostic.
+        self.audio.play('menu_select')
+        self.current_level_index = 0
+        self.pending_level_index = 0
+        player_progress = self.level_loader.capture_player_progress()
+        self.level_loader.load_level(player_progress)
         if not skip_tutorial:
             self.tutorial = TutorialManager(self)
         else:
@@ -165,19 +218,336 @@ class GameManager:
         self.game_active = True
         self.audio.play_random_bgm()
 
+    def start_gameplay_from_save(self, save_data: dict) -> None:
+        """Resume an existing save.
+
+        Two cases:
+
+        - Brand-new save (next_level == first level number): the slot was
+          reserved by NEW GAME but the player has not cleared anything
+          yet. Drop them into level 1 gameplay directly — there is no
+          pre-level shop because no treasure has been converted.
+
+        - Post-progress save (next_level > first level number): the
+          player has cleared at least one dungeon. Drop them into the
+          shop that precedes the saved level. The just-completed
+          dungeon is loaded behind the shop overlay only so the player
+          object has the saved inventory; the player never sees it.
+
+        Args:
+            save_data: Dict returned by save_manager.load_slot. Must
+                contain player_name, next_level, inventory,
+                discovered_items, score, and slot_id.
+        """
+        self.audio.play('menu_select')
+
+        valid_levels = self.level_numbers or [1]
+        first_level = valid_levels[0]
+        last_level = valid_levels[-1]
+
+        # Clamp into the valid range. A save written before the level
+        # schedule was extended (or somehow with an out-of-range value)
+        # should still load: treat it as the nearest valid level.
+        next_level = int(save_data.get('next_level', first_level))
+        next_level = max(first_level, min(next_level, last_level))
+        # level_numbers is contiguous and starts at first_level, so the
+        # 0-indexed position is just (level - first_level).
+        next_level_index = next_level - first_level
+
+        self.player_name = save_data.get('player_name', '')
+        self.active_save_slot = save_data.get('slot_id')
+        self.score = int(save_data.get('score', 0))
+        self.pending_level_index = next_level_index
+
+        is_brand_new_save = next_level == first_level
+        # On a brand-new save the player will play next_level directly,
+        # so current_level_index points at it. On a post-progress save
+        # current_level_index points at the just-completed level so the
+        # HUD shows that number while the shop is up; complete_shop_phase
+        # will then advance current_level_index to pending_level_index.
+        if is_brand_new_save:
+            self.current_level_index = next_level_index
+        else:
+            self.current_level_index = max(0, next_level_index - 1)
+
+        player_progress = {
+            'inventory': dict(save_data.get('inventory', {})),
+            'discovered_items': set(save_data.get('discovered_items', set())),
+        }
+        self.level_loader.load_level(player_progress)
+
+        # Tutorial is intentionally skipped on load. Tracking which cards
+        # the player has already seen would add bookkeeping to every save;
+        # for now a reloaded run is treated as past the tutorial.
+        self.tutorial = None
+        self.ui_state = 'playing'
+        self.game_active = True
+        self.audio.play_random_bgm()
+
+        if is_brand_new_save:
+            # No shop precedes level 1, so go straight to gameplay.
+            return
+
+        self.intermission.start_shop_phase()
+
     def handle_title_menu_move(self, direction: int) -> None:
-        """Move the title screen cursor up (-1) or down (+1)."""
-        options_count = 2  # PLAY, SKIP TUTORIAL
-        new_index = (self.title_menu_index + direction) % options_count
-        if new_index != self.title_menu_index:
-            self.title_menu_index = new_index
-            self.audio.play_menu_move_sound()
+        """Move the cursor up (-1) or down (+1) in vertical menu states.
+
+        Covers title, newgame_prompt, and the two slot-select screens. The
+        confirm dialogs (overwrite, delete) navigate horizontally instead
+        and are handled by handle_confirm_move.
+
+        Args:
+            direction: -1 for up, +1 for down.
+        """
+        if self.ui_state == 'title':
+            options_count = 3  # LOAD GAME, NEW GAME, OPTIONS
+            new_index = (self.title_menu_index + direction) % options_count
+            if new_index != self.title_menu_index:
+                self.title_menu_index = new_index
+                self.audio.play('menu_move')
+        elif self.ui_state == 'newgame_prompt':
+            options_count = 2  # NO (START TUTORIAL), YES
+            new_index = (self.newgame_prompt_index + direction) % options_count
+            if new_index != self.newgame_prompt_index:
+                self.newgame_prompt_index = new_index
+                self.audio.play('menu_move')
+        elif self.ui_state in ('slot_select_new', 'slot_select_load'):
+            options_count = GameSettings.MAX_SAVE_SLOTS
+            new_index = (self.slot_select_index + direction) % options_count
+            if new_index != self.slot_select_index:
+                self.slot_select_index = new_index
+                self.audio.play('menu_move')
+
+    def handle_confirm_move(self, direction: int) -> None:
+        """Move the NO/YES cursor in the overwrite or delete confirm dialog.
+
+        Args:
+            direction: -1 for left (toward NO), +1 for right (toward YES).
+        """
+        if self.ui_state not in ('overwrite_confirm', 'delete_confirm'):
+            return
+        new_index = (self.confirm_index + direction) % 2
+        if new_index != self.confirm_index:
+            self.confirm_index = new_index
+            self.audio.play('menu_move')
+
+    def handle_back_press(self) -> None:
+        """Step one screen back in the menu hierarchy.
+
+        Maps each save-flow ui_state to its parent. No-op on screens with
+        no defined back step (title, gameplay, etc.).
+        """
+        if self.ui_state in ('slot_select_new', 'slot_select_load'):
+            self.ui_state = 'title'
+            self.audio.play('menu_select')
+            return
+        if self.ui_state == 'overwrite_confirm':
+            self.ui_state = 'slot_select_new'
+            self.audio.play('menu_select')
+            return
+        if self.ui_state == 'name_entry':
+            # Send the player back to the slot picker rather than all the
+            # way to title; if they decide not to start a new save, B
+            # again pops them back to title.
+            self.ui_state = 'slot_select_new'
+            self.name_entry_buffer = ""
+            self.audio.play('menu_select')
+            return
+        if self.ui_state == 'delete_confirm':
+            self.ui_state = 'slot_select_load'
+            self.audio.play('menu_select')
+            return
+
+    def handle_delete_press(self) -> None:
+        """Open the delete-confirm dialog for the highlighted load slot.
+
+        Only meaningful on slot_select_load with the cursor on an occupied
+        slot. Empty slots produce a boundary sound to signal the action
+        was rejected.
+        """
+        if self.ui_state != 'slot_select_load':
+            return
+        slot_id = self.slot_select_index + 1
+        if not self.save_manager.is_slot_occupied(slot_id):
+            self.audio.play('boundary')
+            return
+        self.confirm_target_slot = slot_id
+        self.confirm_index = 0  # default to NO so an accidental confirm is harmless
+        self.ui_state = 'delete_confirm'
+        self.audio.play('menu_select')
+
+    def commit_name_entry(self) -> None:
+        """Finalize a typed name and advance to the tutorial prompt.
+
+        The buffer is sanitized (uppercase, whitelist, max length). An
+        empty result keeps the player on name_entry with a boundary
+        sound — there's nothing meaningful to commit. On success we bind
+        the active save slot and player name on the GameManager, write
+        the slot's save file immediately so the slot is reserved at
+        level 1 even if the player quits before clearing a level, then
+        route to newgame_prompt to ask the tutorial question.
+        """
+        if self.ui_state != 'name_entry':
+            return
+        sanitized = self.save_manager.sanitize_name(self.name_entry_buffer)
+        if not sanitized:
+            self.audio.play('boundary')
+            return
+        self.player_name = sanitized
+        self.active_save_slot = self.confirm_target_slot
+
+        # Reserve the slot on disk now. Without this, the save file would
+        # only appear after the first level clear and a player who quit
+        # mid-level-1 would find their slot empty on return.
+        first_level = self.level_numbers[0] if self.level_numbers else 1
+        self.save_manager.save_slot(
+            slot_id=self.active_save_slot,
+            player_name=self.player_name,
+            next_level=first_level,
+            inventory=self.player.inventory,
+            discovered_items=self.player.discovered_items,
+            score=0,
+        )
+
+        self.name_entry_buffer = ""
+        self.ui_state = 'newgame_prompt'
+        self.newgame_prompt_index = 0
+        self.audio.play('menu_select')
+
+    def handle_name_entry_keypress(self, event) -> None:
+        """Update the name entry buffer in response to one keyboard event.
+
+        Accepts A-Z, 0-9, and space (auto-uppercased), backspace to delete
+        the trailing character (or step back when the buffer is empty),
+        Enter to commit, and Escape to exit the game. Everything else is
+        ignored.
+
+        Args:
+            event: pygame.KEYDOWN event for the name entry screen.
+        """
+        if self.ui_state != 'name_entry':
+            return
+        if event.key == pygame.K_BACKSPACE:
+            if self.name_entry_buffer:
+                self.name_entry_buffer = self.name_entry_buffer[:-1]
+                self.audio.play('menu_move')
+            else:
+                # Empty buffer + Backspace steps back to the slot picker.
+                # Without this, the keyboard had no "back" affordance now that
+                # ESC always exits the game.
+                self.handle_back_press()
+            return
+        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self.commit_name_entry()
+            return
+        if event.key == pygame.K_ESCAPE:
+            # ESC during name entry still exits to the launcher to keep the
+            # exit shortcut consistent with every other game state.
+            self.close_game()
+            return
+        # event.unicode is the keystroke's typed character with shift /
+        # caps applied. Filter against the SaveManager whitelist and cap
+        # at the configured length.
+        char = (event.unicode or '').upper()
+        if not char or char not in self.save_manager.ALLOWED_NAME_CHARS:
+            return
+        if len(self.name_entry_buffer) >= GameSettings.MAX_PLAYER_NAME_LENGTH:
+            self.audio.play('boundary')
+            return
+        self.name_entry_buffer += char
+        self.audio.play('menu_move')
 
     def handle_start_press(self) -> None:
         """Handle Start/Enter based on top-level UI state."""
         if self.ui_state == 'title':
-            skip = self.title_menu_index == 1
-            self.start_gameplay_from_title(skip_tutorial=skip)
+            if self.title_menu_index == 0:
+                # LOAD GAME — open the load-slot picker. Default the
+                # cursor to the first occupied slot so the player isn't
+                # scrolling past empties on a fresh title return.
+                self.ui_state = 'slot_select_load'
+                summaries = self.save_manager.list_slots()
+                first_occupied = next(
+                    (s['slot_id'] for s in summaries if s['occupied']),
+                    1,
+                )
+                self.slot_select_index = first_occupied - 1
+                self.audio.play('menu_select')
+                return
+            elif self.title_menu_index == 1:
+                # NEW GAME — open the new-game slot picker. Default the
+                # cursor to slot 1 so the player sees the slot list from
+                # the top.
+                self.ui_state = 'slot_select_new'
+                self.slot_select_index = 0
+                self.audio.play('menu_select')
+                return
+            elif self.title_menu_index == 2:
+                # OPTIONS (not implemented)
+                self.audio.play('menu_select')
+                # Placeholder: do nothing
+                return
+
+        if self.ui_state == 'slot_select_new':
+            slot_id = self.slot_select_index + 1
+            self.confirm_target_slot = slot_id
+            if self.save_manager.is_slot_occupied(slot_id):
+                # Occupied slot — make the player explicitly confirm the
+                # overwrite so a misclick doesn't blow away an old save.
+                self.ui_state = 'overwrite_confirm'
+                self.confirm_index = 0
+            else:
+                self.ui_state = 'name_entry'
+                self.name_entry_buffer = ""
+            self.audio.play('menu_select')
+            return
+
+        if self.ui_state == 'slot_select_load':
+            slot_id = self.slot_select_index + 1
+            save = self.save_manager.load_slot(slot_id)
+            if save is None:
+                # Either empty or corrupt — neither is loadable. Boundary
+                # sound signals the rejection without changing state.
+                self.audio.play('boundary')
+                return
+            save['slot_id'] = slot_id
+            self.start_gameplay_from_save(save)
+            return
+
+        if self.ui_state == 'overwrite_confirm':
+            if self.confirm_index == 1:  # YES
+                self.ui_state = 'name_entry'
+                self.name_entry_buffer = ""
+                self.audio.play('menu_select')
+            else:  # NO
+                self.ui_state = 'slot_select_new'
+                self.audio.play('menu_select')
+            return
+
+        if self.ui_state == 'delete_confirm':
+            if self.confirm_index == 1:  # YES
+                self.save_manager.delete_slot(self.confirm_target_slot)
+                self.audio.play('menu_select')
+            else:
+                self.audio.play('menu_select')
+            self.ui_state = 'slot_select_load'
+            return
+
+        if self.ui_state == 'name_entry':
+            # Enter committing the name is also handled in
+            # handle_name_entry_keypress for the keyboard path; this
+            # branch covers Start on a controller (kept aspirational —
+            # full controller-side text entry is a future task).
+            self.commit_name_entry()
+            return
+
+        if self.ui_state == 'newgame_prompt':
+            if self.newgame_prompt_index == 0:
+                # NO (START TUTORIAL)
+                self.start_gameplay_from_title(skip_tutorial=False)
+            else:
+                # YES
+                self.start_gameplay_from_title(skip_tutorial=True)
             return
 
         if self.ui_state == 'game_over' and self.score_manager.can_continue_from_game_over():
@@ -191,205 +561,40 @@ class GameManager:
         if self.ui_state == 'leaderboard':
             self.reset_game()
 
-    def capture_player_progress(self) -> dict[str, object] | None:
-        """Snapshot persistent player state before rebuilding the level."""
-        if not hasattr(self, 'player'):
-            return None
-
-        return {
-            'inventory': self.player.inventory.copy(),
-            'discovered_items': set(self.player.discovered_items),
-        }
-
-    def restore_player_progress(self, progress: dict[str, object] | None) -> None:
-        """Restore inventory and discovery state after spawning a fresh player."""
-        if not progress:
-            return
-
-        self.player.inventory = progress['inventory'].copy()
-        self.player.discovered_items = set(progress['discovered_items'])
-
-    def load_level(self, player_progress: dict[str, object] | None = None) -> None:
-        """Build the currently selected dungeon level and spawn fresh entities."""
-        self.all_sprites.empty()
-
-        dungeon_name = self.level_order[self.current_level_index]
-        monster_count = get_monster_count_for_dungeon(dungeon_name)
-        self.dungeon.load_dungeon(dungeon_name)
-        self.dungeon.setup_tile_map(monster_count=monster_count)
-        self.spawn_door()
-        self.spawn_monster()
-        self.spawn_npcs()
-        self.spawn_player()
-        self.restore_player_progress(player_progress)
-
-        self.map_memory = MapMemory(self)
-        self.render = RenderManager(self)
-
     def finish_game(self, result: str) -> None:
-        """End the current run and persist the high score."""
+        """End the current run and freeze world updates.
+
+        High-score persistence is no longer triggered here. Wins promote the
+        score through ScoreLeaderboardManager.add_leaderboard_entry once the
+        player submits their initials; losses leave the leaderboard
+        untouched, so the displayed high score stays correct when the GAME
+        OVER overlay appears.
+
+        Args:
+            result: Either "win" (final door cleared) or "loss" (caught by a monster).
+        """
         self.game_active = False
         self.game_result = result
         self.ui_state = 'game_over'
         if self.map_memory is not None:
+            # Reveal the entire map so the death/victory screen is informative.
             self.map_memory.reveal_full_terrain_memory()
         self.pending_leaderboard_score = self.score
         self.game_over_message_complete_time = 0
         self.game_over_prompt_start_time = 0
         self.audio.stop_music()
-        self.score_manager.save_high_score()
 
     # -------------------------
-    # BOOT / SETUP
+    # TURN RESOLUTION
     # -------------------------
-
-    def setup_controllers(self):
-        """Initializes connected gamepads or joysticks."""
-        pygame.joystick.init()
-        # Cache all currently connected controllers.
-        self.connected_joysticks = [pygame.joystick.Joystick(index) for index in range(pygame.joystick.get_count())]
-
-    def load_assets(self):
-        """Handle all image loading and scaling in one place."""
-        self.scaled_dirt_tiles = []
-
-        for dirt_path in AssetPaths.DIRT_TILES:
-            dirt_surf = pygame.image.load(dirt_path).convert_alpha()
-            scaled_dirt = pygame.transform.scale(
-                dirt_surf,
-                (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE)
-            )
-            self.scaled_dirt_tiles.append(scaled_dirt)
-        
-        dug_surf = pygame.image.load(AssetPaths.DUG_TILE).convert_alpha()
-        self.scaled_dug_tile = pygame.transform.scale(dug_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
-
-        wall_surf = pygame.image.load(AssetPaths.WALL_TILE).convert_alpha()
-        self.scaled_wall_tile = pygame.transform.scale(wall_surf, (GridSettings.TILE_SIZE, GridSettings.TILE_SIZE))
-
-    # -------------------------
-    # ENTITY SPAWNING
-    # -------------------------
-
-    def spawn_player(self):
-        """Spawn the player sprite at the precomputed dungeon spawn tile."""
-        col, row = self.dungeon.player_grid_pos
-        x, y = self.grid_to_screen(col, row)
-        self.player = Player(self, (x, y), self.all_sprites)
-
-    def spawn_monster(self):
-        """Spawn all monster sprites at the precomputed dungeon spawn tiles."""
-        self.monsters = []
-        for col, row in self.dungeon.monster_grid_positions:
-            x, y = self.grid_to_screen(col, row)
-            monster = Monster(self, (x, y), self.all_sprites)
-            self.monsters.append(monster)
-
-    def spawn_door(self):
-        """Spawn the level door sprite at the precomputed dungeon door tile."""
-        col, row = self.dungeon.door_grid_pos
-        x, y = self.grid_to_screen(col, row)
-        self.door = Door(self, (x, y), self.all_sprites)
-
-    def spawn_npcs(self):
-        """Spawn NPC sprites at the precomputed dungeon NPC positions."""
-        self.npcs = []
-        for col, row in self.dungeon.npc_grid_positions:
-            x, y = self.grid_to_screen(col, row)
-            npc = NPC(self, (x, y), self.all_sprites)
-            self.npcs.append(npc)
 
     def _trigger_npc_interaction(self, npc) -> None:
-        """Give the player a random item from an NPC then remove it."""
-        self.log_message("IT'S DANGEROUS TO GO ALONE! TAKE THIS!")
-
+        """Give the player a random loot drop from an NPC and fade the NPC out."""
+        self.log_message("IT\'S DANGEROUS TO GO ALONE! TAKE THIS!")
         found_item, amount = self.dungeon.roll_random_loot()
-        if found_item:
-            display_name = found_item
-            if amount > 1:
-                if found_item == "TORCH":
-                    display_name = "TORCHES"
-                elif found_item == "MATCH":
-                    display_name = "MATCHES"
-                elif found_item.endswith("Y"):
-                    display_name = found_item[:-1] + "IES"
-                elif not found_item.endswith("S"):
-                    display_name = found_item + "S"
-
-            if found_item in ItemSettings.TREASURE_SCORE_VALUES:
-                self.score_manager.add_score(found_item, amount)
-
-            if amount > 1:
-                self.log_message(f"YOU FOUND {amount} {display_name}!")
-            elif found_item == "MONSTER REPELLENT":
-                self.log_message("YOU FOUND A CAN OF MONSTER REPELLENT!")
-            else:
-                article = 'AN' if found_item[0] in 'AEIOU' else 'A'
-                self.log_message(f"YOU FOUND {article} {found_item}!")
-
-            if found_item == "GOLD COINS" or found_item in ["RUBY", "SAPPHIRE", "EMERALD", "DIAMOND"]:
-                self.audio.play_coin_sound()
-
-            if found_item == "MAGIC MAP" and self.player.inventory.get("MAP", 0) > 0:
-                self.player.inventory["MAP"] -= 1
-                if self.player.inventory["MAP"] <= 0:
-                    self.player.inventory.pop("MAP", None)
-
-            self.player.inventory[found_item] = self.player.inventory.get(found_item, 0) + amount
-            self.player.discovered_items.add(found_item)
-            self.notify_tutorial('item_picked_up', item=found_item)
-
-            # Pick up a light source from an NPC -> auto-select if none active.
-            if found_item in ('LANTERN', 'TORCH', 'MATCH'):
-                self.player.refresh_light_selection()
-
-            if found_item in ["MAP", "MAGIC MAP"]:
-                self.map_memory.reveal_full_terrain_memory()
-
+        loot.resolve_pickup(self, found_item, amount)
         npc.fade_pending = True
         self.npcs.remove(npc)
-
-    # TODO: Refactor spawning helpers into a dedicated SpawnManager when setup logic grows further.
-
-    # -------------------------
-    # COORDINATE + MAP HELPERS
-    # -------------------------
-
-    def grid_to_screen(self, col, row):
-        """Convert grid coordinates to top-left screen pixel coordinates.
-
-        Args:
-            col: Grid column.
-            row: Grid row.
-
-        Returns:
-            tuple[int, int]: Screen-space pixel coordinates.
-        """
-        return (
-            UISettings.ACTION_WINDOW_X + col * GridSettings.TILE_SIZE,
-            UISettings.ACTION_WINDOW_Y + row * GridSettings.TILE_SIZE,
-        )
-
-    def screen_to_grid(self, x, y):
-        """Convert screen pixel coordinates to grid coordinates.
-
-        Args:
-            x: Screen-space x position.
-            y: Screen-space y position.
-
-        Returns:
-            tuple[int, int]: Grid column and row indices.
-        """
-        return (
-            int((x - UISettings.ACTION_WINDOW_X) // GridSettings.TILE_SIZE),
-            int((y - UISettings.ACTION_WINDOW_Y) // GridSettings.TILE_SIZE),
-        )
-
-    # TODO: Refactor coordinate conversion helpers into a small utility class/module shared by gameplay systems.
-
-    # -------------------------
-    # TURN / GAME STATE --> TurnManager Class (maybe not is_busy())
-    # -------------------------
 
     def advance_turn(self):
         """
@@ -405,47 +610,16 @@ class GameManager:
 
         self.map_memory.remember_visible_map_info()
 
-        # Handle Light Shrinking
-        if self.player.light_turns_left > 0:
-            self.player.light_turns_left -= 1
-            
-            if self.player.light_turns_left > 0:
-                # Calculate how much radius we have per turn of life
-                # We use the starting radius of the current light source
-                unit_radius = self.player.active_light_max_radius / self.player.active_light_max_duration
-                self.player.light_radius = unit_radius * self.player.light_turns_left
-            else:
-                # It hit zero
-                self.player.light_radius = LightSettings.DEFAULT_RADIUS
-                self.log_message("YOUR LIGHT FLICKERS OUT...")
-
-        # Handle Repellent Duration
-        if self.player.repellent_turns > 0:
-            self.player.repellent_turns -= 1
-            if self.player.repellent_turns == 0:
-                self.log_message("THE SCENT OF THE REPELLENT FADES AWAY...")
-
-        # Handle Invisibility Cloak Duration
-        if self.player.invisibility_turns > 0:
-            self.player.invisibility_turns -= 1
-            if self.player.invisibility_turns == 0:
-                self.log_message("THE INVISIBILITY WEARS OFF.")
-                if self.player.invisibility_from_cloak:
-                    self.player.invisibility_cooldown_turns = (
-                        ItemSettings.INVISIBILITY_CLOAK_COOLDOWN + GameSettings.STATUS_EFFECT_TURN_BUFFER
-                    )
-                    self.player.invisibility_from_cloak = False
-
-        # Handle Invisibility Cloak Cooldown
-        if self.player.invisibility_cooldown_turns > 0:
-            self.player.invisibility_cooldown_turns -= 1
+        # All temporary status timers (light radius, repellent, invisibility,
+        # cloak cooldown) belong to the player and tick themselves.
+        self.player.tick_status_effects()
 
         # Check NPC adjacency: trigger interaction when player moves to a tile adjacent to an NPC.
         if self.player.is_moving:
-            dest_col, dest_row = self.screen_to_grid(
+            dest_col, dest_row = coords.screen_to_grid(
                 self.player.target_pos.x, self.player.target_pos.y)
             for npc in list(self.npcs):
-                npc_col, npc_row = self.screen_to_grid(npc.position.x, npc.position.y)
+                npc_col, npc_row = coords.screen_to_grid(npc.position.x, npc.position.y)
                 if abs(dest_col - npc_col) + abs(dest_row - npc_row) == 1:
                     self._trigger_npc_interaction(npc)
 
@@ -455,9 +629,9 @@ class GameManager:
         # Remove any NPC that a monster has landed on.
         for monster in self.monsters:
             dest = monster.target_pos if monster.is_moving else monster.position
-            m_col, m_row = self.screen_to_grid(dest.x, dest.y)
+            m_col, m_row = coords.screen_to_grid(dest.x, dest.y)
             for npc in list(self.npcs):
-                npc_col, npc_row = self.screen_to_grid(npc.position.x, npc.position.y)
+                npc_col, npc_row = coords.screen_to_grid(npc.position.x, npc.position.y)
                 if m_col == npc_col and m_row == npc_row:
                     npc.kill()
                     self.npcs.remove(npc)
@@ -480,7 +654,7 @@ class GameManager:
         for monster in self.monsters:
             if self.player.position == monster.position:
                 self.log_message("YOU WERE CAUGHT BY THE MONSTER!")
-                self.audio.play_scream_sound()
+                self.audio.play('scream')
                 self.finish_game("loss")
                 return True
 
@@ -489,16 +663,14 @@ class GameManager:
     @property
     def is_busy(self):
         """Centralized check to see if the game is currently animating."""
-        return (self.player.is_moving or 
+        return (self.player.is_moving or
                 any(monster.is_moving for monster in self.monsters) or
                 self.message_log.is_typing)
 
     # -------------------------
+    # UI PASS-THROUGHS
     # -------------------------
-    # UI / GAME FEEDBACK
-    # -------------------------
-    # -------------------------
-    
+
     def log_message(self, text, type_speed=None):
         """The central hub for all game objects to send text to the UI."""
         self.message_log.add_message(text, type_speed=type_speed)
@@ -512,193 +684,284 @@ class GameManager:
         if self.tutorial is not None:
             self.tutorial.notify(event, **kwargs)
 
-    @property
-    def is_tutorial_blocking(self) -> bool:
-        """True while a tutorial card is on screen and gameplay must freeze."""
-        return self.tutorial is not None and self.tutorial.is_blocking
-
     # -------------------------
     # MAIN LOOP
     # -------------------------
 
+    def _tick_between_level_flow(self) -> None:
+        """Advance level-transition, door-unlock, treasure-conversion, and game-over timers."""
+        if self.ui_state == 'playing':
+            self.intermission.update_level_transition()
+            self.intermission.update_door_unlock_sequence()
+            self.intermission.update_treasure_conversion()
+        self.score_manager.update_game_over_flow()
+
+    def _process_events(self) -> None:
+        """Drain pygame's event queue and dispatch by event type."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.close_game()
+            elif event.type == pygame.KEYDOWN:
+                self._handle_keydown(event)
+            elif event.type == pygame.JOYBUTTONDOWN:
+                self._handle_joybuttondown(event)
+            elif event.type == pygame.JOYHATMOTION:
+                self._handle_joyhatmotion(event)
+            elif event.type == pygame.JOYAXISMOTION:
+                self._handle_joyaxismotion(event)
+
+    def _dispatch_menu_navigate(self, dx: int, dy: int) -> None:
+        """Centralized menu nav dispatch shared by D-pad and analog stick.
+
+        handle_title_menu_move and handle_confirm_move both gate on
+        ui_state internally, so this dispatcher is a thin "vertical or
+        horizontal" router. Either coordinate may be zero; both being
+        zero is a no-op.
+
+        Args:
+            dx: -1 for left, +1 for right, 0 for none.
+            dy: -1 for up, +1 for down, 0 for none.
+        """
+        if dy != 0:
+            self.handle_title_menu_move(dy)
+        if dx != 0:
+            self.handle_confirm_move(dx)
+
+    def _handle_keydown(self, event) -> None:
+        """Route one keyboard press to the appropriate UI/gameplay handler."""
+        # F11 fullscreen toggle is global and intentionally falls through so
+        # other handlers still see the press.
+        if event.key == pygame.K_F11:
+            pygame.display.toggle_fullscreen()
+
+        # While a tutorial card is up it consumes ALL keyboard input so the
+        # player can't accidentally play through the overlay.
+        if (self.tutorial is not None and self.tutorial.is_blocking):
+            self.tutorial.handle_event(event)
+            return
+
+        # Name entry consumes all keyboard input so typed letters never
+        # also act as gameplay shortcuts. handle_name_entry_keypress
+        # routes Enter / Esc / Backspace / character input itself.
+        if self.ui_state == 'name_entry':
+            self.handle_name_entry_keypress(event)
+            return
+
+        if self.ui_state in ('title', 'newgame_prompt', 'slot_select_new', 'slot_select_load'):
+            if event.key in (pygame.K_UP, pygame.K_w):
+                self.handle_title_menu_move(-1)
+            elif event.key in (pygame.K_DOWN, pygame.K_s):
+                self.handle_title_menu_move(1)
+
+        # Confirm dialogs use horizontal nav for NO/YES selection.
+        if self.ui_state in ('overwrite_confirm', 'delete_confirm'):
+            if event.key == pygame.K_LEFT:
+                self.handle_confirm_move(-1)
+            elif event.key == pygame.K_RIGHT:
+                self.handle_confirm_move(1)
+
+        # ESC always exits the game and returns to the arcade launcher,
+        # matching the L1+R1+START+SELECT controller combo. Save-flow menus
+        # still step backward via the controller B button (handled in
+        # _handle_joybuttondown) and via the BACKSPACE key below.
+        if event.key == pygame.K_ESCAPE:
+            self.close_game()
+
+        # BACKSPACE preserves the previous "step back through save-flow menus"
+        # behavior on the keyboard now that ESC exits the game outright.
+        if event.key == pygame.K_BACKSPACE:
+            self.handle_back_press()
+
+        # Delete (or X) on the load picker opens the delete-confirm dialog.
+        if event.key in (pygame.K_DELETE, pygame.K_x) and self.ui_state == 'slot_select_load':
+            self.handle_delete_press()
+
+        if self.in_shop_phase:
+            self.intermission.handle_shop_event(event)
+
+        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self.handle_start_press()
+
+        self.score_manager.handle_initials_event(event)
+        # Light-source cycling lives on the player; gameplay-state gating is
+        # handled inside Player.handle_event itself.
+        self.player.handle_event(event)
+
+    def _handle_joybuttondown(self, event) -> None:
+        """Route one controller button press."""
+        # Catch the multi-button quit chord on press for instant response;
+        # the outer per-frame check covers held-state quits.
+        if self.quit_combo_pressed():
+            self.close_game()
+
+        # BACK is the global fullscreen toggle and falls through.
+        if event.button == InputSettings.JOY_BUTTON_BACK:
+            pygame.display.toggle_fullscreen()
+
+        if (self.tutorial is not None and self.tutorial.is_blocking):
+            self.tutorial.handle_event(event)
+            return
+
+        if self.in_shop_phase:
+            self.intermission.handle_shop_event(event)
+
+        if event.button in (InputSettings.JOY_BUTTON_START, InputSettings.JOY_BUTTON_A):
+            self.handle_start_press()
+
+        # B steps back through save-flow menus; no-op outside those states
+        # so the in-game LIGHT binding on B is unaffected.
+        if event.button == InputSettings.JOY_BUTTON_B:
+            self.handle_back_press()
+
+        # X opens the delete-confirm dialog from the load picker; no-op
+        # otherwise, leaving the in-game KEY DETECTOR binding intact.
+        if event.button == InputSettings.JOY_BUTTON_X:
+            self.handle_delete_press()
+
+        self.player.handle_event(event)
+        self.score_manager.handle_initials_event(event)
+
+    def _handle_joyhatmotion(self, event) -> None:
+        """Route a D-pad direction event for menus."""
+        if self.ui_state in ('title', 'newgame_prompt', 'slot_select_new', 'slot_select_load'):
+            _, hat_y = event.value
+            if hat_y == 1:
+                self.handle_title_menu_move(-1)
+            elif hat_y == -1:
+                self.handle_title_menu_move(1)
+
+        if self.ui_state in ('overwrite_confirm', 'delete_confirm'):
+            hat_x, _ = event.value
+            if hat_x == -1:
+                self.handle_confirm_move(-1)
+            elif hat_x == 1:
+                self.handle_confirm_move(1)
+
+        if self.in_shop_phase:
+            self.intermission.handle_shop_event(event)
+
+        self.score_manager.handle_initials_event(event)
+
+    def _handle_joyaxismotion(self, event) -> None:
+        """Route axis events: R2 mute toggle and left-stick menu navigation.
+
+        The left analog stick mirrors the D-pad for menu navigation. We
+        edge-trigger on threshold crossings (modeled on the existing R2
+        pattern) so a single push registers a single nav step rather
+        than continuous repeats while the stick is held.
+        """
+        if event.axis == InputSettings.JOY_AXIS_R2:
+            trigger_pressed = event.value > InputSettings.JOY_TRIGGER_THRESHOLD
+            if trigger_pressed and not self.r2_trigger_is_pressed:
+                self.audio.toggle_mute(
+                    resume_music=self.game_active and not self.is_transitioning
+                )
+            self.r2_trigger_is_pressed = trigger_pressed
+            return
+
+        threshold = InputSettings.JOY_TRIGGER_THRESHOLD
+
+        if event.axis == InputSettings.JOY_AXIS_LEFT_Y:
+            prev = self.previous_left_stick_y
+            curr = event.value
+            if curr <= -threshold and prev > -threshold:
+                self._dispatch_menu_navigate(0, -1)
+            elif curr >= threshold and prev < threshold:
+                self._dispatch_menu_navigate(0, 1)
+            self.previous_left_stick_y = curr
+            return
+
+        if event.axis == InputSettings.JOY_AXIS_LEFT_X:
+            prev = self.previous_left_stick_x
+            curr = event.value
+            if curr <= -threshold and prev > -threshold:
+                self._dispatch_menu_navigate(-1, 0)
+            elif curr >= threshold and prev < threshold:
+                self._dispatch_menu_navigate(1, 0)
+            self.previous_left_stick_x = curr
+            return
+
+    def _update_world(self) -> None:
+        """Per-frame logic: message log typewriter, tutorial drain, sprite step + animate, collision."""
+        self.message_log.update()
+        if self.tutorial is not None:
+            self.tutorial.update()
+
+        if self.ui_state != 'playing' or not self.game_active:
+            return
+
+        # No sprite work at all while a modal overlay is up.
+        if (
+            self.is_transitioning
+            or self.in_treasure_conversion
+            or self.in_shop_phase
+            or (self.tutorial is not None and self.tutorial.is_blocking)
+        ):
+            return
+
+        # Sprite update reads fresh input — skip it while animations are
+        # still in flight or the player would queue inputs mid-step.
+        if not self.is_busy:
+            self.all_sprites.update()
+
+        # Animation completes in-flight motion regardless of is_busy so
+        # sprites always finish their current step smoothly.
+        for sprite in self.all_sprites:
+            if hasattr(sprite, 'animate'):
+                sprite.animate()
+        self.check_player_caught_by_monster()
+
+    def _render_frame(self) -> None:
+        """Compose one frame: world, HUD panels, modal overlays, then CRT."""
+        self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
+
+        if self.ui_state in {'playing', 'game_over'}:
+            self.render.draw_grid_background()
+            self.all_sprites.draw(self.screen)
+            if self.ui_state == 'playing' and not DebugSettings.NO_FOG:
+                self.render.draw_fog_of_war()
+            self.render.draw_ui_frames()
+            self.message_log.draw(self.screen)
+            self.inventory_window.draw(self.screen)
+            self.map_window.draw(self.screen)
+            self.render.draw_level_transition()
+            self.render.draw_treasure_conversion()
+            self.render.draw_shop_menu()
+            if self.tutorial is not None:
+                self.tutorial.draw(self.screen)
+
+        if self.ui_state in {'title', 'newgame_prompt'}:
+            self.render.draw_title_screen()
+        elif self.ui_state in {'slot_select_new', 'slot_select_load'}:
+            self.render.draw_slot_select_screen()
+        elif self.ui_state == 'name_entry':
+            self.render.draw_name_entry_screen()
+        elif self.ui_state == 'overwrite_confirm':
+            self.render.draw_overwrite_confirm_screen()
+        elif self.ui_state == 'delete_confirm':
+            self.render.draw_delete_confirm_screen()
+        elif self.ui_state == 'game_over':
+            self.render.draw_end_game_screens()
+        elif self.ui_state == 'enter_initials':
+            self.render.draw_initials_entry_screen()
+        elif self.ui_state == 'leaderboard':
+            self.render.draw_leaderboard_screen()
+
+        # Apply CRT pass after world/UI rendering.
+        self.crt.draw()
+
     def run(self):
-        """
-        Run the game loop.
-        """
-        # TODO: Split run() into process_events(), update_state(), and render_frame() for maintainability.
-        # Main game loop
+        """Run the main game loop until the player quits."""
         while True:
             if self.quit_combo_pressed():
                 self.close_game()
-
-            if self.ui_state == 'playing':
-                self.between_level_manager.update_level_transition()
-                self.between_level_manager.update_door_unlock_sequence()
-                self.between_level_manager.update_treasure_conversion()
-
-            self.score_manager.update_game_over_flow()
-
-            # -------- Event handling --------
-            for event in pygame.event.get():
-                # Exit request.
-                if event.type == pygame.QUIT:
-                    self.close_game()
-
-                # Keyboard input routes.
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_F11:
-                        pygame.display.toggle_fullscreen()
-
-                    # Tutorial dismissal short-circuits all other keyboard
-                    # handlers while a card is up. SPACE is the advertised
-                    # dismiss key; ENTER is also accepted.
-                    if self.is_tutorial_blocking:
-                        if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
-                            if self.tutorial.try_dismiss():
-                                self.tutorial_dismiss_input_locked = True
-                        continue
-
-                    if self.ui_state == 'title':
-                        if event.key in (pygame.K_UP, pygame.K_w):
-                            self.handle_title_menu_move(-1)
-                        elif event.key in (pygame.K_DOWN, pygame.K_s):
-                            self.handle_title_menu_move(1)
-
-                    if self.in_shop_phase:
-                        self.between_level_manager.handle_shop_event(event)
-
-                    if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                        self.handle_start_press()
-
-                    self.score_manager.handle_initials_event(event)
-
-                # Controller button input routes.
-                if event.type == pygame.JOYBUTTONDOWN:
-                    if self.quit_combo_pressed():
-                        self.close_game()
-
-                    if event.button == InputSettings.JOY_BUTTON_BACK:
-                        pygame.display.toggle_fullscreen()
-
-                    # Tutorial dismissal short-circuits all gameplay button
-                    # handlers while a card is up.
-                    if self.is_tutorial_blocking:
-                        if event.button == InputSettings.JOY_BUTTON_A:
-                            if self.tutorial.try_dismiss():
-                                self.tutorial_dismiss_input_locked = True
-                        continue
-
-                    if self.in_shop_phase:
-                        self.between_level_manager.handle_shop_event(event)
-
-                    if event.button in (InputSettings.JOY_BUTTON_START, InputSettings.JOY_BUTTON_A):
-                        self.handle_start_press()
-
-                    # Cycle the player's active light source while in gameplay.
-                    if (
-                        self.ui_state == 'playing'
-                        and self.game_active
-                        and not self.is_transitioning
-                        and not self.in_treasure_conversion
-                        and not self.in_shop_phase
-                    ):
-                        if event.button == InputSettings.JOY_BUTTON_L1:
-                            self.player.cycle_selected_light_source(-1)
-                        elif event.button == InputSettings.JOY_BUTTON_R1:
-                            self.player.cycle_selected_light_source(1)
-
-                    self.score_manager.handle_initials_event(event)
-
-                if event.type == pygame.JOYHATMOTION and self.ui_state == 'title':
-                    _, hat_y = event.value
-                    if hat_y == 1:
-                        self.handle_title_menu_move(-1)
-                    elif hat_y == -1:
-                        self.handle_title_menu_move(1)
-
-                if event.type == pygame.JOYHATMOTION and self.in_shop_phase:
-                    self.between_level_manager.handle_shop_event(event)
-
-                if event.type == pygame.JOYHATMOTION:
-                    self.score_manager.handle_initials_event(event)
-
-                # Controller R2 trigger mute toggle (edge-triggered). L2 is
-                # reserved for the invisibility cloak. Mute state is surfaced
-                # via the persistent green MUTE indicator drawn by
-                # RenderManager, not via the in-game message log.
-                if event.type == pygame.JOYAXISMOTION and event.axis == InputSettings.JOY_AXIS_R2:
-                    trigger_pressed = event.value > InputSettings.JOY_TRIGGER_THRESHOLD
-                    if trigger_pressed and not self.r2_trigger_is_pressed:
-                        self.audio.toggle_mute(
-                            resume_music=self.game_active and not self.is_transitioning
-                        )
-                    self.r2_trigger_is_pressed = trigger_pressed
-
-            # -------- Per-frame update --------
-            self.message_log.update()
-            # Let the tutorial drain its burst queue when nothing is on screen
-            # (handles the boot sequence and back-to-back chains).
-            if self.tutorial is not None:
-                self.tutorial.update()
-            if self.ui_state == 'playing' and self.game_active:
-                if (
-                    not self.is_transitioning
-                    and not self.is_busy
-                    and not self.in_treasure_conversion
-                    and not self.in_shop_phase
-                    and not self.is_tutorial_blocking
-                ):
-                    self.all_sprites.update()
-
-                if (
-                    not self.is_transitioning
-                    and not self.in_treasure_conversion
-                    and not self.in_shop_phase
-                    and not self.is_tutorial_blocking
-                ):
-                    # Always advance movement animation to complete in-flight motion.
-                    # TODO: Replace hasattr('animate') with a protocol/base class for animatable sprites.
-                    for sprite in self.all_sprites:
-                        if hasattr(sprite, 'animate'):
-                            sprite.animate()
-
-                    # Resolve collisions immediately after movement completes.
-                    self.check_player_caught_by_monster()
-
-            # -------- Rendering --------
-            self.screen.fill(ColorSettings.SCREEN_BACKGROUND)
-
-            if self.ui_state in {'playing', 'game_over'}:
-                self.render.draw_grid_background()
-                self.all_sprites.draw(self.screen)
-
-                if self.ui_state == 'playing' and not DebugSettings.NO_FOG:
-                    self.render.draw_fog_of_war()
-                self.render.draw_ui_frames()
-                self.message_log.draw(self.screen)
-                self.inventory_window.draw(self.screen)
-                self.map_window.draw(self.screen)
-                self.render.draw_level_transition()
-                self.render.draw_treasure_conversion()
-                self.render.draw_shop_menu()
-                if self.tutorial is not None:
-                    self.tutorial.draw(self.screen)
-
-            if self.ui_state == 'title':
-                self.render.draw_title_screen()
-            elif self.ui_state == 'game_over':
-                self.render.draw_end_game_screens()
-            elif self.ui_state == 'enter_initials':
-                self.render.draw_initials_entry_screen()
-            elif self.ui_state == 'leaderboard':
-                self.render.draw_leaderboard_screen()
-
-            # Apply CRT pass after world/UI rendering.
-            self.crt.draw()
-
+            self._tick_between_level_flow()
+            self._process_events()
+            self._update_world()
+            self._render_frame()
             pygame.display.flip()
             self.clock.tick(ScreenSettings.FPS)
- 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     game_manager = GameManager()
     game_manager.run()

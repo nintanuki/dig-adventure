@@ -1,10 +1,5 @@
 # Keep shared configuration grouped in namespaced classes for predictable imports.
 import os
-import pygame
-
-# TODO: Reorganize settings into domain-focused modules (display, input, gameplay, UI, audio, assets, debug)
-# to reduce the size of this single constants file.
-
 
 class ColorSettings:
     """Centralized named colors used throughout UI and gameplay rendering."""
@@ -77,23 +72,6 @@ class ColorSettings:
     MESSAGE_CONTROL_A = GREEN
     MESSAGE_DOOR = TAN
 
-
-def color_with_alpha(color_name: str, alpha: int) -> pygame.Color:
-    # TODO: If we want settings to remain constants-only, move this helper to a utility module
-    # (for example render_utils.py) and keep this file purely declarative.
-    """Create a pygame color with an explicit alpha component.
-
-    Args:
-        color_name (str): Any pygame-compatible color name or value.
-        alpha (int): Alpha channel value in the 0-255 range.
-
-    Returns:
-        pygame.Color: Color value with the requested transparency.
-    """
-    color = pygame.Color(color_name)
-    color.a = alpha
-    return color
-
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
     WIDTH = 800
@@ -102,6 +80,7 @@ class ScreenSettings:
     FPS = 60
     CRT_ALPHA_RANGE = (75, 90)
     CRT_SCANLINE_HEIGHT = 3
+    TITLE = "Dungeon Digger"
 
 class GridSettings:
     """Grid and tile scaling values used for map layout and sprite snapping."""
@@ -160,9 +139,10 @@ class UISettings:
     MUTE_RIGHT_X = ACTION_WINDOW_X + ACTION_WINDOW_WIDTH
     MUTE_Y = SCORE_Y
 
-
 class RenderSettings:
     """Constants for title, overlay, and between-screen render timing/layout."""
+
+    IN_GAME_TITLE = ScreenSettings.TITLE.upper()
 
     TITLE_CHASE_INITIAL_DELAY_MS = 60000
     TITLE_CHASE_COOLDOWN_MS = 60000
@@ -203,13 +183,39 @@ class RenderSettings:
     LEADERBOARD_EMPTY_Y = 260
     LEADERBOARD_PROMPT_Y_OFFSET = 60
 
+    # Slot select layout (NEW GAME / LOAD GAME). Ten rows of slot summary
+    # land between the header and the bottom prompt. The cursor X offset
+    # positions the ">" indicator a few pixels left of the row text.
+    SLOT_SELECT_TITLE_Y = 50
+    SLOT_SELECT_START_Y = 110
+    SLOT_SELECT_ROW_HEIGHT = 36
+    SLOT_SELECT_ROW_X = 120
+    SLOT_SELECT_CURSOR_OFFSET_X = -20
+    SLOT_SELECT_PROMPT_Y_OFFSET = 35
+
+    # Name entry, overwrite confirm, and delete confirm share a centered
+    # layout pattern: a header, a contextual line, a focal element (the
+    # typed name buffer or NO/YES options), and a bottom controls hint.
+    SAVE_DIALOG_TITLE_Y = 150
+    SAVE_DIALOG_BODY_Y = 230
+    SAVE_DIALOG_FOCAL_Y = 320
+    SAVE_DIALOG_PROMPT_Y_OFFSET = 50
+    SAVE_DIALOG_OPTION_GAP = 100
+
 class GameSettings:
     """Global gameplay flow constants and persistence limits."""
 
     LEVEL_TRANSITION_MS = 2000
-    HIGH_SCORE_FILE = 'high_score.txt'
     LEADERBOARD_FILE = 'leaderboard.txt'
     LEADERBOARD_LIMIT = 10
+
+    # Save system: ten slots, JSON files under saves/. SAVE_VERSION exists so
+    # SaveManager can reject or migrate older save files if the schema ever
+    # changes incompatibly.
+    SAVES_DIR = 'saves'
+    SAVE_VERSION = 1
+    MAX_SAVE_SLOTS = 10
+    MAX_PLAYER_NAME_LENGTH = 8
     GAME_OVER_CONTINUE_DELAY_MS = 650
     GAME_OVER_PROMPT_FADE_MS = 750
     DOOR_UNLOCK_MESSAGE_TYPE_SPEED = 0.12
@@ -221,7 +227,6 @@ class GameSettings:
     TREASURE_CONVERSION_POST_MESSAGE_DELAY_MS = 450
 
     SHOP_DISPLAY_DELAY_MS = 200
-    SHOP_BULK_PURCHASE_QUANTITY = 5
     STATUS_EFFECT_TURN_BUFFER = 1
 
 class WindowSettings:
@@ -231,12 +236,36 @@ class WindowSettings:
     LINE_HEIGHT = 22
     TEXT_PADDING = 16
     WELCOME_MESSAGE = [
-        "B - LIGHT A TORCH OR LANTERN",
-        "A - DIG AND UNLOCK DOORS",
-        "X - USE KEY DETECTOR",
-        "Y - USE MONSTER REPELLENT",
-        "L2 - USE INVISIBILITY CLOAK"]
+        "IT'S PITCH BLACK",
+        "YOU CAN'T SEE A THING",
+        "MAYBE YOU SHOULD LIGHT A TORCH?",
+        "(B BUTTON ON CONTROLLER / F ON KEYBOARD)"]
     TYPING_SPEED = 0.25 # Characters advanced per frame in typewriter animation.
+
+class TutorialSettings:
+    """Layout, timing, and copy values for the tutorial card overlay."""
+
+    # Anti-mash window: same key that just dismissed a card cannot also dig
+    # on the same press.
+    DISMISS_DELAY_MS = 500
+    # Number of full turns to wait between flow-queue cards so they don't all
+    # fire on a single dig.
+    FLOW_CARD_TURN_GAP = 2
+
+    # Darken the action window behind the card so text reads cleanly.
+    WORLD_DARKEN_ALPHA = 170
+    # Card panel background opacity.
+    PANEL_ALPHA = 220
+    PANEL_BORDER_RADIUS = 8
+    PANEL_PADDING_X = 24
+    PANEL_PADDING_Y = 18
+
+    TEXT_LINE_GAP = 10
+    PROMPT_GAP = 14
+    PROMPT_TEXT = "PRESS A OR SPACE TO CONTINUE"
+    BODY_FONT_SIZE = 14
+    # The dismiss prompt reuses FontSettings.MESSAGE_SIZE directly at the
+    # call site so HUD text stays one source of truth.
 
 class PlayerSettings:
     """Player-specific tuning values."""
@@ -249,7 +278,14 @@ class MonsterSettings:
     """Monster behavior and movement tuning values."""
 
     COUNT = 3
-    CHASE_RADIUS = 3  # Manhattan distance
+    # HEARING_RADIUS replaces the legacy CHASE_RADIUS. The chase trigger
+    # now keys off the player's light_radius (light = danger), so this
+    # value is reused for a different role: the Manhattan bubble inside
+    # which a monster can sense the player even in pitch darkness and
+    # emit a one-shot "you hear something" warning. Kept separate from
+    # light_radius so the dark warning range can be tuned without
+    # touching how far light reaches.
+    HEARING_RADIUS = 3  # Manhattan distance
     IDLE_CHANCE = 0.3
     MIN_PLAYER_DISTANCE = 5  # Minimum Manhattan distance between a monster and the player at spawn.
     REPELLENT_DURATION = 5 # Number of turns the repellent effect remains active.
@@ -273,6 +309,8 @@ class InputSettings:
     JOY_BUTTON_START = 7
     JOY_BUTTON_QUIT_COMBO = (7, 6, 4, 5)
 
+    JOY_AXIS_LEFT_X = 0
+    JOY_AXIS_LEFT_Y = 1
     JOY_AXIS_L2 = 4
     JOY_AXIS_R2 = 5
     JOY_TRIGGER_THRESHOLD = 0.5
@@ -290,15 +328,27 @@ class LightSettings:
     DEFAULT_RADIUS = 0    # Start each run with no active light source.
     BASE_RADIUS = 2
     BASE_DURATION = 3
-    
+
     MATCH_RADIUS = BASE_RADIUS * 1
     MATCH_DURATION = BASE_DURATION * 1
-    
+
     TORCH_RADIUS = BASE_RADIUS * 1.5
     TORCH_DURATION = BASE_DURATION * 1.5
-    
+
     LANTERN_RADIUS = BASE_RADIUS * 3
     LANTERN_DURATION = BASE_DURATION * 3
+
+    # Best-first order used to auto-pick a default light source after pickups.
+    SOURCE_PRIORITY = ('LANTERN', 'TORCH', 'MATCH')
+    # Cycle order for L1/R1 (and Q/E) so the player walks weakest-to-strongest.
+    SOURCE_CYCLE_ORDER = ('MATCH', 'TORCH', 'LANTERN')
+    # (radius, duration) per source. Mirrors the *_RADIUS/_DURATION pairs above
+    # so Player.process_turn_action can look both up with one dict access.
+    SOURCE_STATS = {
+        'MATCH': (MATCH_RADIUS, MATCH_DURATION),
+        'TORCH': (TORCH_RADIUS, TORCH_DURATION),
+        'LANTERN': (LANTERN_RADIUS, LANTERN_DURATION),
+    }
 
 class ItemSettings:
     """Item inventory, spawn, scoring, and shop economy configuration."""
@@ -322,14 +372,13 @@ class ItemSettings:
         'MONSTER REPELLENT': 500,
         'KEY DETECTOR': 2000,
         'MAP': 5000,
-        'INVISIBILITY CLOAK': 10000,
+        'INVISIBILITY CLOAK': 25000,
     }
 
+    # Only the invisibility cloak is limited stock (one per shop visit, and
+    # zero if the player already owns one). Every other item is unlimited.
     SHOP_LIMITED_STOCK_TEMPLATE = {
-        'LANTERN': 3,
         'INVISIBILITY CLOAK': 1,
-        'MAP': 1,
-        'KEY DETECTOR': 1,
     }
 
     DETECTOR_DISTANCE_FOUND = 0
@@ -342,9 +391,9 @@ class ItemSettings:
     # The higher the number, the more common it is.
     SPAWN_CHANCE = {
         # Consumables
-        'MATCH': 0.25,
-        'TORCH': 0.15,
-        'LANTERN': 0.02,
+        'MATCH': 0.20,
+        'TORCH': 0.10,
+        'LANTERN': 0.05,
         'MONSTER REPELLENT': 0.10,
         'INVISIBILITY SCROLL': 0.01,
         
@@ -365,13 +414,13 @@ class ItemSettings:
         'RUBY': (1, 7),
         'SAPPHIRE': (1, 5),
         'EMERALD': (1, 3),
-        'MATCH': (1, 3),
-        'TORCH': (1, 5),
-        # 'MONSTER REPELLENT': (1, 2)
         # Items not listed here default to quantity 1.
+        # Note: add BOOK OF MATCHES (20) for a rare 5% drop
     }
 
-    NORMAL_INITIAL_INVENTORY = {}
+    NORMAL_INITIAL_INVENTORY = {
+        'TORCH': 1,
+    }
 
     TEST_INITIAL_INVENTORY = {
         'INVISIBILITY CLOAK': 1,
@@ -385,7 +434,12 @@ class ItemSettings:
 class FontSettings:
     """Font files, sizes, and text-color mappings for UI rendering."""
 
-    FONT = 'font/Pixeled.ttf'
+    # Absolute path so pygame.font.Font(...) works no matter what the
+    # caller's working directory is. assets/ now owns every bundled media
+    # folder (font, graphics, music, sound).
+    FONT = os.path.join(
+        os.path.dirname(__file__), 'assets', 'font', 'Pixeled.ttf'
+    )
     MESSAGE_SIZE = 8
     SCORE_SIZE = 12
     HUD_SIZE = 10
@@ -412,11 +466,15 @@ class AudioSettings:
 class AssetPaths:
     """Resolved asset paths for sprites, audio, and music content."""
 
-    # TODO: Consider moving asset paths to a dedicated asset_manifest.py to keep settings focused on gameplay constants.
+    # All bundled media now lives under a single assets/ folder
+    # (assets/font, assets/graphics, assets/music, assets/sound) so the
+    # project root only carries code + docs + saves. BASE_DIR still resolves
+    # to the project root because settings.py itself stays at the root.
+    BASE_DIR = os.path.dirname(__file__)
+    ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
 
     # Images
-    BASE_DIR = os.path.dirname(__file__)
-    GRAPHICS_DIR = os.path.join(BASE_DIR, 'graphics')
+    GRAPHICS_DIR = os.path.join(ASSETS_DIR, 'graphics')
     MONSTER_VARIANTS_DIR = os.path.join(GRAPHICS_DIR, 'monsters')
     PLAYER_VARIANTS_DIR = os.path.join(GRAPHICS_DIR, 'player')
     NPC_VARIANTS_DIR = os.path.join(GRAPHICS_DIR, 'npcs')
@@ -442,31 +500,31 @@ class AssetPaths:
     TV = os.path.join(GRAPHICS_DIR, 'tv.png')
 
     # Audio
-    SOUND_DIR = os.path.join(BASE_DIR, 'sound')
-    MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.wav')
-    DIG_SOUND = os.path.join(SOUND_DIR, 'dig_sound_effect.mp3')
-    BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'wall_bump_sound_effect.mp3')
-    KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.wav')
-    SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.wav')
-    MONSTER_CHASE_SOUND = os.path.join(SOUND_DIR, 'sfx_sound_nagger1.wav')
-    COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.wav')
-    LIGHT_SOUND = os.path.join(SOUND_DIR, 'Torch Whoosh Sound Effect.mp3')
-    MATCH_LIGHT_SOUND = os.path.join(SOUND_DIR, 'Lighting A Match Sound Effect.mp3')
-    VANISH_SOUND = os.path.join(SOUND_DIR, 'Vanish Sound Effect.mp3')
-    SHORT_SPRAY_SOUND = os.path.join(SOUND_DIR, 'short_spray.mp3')
-    LONG_SPRAY_SOUND = os.path.join(SOUND_DIR, 'long_spray.mp3')
-    FOUND_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop3.wav')
-    HOT_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop7.wav')
-    WARM_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop6.wav')
-    MENU_MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_menu_move2.wav')
-    MENU_SELECT_SOUND = os.path.join(SOUND_DIR, 'sfx_menu_select3.wav')
+    SOUND_DIR = os.path.join(ASSETS_DIR, 'sound')
+    MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_movement_footstepsloop4_slow.ogg')
+    DIG_SOUND = os.path.join(SOUND_DIR, 'dig_sound_effect.ogg')
+    BOUNDARY_SOUND = os.path.join(SOUND_DIR, 'wall_bump_sound_effect.ogg')
+    KEY_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_single1.ogg')
+    SCREAM_SOUND = os.path.join(SOUND_DIR, 'wilhelm_scream.ogg')
+    MONSTER_CHASE_SOUND = os.path.join(SOUND_DIR, 'sfx_sound_nagger1.ogg')
+    COIN_SOUND = os.path.join(SOUND_DIR, 'sfx_coin_cluster3.ogg')
+    LIGHT_SOUND = os.path.join(SOUND_DIR, 'Torch Whoosh Sound Effect.ogg')
+    MATCH_LIGHT_SOUND = os.path.join(SOUND_DIR, 'Lighting A Match Sound Effect.ogg')
+    VANISH_SOUND = os.path.join(SOUND_DIR, 'Vanish Sound Effect.ogg')
+    SHORT_SPRAY_SOUND = os.path.join(SOUND_DIR, 'short_spray.ogg')
+    LONG_SPRAY_SOUND = os.path.join(SOUND_DIR, 'long_spray.ogg')
+    FOUND_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop3.ogg')
+    HOT_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop7.ogg')
+    WARM_DETECTOR_SOUND = os.path.join(SOUND_DIR, 'sfx_alarm_loop6.ogg')
+    MENU_MOVE_SOUND = os.path.join(SOUND_DIR, 'sfx_menu_move2.ogg')
+    MENU_SELECT_SOUND = os.path.join(SOUND_DIR, 'sfx_menu_select3.ogg')
 
     # Music
-    MUSIC_DIR = os.path.join(BASE_DIR, 'music')
+    MUSIC_DIR = os.path.join(ASSETS_DIR, 'music')
     NORMAL_MUSIC_TRACKS = [
-        os.path.join(MUSIC_DIR, 'Goblins_Den_(Regular).wav'),
+        os.path.join(MUSIC_DIR, 'Goblins_Den_(Regular).ogg'),
     ]
-    CHASE_MUSIC = os.path.join(MUSIC_DIR, 'Goblins_Dance_(Battle).wav')
+    CHASE_MUSIC = os.path.join(MUSIC_DIR, 'Goblins_Dance_(Battle).ogg')
     MUSIC_TRACKS = NORMAL_MUSIC_TRACKS
 
 class DebugSettings:
@@ -474,5 +532,5 @@ class DebugSettings:
     GRID = True # Draw tile outlines for visual debugging.
     MUTE = False # Force mute all sound output during testing.
     NO_FOG = False # Disable fog rendering for visibility debugging.
-    SPAWN_LOG = True # Print spawn/item placement summary during dungeon setup.
+    SPAWN_LOG = False # Print spawn/item placement summary during dungeon setup.
     USE_TEST_INITIAL_INVENTORY = False # Start runs with ItemSettings.TEST_INITIAL_INVENTORY when enabled.
